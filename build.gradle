@@ -1,0 +1,15 @@
+plugins {
+    id "base"
+}
+
+tasks.register("assembleDebug") {
+    dependsOn(":app:assembleDebug")
+}
+
+tasks.named("assemble") {
+    dependsOn(":app:assembleDebug")
+}
+
+tasks.named("clean") {
+    dependsOn(":app:clean")
+}
