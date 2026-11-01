@@ -50,6 +50,13 @@ Keeping food now takes real time and can go wrong in real ways.
 - The axe's edge and head show on the camp panel.
 - Balance: median survival over 510 bot games unchanged at 49 days.
 
+## Light and cooking update (Nov 1, 2026)
+
+- **Night work needs light:** after dark, jobs need a fire or a lamp. Inside a shelter in the dark you can still talk to the camera, rest, or twist cordage by feel; carving, sewing and the rest need to see.
+- **Fat lamp** (new craft): a flat stone dish, a moss or cordage wick, and rendered tallow. It lights a shelter even when the fire is outside, and steady lamplight takes away the morale cost of working at night. It burns about a fifth of a portion of tallow an hour of work. Indoors it is occasionally knocked into the bedding.
+- **Bone broth** left on the coals with the fire burning all night comes out 45% richer by morning.
+- Balance: median survival over 510 bot games unchanged at 49 days.
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.

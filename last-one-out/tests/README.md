@@ -13,6 +13,7 @@ Run these before publishing any change. They test the real `../index.html`.
 | `node cooking.js` | Cooking rules: raw meat and fish, worms in pig and predator meat, what boiling and roasting do. | ~5 s |
 | `node fire.js` | Fire and stove rules: damp tinder, the stone hearth, soot in the flue, smoker flare-ups, chinking the walls. | ~5 s |
 | `node tools.js` | Tool and material rules: dull axes, sharpening, axe heads working loose, bursting hearth stones, clay chinking. | ~5 s |
+| `node light.js` | Light and the night: what needs a fire or a lamp, the fat lamp, overnight broth. | ~3 s |
 | `node balance.js` | Median survival over 510 bot games, per place and overall. Fails if the overall median moves more than 5% from the reference. | ~12 s |
 | `node fuzz.js [runs]` | Random play in every place, looking for crashes, broken numbers and days that never end. | ~10 s |
 | `node ui-check.js` | Opens the page in a headless browser at phone width: starts a new run, loads saves from older versions, and shows late-game and win, pulled-out and tap-out screens in every place. Fails on any page error. | ~3 min |

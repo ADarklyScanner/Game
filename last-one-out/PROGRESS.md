@@ -11,8 +11,8 @@ Each phase is committed and published on its own, so stopping between phases nev
 | 2 | Fire and stoves: damp tinder, stone hearth, flue soot and chimney fires, smoker flare-ups, chinking walls | Done |
 | 3 | Materials and tools: dull axes cost effort and cause injuries, honing on river stones, axe heads working loose and refitting with rawhide, bursting hearth stones, clay temper | Done (part) |
 | 3 later | Fibre and cordage strength, bark girdling, salvage contamination, carpentry joints, stone grades | Left for later |
-| 4 | More cooking and camp lighting | Next |
-| 5 | Water safety, medicine, hygiene, sanitation, waste | Not started |
+| 4 | Light and cooking: night work needs a fire or a lamp, fat lamp burning tallow, bone broth simmered overnight | Done |
+| 5 | Water safety, medicine, hygiene, sanitation, waste | Next |
 | 6 | Shelters, cabins, camp layout, bridges, rafts, snowshoes, bedding and sleep | Not started |
 | 7 | Pottery and kiln firing | Not started |
 | 8 | Weapons, arrows, tackle, traps, fishing, ice fishing, hunting, tracking, weather, navigation, climbing, swimming, ice safety, wildlife, predators, stealth, scent, trail marking | Not started |
