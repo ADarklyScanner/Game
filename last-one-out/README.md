@@ -157,6 +157,10 @@ The crafts added in the realism update are now done by hand. How well you do it 
 - **Dig a latrine** (new, at camp): without one the ground near camp and the water get fouled over the weeks, and untreated water makes you sick more often. A latrine dug downhill, away from the water, lets it clear; it lasts about a month.
 - Balance against the original game: median 48 days (was 49), mean 48.0 (was 49.9).
 
+## Hands-on for the older crafts (Nov 1, 2026)
+
+The rest of the crafting is done by hand too: carving a bow drill, twisting a handline, grinding gorge hooks, charring a digging stick, tying a lure, knotting a net, lashing a smoker, food cache, woodshed and log bridge, staking a fish trap, punching a can stove, laying a clay chimney, pounding pemmican, bending and lacing snowshoes, and sewing mittens. Where a sloppy job matters, it costs: slack snowshoe lacing sags, loose mitten stitches let the cold in, a well or badly lashed cache is stronger or weaker against animals, gaps in a fish trap let fish out, badly mixed pemmican goes rancid in a couple of months, and a rough chimney fouls with soot faster.
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.

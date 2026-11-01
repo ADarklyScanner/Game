@@ -38,6 +38,8 @@ The newer crafts are done by hand, like the original fire-starting and cordage p
 splitting and tillering a bow, pouring a fat lamp, twisting a sinew leader, trimming a wading staff, straightening arrows, scraping a hide,
 chinking walls, coiling a pot, firing pots in a pit, mending, stacking a cairn, setting a hearth, laying a bough bed, lashing a drying rack,
 fire reflector, bed frame and raft, knapping a stone blade, weaving a door mat, and notching cabin logs.
+The older crafts are hands-on too: bow drill, handline, gorge hooks, digging stick, lure, net, smoker, food cache, fish trap, can stove,
+clay chimney, woodshed, log bridge, pemmican, snowshoes and mittens.
 
 ## Left out on purpose
 

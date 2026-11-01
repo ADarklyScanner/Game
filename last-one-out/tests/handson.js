@@ -42,6 +42,29 @@ async function run(b, name, setup, play, verify) {
   await run(b, 'knapping a blade (taps)', s => { s.gear = s.gear.filter(x => x !== 'Knife'); s.sys.flint = 1; }, async p => { await start(p, 'craft_stoneblade'); await p.waitForTimeout(200); await tapAll(p); }, g => (g.sys.flint === 0) || `flint ${g.sys.flint}`);
   await run(b, 'weaving a door mat (steps)', s => {}, async p => { await start(p, 'craft_mat'); await steps(p, ['Over', 'Under'], 10); }, g => g.sys.mat === 'tight' || `mat ${g.sys.mat}`);
   await run(b, 'climbing the rock fills in the map', s => { s.mats.cordage = 6; }, async p => { await p.evaluate(() => { const W = window.__test.W(); W.player.x = W.cliff.x + 40; W.player.y = W.cliff.y + 60; }); await p.waitForTimeout(500); const before = await p.evaluate(() => window.__test.W().exp.length || window.__test.W().exp.size || 0); await click(p, /^Climb the rock/); await p.waitForTimeout(400); const after = await p.evaluate(() => window.__test.W().exp.length || window.__test.W().exp.size || 0); await p.evaluate(([a, b]) => { window.__exp = [a, b]; }, [before, after]); }, g => (g.sys.lookout === g.day || (g.conditions || []).some(c => /fall/.test(c.name))) || `lookout ${g.sys.lookout}`);
+  // the older crafts, done by hand
+  const noFish = s => { s.gear = s.gear.filter(x => x !== 'Fishing gear'); s.hooks = 0; s.line = 0; };
+  const OLD = [
+    ['craft_bowdrill', s => { s.gear = s.gear.filter(x => x !== 'Ferro rod'); }, 'strokes', g => g.crafts.bowdrill === 1],
+    ['craft_handline', noFish, ['Twist', 'Fold', 6], g => g.crafts.handline === 1],
+    ['craft_hooks', s => { s.hooks = 0; }, 'strokes', g => g.hooks === 3],
+    ['craft_diggingstick', s => {}, 'strokes', g => g.crafts.diggingstick === 1],
+    ['craft_lure', s => {}, 'taps', g => g.lure === true],
+    ['craft_net', s => { s.found.push({ cls: 'Netting', name: 'Netting' }); s.crafts.net = 1; }, ['Loop', 'Knot', 10], g => g.crafts.net >= 2],
+    ['craft_smoker', s => { s.crafts.smoker = 1; }, 'lash', g => g.crafts.smoker === 2],
+    ['craft_cache', s => { s.crafts.cache = 1; s.cachePlace = 'away'; }, 'lash', g => g.crafts.cache === 2 && g.cacheCond > 0],
+    ['craft_fishtrap', s => { s.crafts.fishtrap = 2; }, 'taps', g => g.fishTrap === true && !(g.sys.trapGaps)],
+    ['craft_stove', s => { s.found.push({ cls: 'Metal hardware', name: 'Tin cans' }); }, 'taps', g => g.crafts.stove === 1],
+    ['craft_chimney', s => { s.crafts.chimney = 1; s.mats.clay = 6; s.mats.stone = 8; }, 'taps', g => g.crafts.chimney === 2 && !(g.sys.flueRough)],
+    ['craft_woodshed', s => {}, 'lash', g => g.crafts.woodshed === 1],
+    ['craft_bridge', s => { s.crafts.bridge = 1; }, 'lash', g => g.crafts.bridge === 2],
+    ['craft_pemmican', s => { s.stores.push({ id: 'hare', por: 4, left: 120, smoked: false, dried: true, moist: 0.12 }); }, ['Pound', 'Mix', 8], g => g.stores.some(x => x.id === 'pemmican' && (x.left === null || x.left > 1e8))],
+    ['craft_snowshoes', s => { s.seasonKey = 'US-S6'; s.day = E.DATA.seasons.find(x => x.key === 'US-S6').climate.snow + 2; }, ['Bend', 'Lace', 8], g => g.crafts.snowshoes === 1 && !(g.sys.looseShoes)],
+    ['craft_mittens', s => {}, ['Stitch', 'Pull', 8], g => g.crafts.mittens === 1 && !(g.sys.looseMitts)],
+  ];
+  for (const [id, setup, how, ok] of OLD) await run(b, id + ' (hands-on)', setup, async p => { await start(p, id); await p.waitForTimeout(200);
+    if (how === 'taps') await tapAll(p); else if (how === 'strokes') await stroke(p, 7); else if (how === 'lash') { const pts = await p.evaluate(() => [...document.querySelectorAll('#mini .joint')].map(c => { const r = c.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })); for (const [x, y] of pts) { await p.mouse.click(x, y); await p.waitForTimeout(60); } } else await steps(p, how.slice(0, 2), how[2]); }, g => ok(g) || `${id} did not finish as expected`);
+  await run(b, 'snowshoes laced slack', s => { s.seasonKey = 'US-S6'; s.day = E.DATA.seasons.find(x => x.key === 'US-S6').climate.snow + 2; }, async p => { await start(p, 'craft_snowshoes'); for (let i = 0; i < 3; i++) { await click(p, /^Lace/); await p.waitForTimeout(50); } await steps(p, ['Bend', 'Lace'], 8); }, g => g.sys.looseShoes === true || 'expected loose lacing');
   for (const [id, key] of [['craft_rack', 'rack'], ['craft_reflector', 'reflector'], ['craft_platform', 'platform'], ['craft_raft', 'raft']]) await run(b, id + ' (lashing)', s => { if (id === 'craft_reflector') { s.shelterType = 'leanto'; s.shelterLvl = 1; } }, async p => { await start(p, id); await p.waitForTimeout(200); const pts = await p.evaluate(() => [...document.querySelectorAll('#mini .joint')].map(c => { const r = c.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })); for (const [x, y] of pts) { await p.mouse.click(x, y); await p.waitForTimeout(60); } }, g => g.crafts[key] === 1 || `${key} ${g.crafts[key]}`);
   await b.close(); console.log(fails ? `${fails} hands-on check(s) failed, ${passes} passed.` : `All ${passes} hands-on checks passed.`); process.exit(fails ? 1 : 0);
 })();
