@@ -1849,7 +1849,10 @@ function placeOf() { const ahead = S.rivals.filter(r => r.days > S.day || (r.pla
 
 // ------------------------------------------------------------ setup screen
 function renderSetup() {
-  const seasons = D.seasons.slice();
+  // easiest first: by difficulty level, then by how long a typical player lasts there (longest first)
+  const level = k => DIFF_NAMES.length - 1 - DIFF_NAMES.findIndex(d => d[0] === diffLabel(k)[0]);
+  const avgDays = se => ((D.difficulty || {})[se.key] || {}).median ?? realMedian(se);
+  const seasons = D.seasons.slice().sort((a, b) => level(a.key) - level(b.key) || avgDays(b) - avgDays(a));
   app.className = 'wrap'; app.replaceChildren();
   app.append($(`<header class="hero"><h1>Last One <span>Out</span></h1>
     <p>Ten people, ten items, one wilderness. Pick a place, outlast the other survivors, and live off what the land gives you.</p></header>`));
