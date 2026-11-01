@@ -27,7 +27,7 @@ function makeBot(E, s, opts = {}) {
     if (s.shelterLvl >= 2 && (E.sealOf ? E.sealOf(s) : 1) < 0.4) pri.push('caulk'); // re-chink when the seal is poor, not at every crack
     if (s.sys && s.sys.soot > 0.5) pri.push('check_roof');
     if (s.crafts.hearth !== 1 && s.mats.stone < 6 && s.day > 3) pri.push('stones');
-    pri.push('craft_pemmican', 'cordage', 'checknet', 'setnet', 'checktraps', 'fish', 'snares', 'setlines', 'berries', 'shellfish', 'roots', 'greens', 'forage', 'cattail', 'hunt', 'boil', 'water');
+    pri.push('craft_pemmican', 'cordage', 'checknet', 'setnet', 'checktraps', 'fish', ...(E.available(s, 'snares').ok && E.ACTIONS.scout && !(s.sys && s.sys.scoutDay === s.day) ? ['scout'] : []), 'snares', 'setlines', 'berries', 'shellfish', 'roots', 'greens', 'forage', 'cattail', 'hunt', 'boil', 'water');
     for (const p of pri) { if (s.today.done.filter(x => x === p).length >= 2) continue; if (ok(p)) return p; }
     return null;
   };

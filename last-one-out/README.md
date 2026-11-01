@@ -84,6 +84,15 @@ Keeping food now takes real time and can go wrong in real ways.
 - Pots drying and fired pots show on the camp panel.
 - Balance unchanged: median 48 days, mean 47.8 (the original game: 49 and 49.9).
 
+## Reading the land update (Nov 1, 2026)
+
+- **Traps left unchecked:** a catch left in a snare overnight has a 15% chance each night of being taken by a fox or something bigger.
+- **Look for game sign** (new, on a trail, 30 min): snares set the same day go on the runs the animals really use and catch half again as often.
+- **Read the sky** (new, late in the day or after dark, 15 min): a forecast for tomorrow. Right about 65% of the time at first, rising to 85% with practice.
+- **Smoke your clothes** (new, by the fire, 30 min): masks your scent; hunting goes 20% better that day and the next.
+- **Thin ice:** for about ten days after freeze-up, fishing or netting on the new ice can put you through it, soaked and chilled.
+- Balance against the original game: median 48 days (was 49), mean 48.2 (was 49.9).
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.
