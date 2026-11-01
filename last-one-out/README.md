@@ -66,6 +66,15 @@ Keeping food now takes real time and can go wrong in real ways.
 - **Correction:** a dull axe no longer costs extra energy per hour on top of the wood it already loses. It still slips into your leg more often.
 - Balance against the original game: median 48 days (was 49), mean 47.8 (was 49.9).
 
+## Shelter and sleep update (Nov 1, 2026)
+
+- **Snow on the roof:** each snowfall adds weight; it melts off above freezing. A heavy load wears shallow roofs (tarp, lean-to) much faster than a steep debris hut, rock shelter or cabin, with warnings first. "Clear snow off the roof" takes it off. A moderate layer on a walled shelter insulates it.
+- **Fire reflector** (new): a chest-high wall of poles behind an outdoor fire throws heat into an open lean-to or tarp camp.
+- **Raised bed frame** (new, 6 poles, 2 cordage): gets the bed off the frozen ground; with a bough bed, about a quarter less night cold.
+- **Cabin logs shrink:** about four weeks after a cabin is finished, its green logs have dried and gaps open, and the cabin is draftier until it is chinked.
+- **Snowshoes:** walking in deep snow without them takes a quarter longer at double the effort; with them it costs 60% less effort.
+- Balance against the original game: median 48 days (was 49), mean 47.8 (was 49.9).
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.

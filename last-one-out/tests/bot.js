@@ -15,12 +15,14 @@ function makeBot(E, s, opts = {}) {
     if (s.sys && s.sys.offal >= 1) pri.push('bury');
     if (s.sys && s.sys.taint > 0) pri.push('scrub');
     // build each camp item once when it becomes possible, then use it
-    for (const c of ['craft_hearth', ...(s.crafts.smoker >= 2 ? [] : ['craft_rack']), 'craft_smoker', 'craft_cache', 'craft_handline', 'craft_hooks', 'craft_fishtrap', 'craft_woodshed', 'craft_net', 'craft_stove', 'craft_snowshoes', 'craft_mittens']) if (s.day > 3) pri.push(c); // the engine says 'Built' once a craft is finished
+    for (const c of ['craft_reflector', 'craft_platform', 'craft_hearth', ...(s.crafts.smoker >= 2 ? [] : ['craft_rack']), 'craft_smoker', 'craft_cache', 'craft_handline', 'craft_hooks', 'craft_fishtrap', 'craft_woodshed', 'craft_net', 'craft_stove', 'craft_snowshoes', 'craft_mittens']) if (s.day > 3) pri.push(c); // the engine says 'Built' once a craft is finished
     // preserve only a real surplus: a few portions of fresh meat beyond what spoils first
     const fresh = s.stores.filter(x => !x.smoked && !x.dried && !x.where && ['fish', 'game', 'organ'].includes(E.DATA.foods[x.id].kind)).reduce((a, x) => a + x.por, 0);
     if (fresh >= 3) pri.push(s.crafts.smoker >= 2 ? 'smoke' : 'dry_food'); // one station at a time: the smoker once it is built, the rack until then
     if (s.stores.filter(x => x.where === 'smoker').reduce((a, x) => a + x.por, 0) >= 2) pri.push('smoke'); // tend it
     if (s.stores.some(x => x.id === 'fat' && !x.rendered)) pri.push('render_fat');
+    if ((s.sys && s.sys.snowLoad) > 1.5) pri.unshift('clear_roof');
+    if (s.sys && s.sys.gaps) pri.push('caulk');
     if (s.shelterLvl >= 1 && (E.bedOf ? E.bedOf(s) : 1) < 0.3) pri.push('bed', 'boughs');
     if (s.shelterLvl >= 2 && (E.sealOf ? E.sealOf(s) : 1) < 0.4) pri.push('caulk'); // re-chink when the seal is poor, not at every crack
     if (s.sys && s.sys.soot > 0.5) pri.push('check_roof');
