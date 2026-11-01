@@ -30,6 +30,13 @@ Each phase is committed and published on its own, so stopping between phases nev
 From the plan's architecture: double-tap protection is done (the same job tapped twice within 0.4 s runs once). Not built: a general job scheduler and typed material lots in kilograms. Drying racks, the smoker, pottery and lamps already run as day-by-day jobs on the game's own clock, and portions stay the unit, as agreed.
 Each system is built directly on the game's existing rules instead, which keeps saves and balance safe.
 
+## Hands-on crafting
+
+The newer crafts are done by hand, like the original fire-starting and cordage pieces. Done well they come out better; rushed or sloppy, worse:
+splitting and tillering a bow, pouring a fat lamp, twisting a sinew leader, trimming a wading staff, straightening arrows, scraping a hide,
+chinking walls, coiling a pot, firing pots in a pit, mending, stacking a cairn, setting a hearth, laying a bough bed, lashing a drying rack,
+fire reflector and bed frame.
+
 ## Rules every phase follows
 
 - `tests/run-all.sh` must pass before anything is published.

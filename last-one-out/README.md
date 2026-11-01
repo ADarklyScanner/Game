@@ -131,6 +131,16 @@ Keeping food now takes real time and can go wrong in real ways.
 - **Build a cairn** (new, 4 stones, anywhere away from camp): a knee-high stack you can see even in fog. Shown on your map.
 - **Losing your bearings:** in fog, snowfall, a storm or the dark, more than half a kilometre from camp, every hundred metres you walk can cost half an hour going in a circle. With one landmark or cairn in sight the risk halves; with two there is none.
 
+## Hands-on crafting (Nov 1, 2026)
+
+The crafts added in the realism update are now done by hand. How well you do it changes the result:
+- **Carve a bow:** drive wedges to split the stave, then tiller it: shave the stiffer limb until both bend the same and string it. Done well, the limbs come out even almost every time; shave too much and the bow goes weak. Re-tillering works the same way.
+- **Fat lamp:** hold to pour the tallow and stop at the line. Overfill it and some is lost in the ashes.
+- **Fine leader, arrows, clay pot, mending:** alternate two moves in rhythm (twist and wet; warm and bend; coil and smooth; stitch and pull). More than a slip or two makes a worse job: a leader can snap, arrows stay crooked, a pot has a flaw that cracks in the firing, a patch holds less.
+- **Scraping a hide, chinking walls:** long even strokes. Too hard and a hide can tear through; slapdash chinking seals less.
+- **Firing pots:** feed the pit a stick at a time and keep the heat in the band. Let it flare and pots crack.
+- **Cairn, hearth, bough bed, wading staff, drying rack, reflector, bed frame:** tap each stone, bough, knot or joint.
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.

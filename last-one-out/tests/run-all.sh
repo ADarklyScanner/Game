@@ -17,4 +17,5 @@ node bowmap.js
 node balance.js
 node fuzz.js 20
 node ui-check.js
+node handson.js
 echo "Everything passed."
