@@ -75,6 +75,15 @@ Keeping food now takes real time and can go wrong in real ways.
 - **Snowshoes:** walking in deep snow without them takes a quarter longer at double the effort; with them it costs 60% less effort.
 - Balance against the original game: median 48 days (was 49), mean 47.8 (was 49.9).
 
+## Pottery update (Nov 1, 2026)
+
+- **Shape a clay pot** (3 clay, plus a stone pounded to grit if you have one).
+- **Drying:** about a week in the air, about four days by the fire. Rain softens pots drying in the open; plain clay with no grit can crack if it dries too fast by the fire.
+- **Fire the pots in a pit** (needs a fire and 2 days of firewood): dry pots with grit mostly come out whole, plain clay fails more often, and a pot fired while still damp usually bursts.
+- **A fired clay pot** does what a pot does: boil water, stews, bone broth, needle tea, rendering fat, a drip pan under the smoker. It carries one potful of water, and now and then it cracks on the coals.
+- Pots drying and fired pots show on the camp panel.
+- Balance unchanged: median 48 days, mean 47.8 (the original game: 49 and 49.9).
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.

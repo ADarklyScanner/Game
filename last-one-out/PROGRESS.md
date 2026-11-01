@@ -16,8 +16,8 @@ Each phase is committed and published on its own, so stopping between phases nev
 | 6 (early) | Bough bed pulled forward from Phase 6 | Done |
 | 6 | Shelters and sleep: snow load on roofs (shallow roofs suffer, a snow blanket insulates), clearing the roof, fire reflector, raised bed frame, cabin logs shrinking after four weeks, snowshoes in deep snow | Done |
 | 6 later | Bridges, rafts, camp layout zones (latrine, water upstream) | Left for later |
-| 7 | Pottery and kiln firing | Next |
-| 8 | Weapons, arrows, tackle, traps, fishing, ice fishing, hunting, tracking, weather, navigation, climbing, swimming, ice safety, wildlife, predators, stealth, scent, trail marking | Not started |
+| 7 | Pottery: shape with or without grit, dry for days (rain undoes it, fast drying cracks plain clay), pit-fire (damp pots burst); a fired clay pot boils, stews and carries water like a small pot and cracks now and then | Done |
+| 8 (next) | Weapons, arrows, tackle, traps, fishing, ice fishing, hunting, tracking, weather, navigation, climbing, swimming, ice safety, wildlife, predators, stealth, scent, trail marking | Not started |
 | 9 | Textiles, clothing repair, hides, ecology and regrowth, farming, trading, social, mental strain | Not started |
 
 Not built from the plan's architecture: a general job scheduler, typed material lots in kilograms, and action receipts.
@@ -27,5 +27,5 @@ Each system is built directly on the game's existing rules instead, which keeps 
 
 - `tests/run-all.sh` must pass before anything is published.
 - Bot survival (median and mean over 1,020 games) must stay within 5% of the original game: median 49, mean 49.9 days.
-- Standing after Phase 6: median 48 (-2.0%), mean 47.8 (-4.2%). Later phases need to add realistic advantages as well as hazards to stay inside the limit.
+- Standing after Phase 7: median 48 (-2.0%), mean 47.8 (-4.2%). Later phases need to add realistic advantages as well as hazards to stay inside the limit.
 - Saves from older versions must keep loading.

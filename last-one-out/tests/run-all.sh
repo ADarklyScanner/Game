@@ -10,6 +10,7 @@ node tools.js
 node light.js
 node hygiene.js
 node shelter.js
+node pottery.js
 node balance.js
 node fuzz.js 20
 node ui-check.js
