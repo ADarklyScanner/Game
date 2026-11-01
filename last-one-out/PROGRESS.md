@@ -18,7 +18,8 @@ Each phase is committed and published on its own, so stopping between phases nev
 | 6 later | Bridges, rafts, camp layout zones (latrine, water upstream) | Left for later |
 | 7 | Pottery: shape with or without grit, dry for days (rain undoes it, fast drying cracks plain clay), pit-fire (damp pots burst); a fired clay pot boils, stews and carries water like a small pot and cracks now and then | Done |
 | 8 | Reading the land: catches left in snares lost to scavengers (15% a night), reading the sky for tomorrow's weather (65% to 85% with practice), smoking clothes to mask scent for hunting, thin new ice, looking for game sign so snares on real runs catch 50% more | Done (part) |
-| 8 later | Bow tillering, arrow straightening, tackle and leaders, ice holes freezing, downwind hunting, tracks fading in snow, navigation and landmarks, climbing, wading staffs, bear spray, noise, cairns | Left for later |
+| 8 later (a) | Fine sinew leader for handlines (+30% bites in clear water), ice holes freezing over and set lines freezing in, fresh snow and rain covering blood trails, arrows heat-straightened or crooked (up to 30% fewer hits). Downwind hunting was already in the hunting mini-game | Done |
+| 8 later (b) | Navigation and landmarks, climbing, wading staffs, bear spray, noise, cairns. Bow tillering needs a craftable bow; river crossings carry no risk yet | Not started |
 | 9 | Clothes wear from work and storms and let the cold in; mending with a bone needle restores 90% of the lost warmth and patches sleeping-bag holes (which were permanent); tea by the fire lifts spirits | Done (part) |
 | 9 later | Textiles and weaving, hide tanning and softening, picking patches selectively, farming. Trading and social contact are on hold: the plan gates them behind a review, since they clash with a solo survival game | Left for later |
 

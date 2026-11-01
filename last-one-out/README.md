@@ -100,6 +100,14 @@ Keeping food now takes real time and can go wrong in real ways.
 - **Tea by the fire:** a hot drink and a warm fire at the end of the day lifts your spirits.
 - Balance against the original game: median 48 days (was 49), mean 48.1 (was 49.9).
 
+## Hunting and fishing details (Nov 1, 2026)
+
+- **Fine leader** (new craft, for a homemade handline): a strand of sinew from a hide between hook and cord. Fish bite about 30% more, except in muddy flood water.
+- **Ice holes freeze over:** below -5 C the first ice-fishing session of a day costs half an hour of chopping. Set lines left in the ice below -15 C often freeze in, and the hooks are lost.
+- **Blood trails:** fresh snow or rain makes a wounded animal harder to follow.
+- **Arrows:** made by a fire, the shafts are heat-straightened. Made without one, they are crooked, and a quiver of crooked arrows hits up to 30% less.
+- Balance unchanged: median 48, mean 48.1 (original 49 and 49.9).
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.
