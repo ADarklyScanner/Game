@@ -20,6 +20,7 @@ Run these before publishing any change. They test the real `../index.html`.
 | `node wild.js` | Reading the land: catches left in snares, forecasting from the sky, smoke on your clothes, thin ice, game sign. | ~10 s |
 | `node mend.js` | Clothes and spirits: wear, mending, sleeping-bag holes, tea by the fire. | ~2 s |
 | `node bowmap.js` | A bow of your own (carving, tillering), cairns, and losing your bearings. | ~3 s |
+| `node crafts.js` | Stone blades, woven door mats, cabin joints, rafts. | ~10 s |
 | `node balance.js` | Survival over 1,020 bot games, per place and overall, against the original game before the realism update (`reference/original-game.html`). Fails if the overall median or mean moves more than 5%. | ~25 s |
 | `node fuzz.js [runs]` | Random play in every place, looking for crashes, broken numbers and days that never end. | ~10 s |
 | `node handson.js` | Plays each newer hands-on craft through the real page and checks the result, including deliberately sloppy runs. Uses a temporary copy of the game with a test hook. | ~2 min |

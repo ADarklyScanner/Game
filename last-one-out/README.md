@@ -141,6 +141,14 @@ The crafts added in the realism update are now done by hand. How well you do it 
 - **Firing pots:** feed the pit a stick at a time and keep the heat in the band. Let it flare and pots crack.
 - **Cairn, hearth, bough bed, wading staff, drying rack, reflector, bed frame:** tap each stone, bough, knot or joint.
 
+## Stone, weaving, joints and a raft (Nov 1, 2026)
+
+- **Glassy stone:** gathering stones sometimes turns up a fine-grained piece that rings when tapped.
+- **Knap a stone blade** (new, hands-on: strike along the edge): needs a glassy stone and a hammerstone. It can fall apart on a hidden flaw, less often with careful strikes. It works as a knife if you came without one, but it is brittle and snaps now and then.
+- **Weave a door mat** (new, hands-on: over and under): 4 bark, 2 cordage. Hung over the shelter door, a tight weave cuts the cold of a windy night by about a tenth; a loose weave much less.
+- **Cabin joints:** the cabin's building sessions are notching. A sloppy notch leaves a loose joint, and a cabin with loose joints wears up to twice as fast in storms.
+- **Build a raft** (new, two sessions, 4 logs and 4 cordage): fishing from it in deeper water gets about 30% more bites, wind can roll it, and left in the water it soaks up 5% of its float a day until you pull it up to dry.
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.
