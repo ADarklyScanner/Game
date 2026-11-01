@@ -28,6 +28,16 @@ Run these before publishing any change. They test the real `../index.html`.
 | `node handson.js` | Plays each newer hands-on craft through the real page and checks the result, including deliberately sloppy runs. Uses a temporary copy of the game with a test hook. | ~2 min |
 | `node ui-check.js` | Opens the page in a headless browser at phone width: starts a new run, loads saves from older versions, and shows late-game and win, pulled-out and tap-out screens in every place. Fails on any page error. | ~3 min |
 
+## The bug hunt tools (see ../TESTPLAN.md)
+
+| Tool | What it does |
+|---|---|
+| `node inventory.js` | Lists everything in the game that must be tested, from the code: actions and each of their refusal reasons, events and choices, places, gear, foods, shelters, conditions, mini-games, panels, screens. Writes `inventory.json`. |
+| `cover.js` | A test-only copy of the engine that records what ran into `.coverage.json` (the game file is not changed). |
+| `node coverage-report.js` | Lists every inventory item no test has touched yet. |
+| `node exhaustive.js [n]` | Builds n varied situations; asks every action, runs allowed ones, checks a refusal changes nothing, forces every event that could fire there and takes every choice, then plays the night. Rules are checked after each step. |
+| `node styles.js [n]` | Eight kinds of player (random, careless, fisher, hunter, forager, starved of gear, night owl, mover) in every place; rules checked after every action and night; same seed gives the same game; saves round-trip; save size limit. |
+
 ## When the baseline changes
 
 If you changed how the game plays **on purpose** (new rules, rebalancing), `baseline.js` will report changed runs. Check that only the runs you expected changed, then record the new reference:

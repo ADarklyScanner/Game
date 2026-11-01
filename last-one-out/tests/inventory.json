@@ -1,0 +1,889 @@
+{
+ "actions": [
+  "fish",
+  "setnet",
+  "checknet",
+  "hunt",
+  "track",
+  "snares",
+  "deadfalls",
+  "checktraps",
+  "berries",
+  "greens",
+  "mushrooms",
+  "roots",
+  "shellfish",
+  "seaweed",
+  "insects",
+  "bait",
+  "nettle",
+  "cattail",
+  "pinenuts",
+  "rosehips",
+  "seeds",
+  "needle_tea",
+  "bone_broth",
+  "read_letter",
+  "talk_camera",
+  "setlines",
+  "forage",
+  "cut_poles",
+  "cut_logs",
+  "boughs",
+  "moss",
+  "bark",
+  "tinder",
+  "stones",
+  "firewood",
+  "cordage",
+  "light_fire",
+  "shelter",
+  "clean",
+  "dress",
+  "smoke",
+  "dry_food",
+  "render_fat",
+  "boil",
+  "water",
+  "dry",
+  "repair",
+  "fire_in",
+  "fire_out",
+  "dig_clay",
+  "whittle",
+  "sharpen",
+  "search",
+  "rest",
+  "melt_snow",
+  "cook",
+  "tend_fire",
+  "craft_bowdrill",
+  "craft_handline",
+  "craft_hooks",
+  "craft_diggingstick",
+  "craft_arrows",
+  "craft_smoker",
+  "craft_cache",
+  "craft_fishtrap",
+  "craft_net",
+  "craft_stove",
+  "craft_chimney",
+  "craft_woodshed",
+  "craft_reflector",
+  "craft_platform",
+  "work_hide",
+  "inspect",
+  "shadow_stick",
+  "splint",
+  "dig_latrine",
+  "climb",
+  "craft_stoneblade",
+  "craft_mat",
+  "craft_raft",
+  "raft_fish",
+  "beach_raft",
+  "craft_bow",
+  "tiller_bow",
+  "cairn",
+  "craft_staff",
+  "craft_leader",
+  "craft_lamp",
+  "craft_hearth",
+  "craft_rack",
+  "craft_pemmican",
+  "craft_snowshoes",
+  "craft_mittens",
+  "craft_lure",
+  "repair_cache",
+  "mend",
+  "scout",
+  "read_sky",
+  "smoke_clothes",
+  "shape_pot",
+  "fire_pots",
+  "clear_roof",
+  "bed",
+  "bury",
+  "scrub",
+  "fix_axe",
+  "check_roof",
+  "caulk",
+  "craft_bridge"
+ ],
+ "why": {
+  "fish": [
+   "Water is frozen. Needs an axe or saw for an ice hole",
+   "No fish here",
+   "Too rough to fish",
+   "Freeze-up. Ice too thin to walk, too thick to cast"
+  ],
+  "setnet": [
+   "Needs a gill net",
+   "The net is already set",
+   "Ice. Needs an axe or saw",
+   "Too rough to wade out",
+   "Freeze-up. Wait for solid ice",
+   "Torn. Needs 2 cordage or some fishing line to mend"
+  ],
+  "checknet": [
+   "No net set",
+   "Too rough to wade out"
+  ],
+  "hunt": [
+   "No arrows. Make more",
+   "Needs a bow or slingshot",
+   "Out of stones for the slingshot",
+   "Nothing moves in this",
+   "Fog. Wait for it to lift"
+  ],
+  "track": [
+   "Nothing to track"
+  ],
+  "snares": [
+   "Needs snare wire or cordage",
+   "Enough snares out"
+  ],
+  "deadfalls": [
+   "Needs a knife to carve triggers",
+   "Needs 3 flat stones",
+   "12 deadfalls out"
+  ],
+  "checktraps": [
+   "No traps out"
+  ],
+  "seeds": [
+   "None recorded here",
+   "Red tide. The shellfish are poison this week",
+   "Needs a shovel or digging stick",
+   "Wait for low tide",
+   "Surf is too high",
+   "Ground is frozen"
+  ],
+  "bait": [
+   "Ground is frozen. Use guts from cleaning"
+  ],
+  "forage": [
+   "Nothing to gather under the snow"
+  ],
+  "cut_logs": [
+   "Needs an axe or saw"
+  ],
+  "moss": [
+   "Checked"
+  ],
+  "bark": [
+   "Bark will not strip in the cold"
+  ],
+  "firewood": [
+   "Woodpile is full"
+  ],
+  "cordage": [
+   "Needs bark strips (or hide)"
+  ],
+  "light_fire": [
+   "The fire is burning",
+   "No firewood",
+   "No tinder",
+   "No ferro rod and no bow drill"
+  ],
+  "shelter": [
+   "Nothing more to build",
+   "Choose what to build",
+   "Needs …"
+  ],
+  "fire_in": [
+   "No room for a fire in there",
+   "The fire is already inside",
+   "Light it first"
+  ],
+  "fire_out": [
+   "The fire is outside"
+  ],
+  "dig_clay": [
+   "No clay here",
+   "Ground is frozen"
+  ],
+  "needle_tea": [
+   "No conifers here",
+   "Needs a fire",
+   "Nothing to brew in",
+   "Had a cup today",
+   "No water at camp. Fetch some",
+   "Needs a spruce bough for the needles"
+  ],
+  "bone_broth": [
+   "Needs a fire",
+   "Needs a pot",
+   "Needs 2 bone",
+   "No water at camp. Fetch some"
+  ],
+  "read_letter": [
+   "You did not bring one",
+   "Save it. You will need it more later"
+  ],
+  "talk_camera": [
+   "Said your piece today"
+  ],
+  "setlines": [
+   "Needs hooks",
+   "Needs 2 hooks",
+   "Needs 2 cordage or line",
+   "Lines are out. Check them in the morning",
+   "Ice",
+   "Too rough"
+  ],
+  "check_roof": [
+   "No shelter",
+   "Nothing to check"
+  ],
+  "caulk": [
+   "No walls to chink",
+   "The walls are tight",
+   "Needs 4 moss or 3 clay"
+  ],
+  "mend": [
+   "Nothing worth mending",
+   "Needs cordage for thread"
+  ],
+  "scout": [
+   "Already looked today"
+  ],
+  "read_sky": [
+   "Best read late in the day",
+   "Already read it today"
+  ],
+  "smoke_clothes": [
+   "Needs a fire",
+   "Already smoked today"
+  ],
+  "shape_pot": [
+   "Needs 3 clay",
+   "Two pots are already drying"
+  ],
+  "fire_pots": [
+   "No pots shaped",
+   "Needs a fire",
+   "Needs 2 days of firewood"
+  ],
+  "clear_roof": [
+   "No roof",
+   "Not much snow on it"
+  ],
+  "craft_reflector": [
+   "Built",
+   "Only worth it for an open shelter",
+   "Needs 6 poles"
+  ],
+  "craft_platform": [
+   "Built",
+   "Needs a shelter to put it in",
+   "Needs 6 poles, 2 cordage"
+  ],
+  "bed": [
+   "The bed is thick and springy",
+   "Needs … boughs"
+  ],
+  "bury": [
+   "No gut pile"
+  ],
+  "scrub": [
+   "Nothing to scrub",
+   "Needs a fire for hot ash"
+  ],
+  "work_hide": [
+   "No hide",
+   "Needs a knife or a stone to scrape with"
+  ],
+  "inspect": [
+   "You are looking closely today"
+  ],
+  "shadow_stick": [
+   "Needs sun to throw a shadow",
+   "You know which way is which today"
+  ],
+  "splint": [
+   "Nothing to splint",
+   "Needs a pole or 2 bark for the splint",
+   "Needs cordage to bind it"
+  ],
+  "dig_latrine": [
+   "The latrine is fine for now",
+   "Not yet needed"
+  ],
+  "climb": [
+   "Too much wind up there",
+   "Once is enough today"
+  ],
+  "craft_stoneblade": [
+   "You have a knife",
+   "Made",
+   "Needs fine-grained stone (look among the stones you gather)",
+   "Needs a hammerstone"
+  ],
+  "craft_mat": [
+   "Made",
+   "Needs a shelter door to hang it over",
+   "Needs 4 bark, 2 cordage"
+  ],
+  "craft_raft": [
+   "Built",
+   "No water to float on",
+   "Needs an axe or saw",
+   "Needs 4 logs, 4 cordage"
+  ],
+  "raft_fish": [
+   "No raft",
+   "The raft is waterlogged and sits low. Dry it out",
+   "Frozen",
+   "Too rough",
+   "Needs fishing gear or a handline"
+  ],
+  "beach_raft": [
+   "No raft",
+   "Already on shore"
+  ],
+  "craft_bow": [
+   "You have a bow",
+   "Made",
+   "Needs a knife",
+   "Needs a straight pole for a stave",
+   "Needs 2 cordage for a string"
+  ],
+  "tiller_bow": [
+   "No bow of your own",
+   "The limbs bend evenly",
+   "Needs a knife"
+  ],
+  "cairn": [
+   "Needs 4 stones",
+   "Enough cairns"
+  ],
+  "craft_staff": [
+   "Made",
+   "No river to wade",
+   "Needs a pole"
+  ],
+  "craft_leader": [
+   "Your line is already fine",
+   "Needs a handline first",
+   "Made",
+   "Needs a knife",
+   "Needs sinew from a hide"
+  ],
+  "craft_lamp": [
+   "Made",
+   "Needs a flat stone for the dish",
+   "Needs moss or cordage for a wick",
+   "Needs rendered tallow to burn"
+  ],
+  "craft_hearth": [
+   "Built",
+   "Needs 6 flat stones"
+  ],
+  "repair_cache": [
+   "No cache",
+   "The cache is sound",
+   "Needs a pole and a cordage"
+  ],
+  "craft_pemmican": [
+   "Meat is still too wet (…% water). It has to be under …%",
+   "Needs 4 portions of dried meat"
+  ],
+  "craft_snowshoes": [
+   "Made",
+   "No snow yet",
+   "Needs 2 poles, 3 cordage"
+  ],
+  "craft_mittens": [
+   "Made",
+   "Needs 2 hide",
+   "Needs a knife"
+  ],
+  "craft_bridge": [
+   "Built",
+   "No river",
+   "Needs an axe or saw",
+   "Needs 2 logs, 2 cordage"
+  ],
+  "whittle": [
+   "Needs a shelter with room to sit"
+  ],
+  "clean": [
+   "Nothing to clean"
+  ],
+  "dress": [
+   "No carcass",
+   "Needs a knife to open a big animal"
+  ],
+  "smoke": [
+   "Build a smoker first",
+   "Needs a burning fire",
+   "No firewood to keep it smoking",
+   "The smoker is going well. Tend it tomorrow",
+   "The smoker is full",
+   "Nothing fresh to smoke"
+  ],
+  "boil": [
+   "Nothing to boil in",
+   "Needs a fire",
+   "No water at camp. Fetch some",
+   "Enough boiled for now"
+  ],
+  "water": [
+   "Nothing to carry it in",
+   "Already full",
+   "Frozen. Needs an axe or saw for a hole"
+  ],
+  "dry_food": [
+   "Build a drying rack first",
+   "The rack is full",
+   "Nothing fresh to hang"
+  ],
+  "render_fat": [
+   "Needs a fire",
+   "No raw fat"
+  ],
+  "craft_rack": [
+   "Built",
+   "Built. 4 boughs would roof it",
+   "Needs 3 poles",
+   "Needs 2 cordage"
+  ],
+  "dry": [
+   "You are dry",
+   "Needs a fire"
+  ],
+  "repair": [
+   "Nothing to patch",
+   "The shelter is sound"
+  ],
+  "sharpen": [
+   "No axe",
+   "The edge is fine",
+   "Needs a sharpening stone or a flat stone",
+   "As sharp as a river stone will get it"
+  ],
+  "fix_axe": [
+   "No axe",
+   "The head is tight",
+   "Needs a knife to carve a wedge"
+  ],
+  "melt_snow": [
+   "No snow",
+   "Nothing to melt it in",
+   "Needs the fire",
+   "Pots are full"
+  ],
+  "cook": [
+   "Needs a fire",
+   "Nothing in the stores",
+   "You have eaten"
+  ],
+  "tend_fire": [
+   "No fire",
+   "Only after dark"
+  ],
+  "craft_lure": [
+   "You have a lure",
+   "Nothing to fish with",
+   "Needs a knife",
+   "Needs a feather, or a tin can"
+  ],
+  "craft_bowdrill": [
+   "Made",
+   "You have a ferro rod",
+   "Needs a blade",
+   "Needs 1 cordage"
+  ],
+  "craft_handline": [
+   "Made",
+   "You have fishing gear",
+   "Needs 3 cordage",
+   "Needs bone or a knife"
+  ],
+  "craft_hooks": [
+   "Enough hooks",
+   "Needs a knife",
+   "Needs bone from a catch"
+  ],
+  "craft_diggingstick": [
+   "Made",
+   "You have a shovel",
+   "Needs a fire to harden the point",
+   "Needs a pole"
+  ],
+  "craft_arrows": [
+   "Needs a bow",
+   "Needs a knife",
+   "Quiver is full",
+   "Needs feathers from a bird",
+   "Needs a straight pole for shafts"
+  ],
+  "craft_smoker": [
+   "Built",
+   "Needs 4 poles"
+  ],
+  "craft_cache": [
+   "Built",
+   "Needs 2 poles, 2 cordage"
+  ],
+  "craft_fishtrap": [
+   "Built",
+   "No water to trap in",
+   "Frozen",
+   "Needs 2 poles"
+  ],
+  "craft_net": [
+   "You have a net",
+   "Needs netting found on site"
+  ],
+  "craft_chimney": [
+   "Built",
+   "Needs a cabin or rock shelter",
+   "Needs 6 clay, 8 flat stones"
+  ],
+  "craft_woodshed": [
+   "Built",
+   "Needs 4 poles, 6 boughs"
+  ],
+  "craft_stove": [
+   "Built",
+   "Needs cans or metal found on site"
+  ]
+ },
+ "nightActions": [
+  "splint",
+  "craft_stoneblade",
+  "craft_mat",
+  "craft_bow",
+  "tiller_bow",
+  "work_hide",
+  "craft_leader",
+  "mend",
+  "read_sky",
+  "shape_pot",
+  "craft_lamp",
+  "fix_axe",
+  "render_fat",
+  "melt_snow",
+  "whittle",
+  "cordage",
+  "talk_camera",
+  "read_letter",
+  "sharpen",
+  "boil",
+  "needle_tea",
+  "bone_broth",
+  "rest",
+  "craft_hooks",
+  "craft_arrows",
+  "craft_lure",
+  "craft_bowdrill",
+  "craft_handline",
+  "clean",
+  "cook",
+  "light_fire",
+  "dry",
+  "fire_in",
+  "tend_fire",
+  "craft_mittens",
+  "craft_pemmican"
+ ],
+ "events": {
+  "bear": [
+   "Stand tall and make noise",
+   "Back off and let it eat",
+   "Bear spray"
+  ],
+  "strangeberries": [
+   "Eat a handful",
+   "Test them slowly",
+   "Leave them"
+  ],
+  "grouse": [
+   "Throw a stick",
+   "Take an arrow shot",
+   "Let it be"
+  ],
+  "storm": [
+   "Spend the morning bracing the shelter",
+   "Carry on and hope"
+  ],
+  "fishrun": [
+   "Drop everything and fish",
+   "Stick to the plan"
+  ],
+  "carcass": [
+   "Take what you can",
+   "Leave it"
+  ],
+  "raider": [
+   "Chase it off and hang the food higher",
+   "Let it have its fill"
+  ],
+  "ducks": [
+   "Belly-crawl the shore and take a shot",
+   "Let them sit"
+  ],
+  "ferro": [
+   "Go back and search the shallows",
+   "Let it go"
+  ],
+  "wolves": [
+   "Build the fire up and keep to camp this morning",
+   "Carry on. They are curious, not hungry"
+  ],
+  "cat": [
+   "Sleep with the axe and the fire high",
+   "Shrug it off"
+  ],
+  "sealion": [
+   "Wade out and shout it off",
+   "Let it finish"
+  ],
+  "bearkill": [
+   "Walk in shouting and claim it",
+   "Let it have the kill"
+  ],
+  "snake": [
+   "Freeze, then back away",
+   "Pin it with a stick and take it"
+  ],
+  "baboons": [
+   "Run back shouting and throwing stones",
+   "Wait them out"
+  ],
+  "bigbeast": [
+   "Up the nearest thorn tree and wait",
+   "Back off the long way round"
+  ],
+  "sow": [
+   "Back away slowly, talking to her",
+   "Climb a tree and wait her out"
+  ],
+  "flood": [
+   "Move camp to higher ground",
+   "Dig a drain and bail"
+  ],
+  "duff": [
+   "Beat it out with your jacket",
+   "Haul water and dig a line round it"
+  ],
+  "axetide": [
+   "Search at the next low tide",
+   "Write it off"
+  ],
+  "axefound": [
+   "Search the rocks",
+   "Leave it"
+  ],
+  "wound": [
+   "Clean and dress it properly",
+   "Wrap it and keep going"
+  ]
+ },
+ "places": [
+  "US-S1",
+  "US-S2",
+  "US-S3",
+  "US-S5",
+  "US-S6",
+  "US-S7",
+  "US-S8",
+  "US-S9",
+  "US-S10",
+  "US-S11",
+  "US-S12",
+  "US-S13",
+  "US Frozen-S1",
+  "AU-S1",
+  "AU-S2",
+  "AU-S3",
+  "AU-S4"
+ ],
+ "gear": [
+  "Pot",
+  "Fishing gear",
+  "Ferro rod",
+  "Sleeping bag",
+  "Saw",
+  "Axe",
+  "Bow and arrows",
+  "Paracord",
+  "Multitool",
+  "Trapping wire",
+  "Knife",
+  "Rations",
+  "Gillnet",
+  "Tarp",
+  "Canteen",
+  "Shovel",
+  "Bivy bag",
+  "Salt",
+  "Blanket",
+  "Frying pan",
+  "Soap",
+  "Sharpening stone",
+  "Slingshot",
+  "Wire",
+  "Ground sheet",
+  "Hammock",
+  "Rope",
+  "Scotch eyed auger"
+ ],
+ "foods": [
+  "trout",
+  "laketrout",
+  "pike",
+  "whitefish",
+  "burbot",
+  "eel",
+  "salmon",
+  "catfish",
+  "yellowfish",
+  "rockfish",
+  "smallfish",
+  "crab",
+  "mouse",
+  "squirrel",
+  "grouse",
+  "duck",
+  "smallbird",
+  "hare",
+  "pademelon",
+  "possum",
+  "porcupine",
+  "beaver",
+  "muskrat",
+  "weasel",
+  "marten",
+  "fox",
+  "wolverine",
+  "snake",
+  "moose",
+  "muskox",
+  "deer",
+  "warthog",
+  "char",
+  "grayling",
+  "perch",
+  "walleye",
+  "cisco",
+  "inconnu",
+  "lingcod",
+  "sculpin",
+  "taimen",
+  "galaxias",
+  "ptarmigan",
+  "goose",
+  "guineafowl",
+  "hyrax",
+  "springhare",
+  "wallaby",
+  "hare_eu",
+  "otter",
+  "chipmunk",
+  "roedeer",
+  "reddeer",
+  "elk",
+  "caribou",
+  "boar",
+  "springbok",
+  "nettle",
+  "cattail",
+  "pinenuts",
+  "needletea",
+  "broth",
+  "pemmican",
+  "berries",
+  "rosehips",
+  "greens",
+  "roots",
+  "mushrooms",
+  "seeds",
+  "bark",
+  "shellfish",
+  "seaweed",
+  "insects",
+  "fat",
+  "organ",
+  "ration"
+ ],
+ "shelters": [
+  "tarp",
+  "leanto",
+  "hut",
+  "rock",
+  "cabin"
+ ],
+ "miniGames": [
+  "startFish",
+  "startHunt",
+  "startTrack",
+  "startChop",
+  "startCollect",
+  "startMushroom",
+  "startTrace",
+  "startClean",
+  "startDress",
+  "startCordage",
+  "startFire",
+  "startLash",
+  "startBuild",
+  "startRepair",
+  "startSnare",
+  "startNet",
+  "startTrapline",
+  "startSharpen",
+  "startSteps",
+  "startStrokes",
+  "startTaps",
+  "startTiller",
+  "startHeat",
+  "startPour",
+  "startCraft"
+ ],
+ "panels": [
+  "openMoveCamp",
+  "openBuild",
+  "openCachePlace",
+  "openShelterChoice",
+  "openPack",
+  "openMap",
+  "openCamp",
+  "openBody",
+  "openNotes",
+  "openJournal",
+  "openMenu",
+  "openHow",
+  "openRecords"
+ ],
+ "screens": [
+  "renderSetup",
+  "renderGame",
+  "renderEnd"
+ ],
+ "conditions": [
+  "Bruised shin from a flying axe head",
+  "Snow blindness",
+  "Chilled through after the ice broke",
+  "Wasp stings",
+  "Thorns in the palms",
+  "Quills in the hand",
+  "Broken wrist from a fall",
+  "Sprained ankle from a fall",
+  "Chilled after a capsize",
+  "Melted boot sole",
+  "Sick from strange berries",
+  "Snakebite, dry",
+  "Burned hands",
+  "Burn from a bursting stone",
+  "Smoke-burned eyes",
+  "Spider bites",
+  "Frostnipped toes",
+  "Frostnipped fingers",
+  "Trichinosis",
+  "Bound up (no greens for a week)",
+  "Cracked tooth"
+ ]
+}
