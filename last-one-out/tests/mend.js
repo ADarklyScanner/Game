@@ -22,4 +22,11 @@ function camp(gear = GEAR, seed = 3) { const s = E.newGame('US-S6', gear, { seed
   const will = tea => { const s = camp(GEAR, 21); s.morale = 50; s.fire = true; s.teaToday = tea; s.event = null; E.endDay(s); return s.morale; };
   check('tea by the fire lifts spirits', will(true) > will(false), [will(false), will(true)]);
 }
+{ // scraped and softened leather: better patches and warmer mittens
+  const s = camp(); s.mats.hide = 3; check('hide work offered', E.available(s, 'work_hide').ok); E.act(s, 'work_hide'); check('soft leather made', s.sys.leather === 1 && s.mats.hide === 2);
+  s.sys.clothes = 0.3; s.sys.needle = true; s.mats.cordage = 1; E.act(s, 'mend'); check('a leather patch makes clothes as good as new', E.clothesOf(s) === 1 && s.sys.leather === 0);
+  const mitt = soft => { const m = E.newGame('AU-S4', ['Ferro rod', 'Knife'], { seed: 9, weight: 200 }); E.beginDay(m); m.event = null; m.storm = m.wind = m.snowfall = false; m.stores = [{ id: 'ration', por: 30, left: Infinity, smoked: false }]; m.fire = false; m.crafts.mittens = 1; m.sys.softMittens = soft; E.endDay(m); return m.lastDay.cold; };
+  check('soft leather mittens are warmer', mitt(true) < mitt(false), [mitt(false), mitt(true)]);
+  const k = camp(); k.sys.leather = 2; k.mats.hide = 0; check('mittens from soft leather', E.available(k, 'craft_mittens').ok); E.act(k, 'craft_mittens'); check('made from the leather', k.crafts.mittens === 1 && k.sys.leather === 0 && k.mats.hide === 0 && k.sys.softMittens);
+}
 console.log(fails ? `${fails} mend check(s) failed, ${passes} passed.` : `All ${passes} mend checks passed.`); process.exit(fails ? 1 : 0);

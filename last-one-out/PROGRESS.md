@@ -10,7 +10,8 @@ Each phase is committed and published on its own, so stopping between phases nev
 | 1+ | Cooking risks (raw meat and fish, worms), drying rack on the map, drop sites ordered by difficulty | Done |
 | 2 | Fire and stoves: damp tinder, stone hearth, flue soot and chimney fires, smoker flare-ups, chinking walls | Done |
 | 3 | Materials and tools: dull axes cost effort and cause injuries, honing on river stones, axe heads working loose and refitting with rawhide, bursting hearth stones, clay temper | Done (part) |
-| 3 later | Fibre and cordage strength, bark girdling, salvage contamination, carpentry joints, stone grades | Left for later |
+| 3 later (a) | Cordage from frozen dry bark is brittle (35% less) unless soaked; salvage contamination done in Phase 5 | Done |
+| 3 later (b) | Bark girdling, carpentry joints, stone grades (no knapping in the game yet) | Not started |
 | 4 | Light and cooking: night work needs a fire or a lamp, fat lamp burning tallow, bone broth simmered overnight | Done |
 | 5 | Water, hygiene and waste: tainted salvaged cans (boiling does not help, scrubbing does), hands after butchery (soap vs cold water), gut piles drawing raiders and flies, burying them. Wound dressing was already realistic | Done |
 | 6 (early) | Bough bed pulled forward from Phase 6 | Done |
@@ -21,7 +22,8 @@ Each phase is committed and published on its own, so stopping between phases nev
 | 8 later (a) | Fine sinew leader for handlines (+30% bites in clear water), ice holes freezing over and set lines freezing in, fresh snow and rain covering blood trails, arrows heat-straightened or crooked (up to 30% fewer hits). Downwind hunting was already in the hunting mini-game | Done |
 | 8 later (b) | Navigation and landmarks, climbing, wading staffs, bear spray, noise, cairns. Bow tillering needs a craftable bow; river crossings carry no risk yet | Not started |
 | 9 | Clothes wear from work and storms and let the cold in; mending with a bone needle restores 90% of the lost warmth and patches sleeping-bag holes (which were permanent); tea by the fire lifts spirits | Done (part) |
-| 9 later | Textiles and weaving, hide tanning and softening, picking patches selectively, farming. Trading and social contact are on hold: the plan gates them behind a review, since they clash with a solo survival game | Left for later |
+| 9 later (a) | Scrape and soften hides into leather: leather patches make clothes as good as new, leather mittens are warmer. Patch regrowth already exists in the game | Done |
+| 9 later (b) | Textiles and weaving, farming. Trading and social contact are on hold: the plan gates them behind a review, since they clash with a solo survival game | Left for later |
 
 Not built from the plan's architecture: a general job scheduler, typed material lots in kilograms, and action receipts.
 Each system is built directly on the game's existing rules instead, which keeps saves and balance safe.

@@ -108,6 +108,12 @@ Keeping food now takes real time and can go wrong in real ways.
 - **Arrows:** made by a fire, the shafts are heat-straightened. Made without one, they are crooked, and a quiver of crooked arrows hits up to 30% less.
 - Balance unchanged: median 48, mean 48.1 (original 49 and 49.9).
 
+## Materials details (Nov 1, 2026)
+
+- **Brittle cordage:** bark twisted dry in hard frost (below -5 C) cracks, giving about a third less cordage, unless there is a pot of water at camp to soak it in, or the air is damp.
+- **Scrape and soften a hide** (new, by day or firelight, 2 hours): soft leather. A leather patch makes worn clothes as good as new, and mittens sewn from two pieces of soft leather are warmer than rawhide ones.
+- Balance unchanged: median 48, mean 48.1 (original 49 and 49.9).
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.

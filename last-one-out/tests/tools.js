@@ -36,4 +36,8 @@ const rate = (n, f) => { let k = 0; for (let i = 0; i < n; i++) if (f(i)) k++; r
   const seal = temper => { const s = camp(); s.shelterType = 'cabin'; s.shelterLvl = 3; s.mats.clay = 3; s.mats.moss = temper ? 1 : 0; E.act(s, 'caulk'); for (let i = 0; i < 4; i++) { s.event = null; E.endDay(s); E.beginDay(s); s.event = null; s.storm = false; } return E.sealOf(s); };
   const plain = seal(false), tempered = seal(true); check('plain clay cracks as it dries', tempered - plain > 0.15, [plain, tempered]);
 }
+{ // the plan's test: dry fibre in hard frost makes about 35% less cordage; soaking it first fixes that
+  const made = (soak) => { let n = 0; for (let i = 0; i < 600; i++) { const s = camp(GEAR, 'AU-S4', 1500 + i); s.rain = s.fog = s.snowfall = false; s.day = 50; s.mats.bark = 3; s.mats.cordage = 0; s.potWater = soak ? 1 : 0; s.hours = 1; s.phase = 0; if (E.temperature(s) >= -5) return null; E.act(s, 'cordage'); n += s.mats.cordage; } return n / 600; };
+  const dry = made(false), wet = made(true); if (dry == null) check('test place is cold enough', false); else { check('brittle frozen bark: about 35% less cordage', Math.abs(dry / wet - 0.65) < 0.05, [dry, wet]); }
+}
 console.log(fails ? `${fails} tool check(s) failed, ${passes} passed.` : `All ${passes} tool checks passed.`); process.exit(fails ? 1 : 0);
