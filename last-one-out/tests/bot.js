@@ -11,8 +11,12 @@ function makeBot(E, s, opts = {}) {
     if (s.carcass) pri.push('dress');
     if (s.raw.length) pri.push('clean', 'cook', 'smoke');
     // build each camp item once when it becomes possible, then use it
-    for (const c of ['craft_smoker', 'craft_cache', 'craft_handline', 'craft_hooks', 'craft_fishtrap', 'craft_woodshed', 'craft_net', 'craft_stove', 'craft_snowshoes', 'craft_mittens']) if (s.day > 3) pri.push(c); // the engine says 'Built' once a craft is finished
-    if (s.stores.some(x => !x.smoked && ['fish', 'game', 'organ'].includes(E.DATA.foods[x.id].kind))) pri.push('smoke');
+    for (const c of [...(s.crafts.smoker >= 2 ? [] : ['craft_rack']), 'craft_smoker', 'craft_cache', 'craft_handline', 'craft_hooks', 'craft_fishtrap', 'craft_woodshed', 'craft_net', 'craft_stove', 'craft_snowshoes', 'craft_mittens']) if (s.day > 3) pri.push(c); // the engine says 'Built' once a craft is finished
+    // preserve only a real surplus: a few portions of fresh meat beyond what spoils first
+    const fresh = s.stores.filter(x => !x.smoked && !x.dried && !x.where && ['fish', 'game', 'organ'].includes(E.DATA.foods[x.id].kind)).reduce((a, x) => a + x.por, 0);
+    if (fresh >= 3) pri.push(s.crafts.smoker >= 2 ? 'smoke' : 'dry_food'); // one station at a time: the smoker once it is built, the rack until then
+    if (s.stores.filter(x => x.where === 'smoker').reduce((a, x) => a + x.por, 0) >= 2) pri.push('smoke'); // tend it
+    if (s.stores.some(x => x.id === 'fat' && !x.rendered)) pri.push('render_fat');
     pri.push('craft_pemmican', 'cordage', 'checknet', 'setnet', 'checktraps', 'fish', 'snares', 'setlines', 'berries', 'shellfish', 'roots', 'greens', 'forage', 'cattail', 'hunt', 'boil', 'water');
     for (const p of pri) { if (s.today.done.filter(x => x === p).length >= 2) continue; if (ok(p)) return p; }
     return null;
@@ -20,4 +24,6 @@ function makeBot(E, s, opts = {}) {
   policy.event = () => 0;
   return policy;
 }
-module.exports = { makeBot };
+// the food-preservation actions; 'core' baseline games never use them
+const PRESERVE = ['smoke', 'craft_smoker', 'craft_pemmican', 'dry_food', 'craft_rack', 'render_fat'];
+module.exports = { makeBot, PRESERVE };

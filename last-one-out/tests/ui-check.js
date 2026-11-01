@@ -29,8 +29,24 @@ async function tapAround(p, n) { for (let i = 0; i < n; i++) { await p.evaluate(
     const g = await p.evaluate(k => JSON.parse(localStorage.getItem(k)), KEY); const txt = await p.evaluate(() => document.body.innerText);
     if (errs.length) fail('old save ' + k, errs.slice(0, 2));
     if (!g || g.rivalsV !== 1) fail('old save ' + k, 'not migrated');
+    if (!g || !g.sys || g.sys.schema !== 1) fail('old save ' + k, 'no sys block after loading');
     const leak = oldNames.filter(n => txt.includes(n) || (g && (g.rivals || []).some(r => r.name === n))); if (leak.length) fail('old save ' + k, 'old names: ' + leak.slice(0, 3));
     await ctx.close();
+  }
+  { // food: meat drying on the rack and in the smoker shows in the camp sheet with its progress
+    const s = E.newGame('US-S2', ['Pot', 'Knife', 'Ferro rod', 'Axe', 'Saw', 'Fishing gear', 'Sleeping bag', 'Paracord', 'Tarp', 'Rations'], { seed: 9, weight: 200 });
+    E.beginDay(s); s.event = null; s.fire = true; s.firewood = 10; s.mats.poles = 10; s.crafts.smoker = 2;
+    E.act(s, 'craft_rack'); s.stores.push({ id: 'hare', por: 6, left: 4, smoked: false }, { id: 'trout', por: 3, left: 3, smoked: false }, { id: 'fat', por: 2, left: 3, smoked: false }, { id: 'grouse', por: 4, left: 120, smoked: false, dried: true, moist: 0.12 });
+    E.act(s, 'dry_food'); s.stores.push({ id: 'pike', por: 3, left: 3, smoked: false }); E.act(s, 'smoke');
+    const { p, ctx, errs } = await page(b, save(s)); await p.keyboard.press('c'); await p.waitForTimeout(400);
+    const txt = await p.evaluate(() => document.body.innerText);
+    for (const want of ['on the rack', 'in the smoker', '% water', 'dried']) if (!txt.includes(want)) fail('food sheet', `missing "${want}"`);
+    await p.keyboard.press('Escape'); await p.waitForTimeout(800);
+    const bar = await p.evaluate(() => document.body.innerText);
+    await p.evaluate(() => { const m = [...document.querySelectorAll('button')].find(e => /^More…/.test(e.textContent.trim())); if (m) m.click(); }); await p.waitForTimeout(300);
+    const more = await p.evaluate(() => document.body.innerText); if (!/Render fat/i.test(bar + more)) fail('food buttons', 'Render fat not offered at camp. Bar: ' + bar.replace(/\s+/g, ' ').slice(0, 300));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+    await tapAround(p, 40); if (errs.length) fail('food screens', errs.slice(0, 2)); await ctx.close();
   }
   for (const se of D.seasons) { // 3. late game and every kind of ending, in every place
     const s = E.newGame(se.key, [...D.gear].sort((a, c) => c.rate - a.rate).slice(0, 10).map(g => g.id), { seed: 77, weight: 200 }); const bot = makeBot(E, s);

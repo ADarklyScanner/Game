@@ -1,0 +1,377 @@
+{
+ "US-S1#11": {
+  "d5": "dd95aff3045b",
+  "d25": "47d0f342e2f5",
+  "end": "65a322474981",
+  "day": 41,
+  "status": "tapped"
+ },
+ "US-S1#222": {
+  "d5": "e763dc0a17b8",
+  "d25": "b2c2a2118a67",
+  "end": "00587c9bb307",
+  "day": 43,
+  "status": "tapped"
+ },
+ "US-S1#3333": {
+  "d5": "5e4347b4056a",
+  "d25": "f7f17fedf619",
+  "d50": "9e4f3a2ebf85",
+  "end": "ff72aa2ec909",
+  "day": 55,
+  "status": "tapped"
+ },
+ "US-S2#11": {
+  "d5": "394dac1ce569",
+  "d25": "048db4179519",
+  "end": "67012d91fcc4",
+  "day": 35,
+  "status": "medical"
+ },
+ "US-S2#222": {
+  "d5": "f969247b6833",
+  "d25": "fb751fb66086",
+  "end": "6d9ab80cf61a",
+  "day": 49,
+  "status": "medical"
+ },
+ "US-S2#3333": {
+  "d5": "71e537463ac9",
+  "d25": "be2f117d8841",
+  "end": "1c5d4c103f30",
+  "day": 42,
+  "status": "medical"
+ },
+ "US-S3#11": {
+  "d5": "f25023f78c36",
+  "d25": "2018794b32c7",
+  "end": "9bfe6653b817",
+  "day": 28,
+  "status": "medical"
+ },
+ "US-S3#222": {
+  "d5": "77418e4cafd6",
+  "d25": "46b1fe163401",
+  "d50": "c4e39329583a",
+  "end": "9c0d01896f95",
+  "day": 56,
+  "status": "medical"
+ },
+ "US-S3#3333": {
+  "d5": "42057876cf44",
+  "d25": "2333c6cc4592",
+  "end": "c3df108ffb7f",
+  "day": 42,
+  "status": "medical"
+ },
+ "US-S5#11": {
+  "d5": "9eb59e01e983",
+  "d25": "d0d0b30485d0",
+  "end": "e9b762fd9b30",
+  "day": 33,
+  "status": "medical"
+ },
+ "US-S5#222": {
+  "d5": "8c7d48e4ab09",
+  "d25": "14a81ee34ee2",
+  "d50": "bbcb107407c3",
+  "end": "2b785286e1bb",
+  "day": 56,
+  "status": "medical"
+ },
+ "US-S5#3333": {
+  "d5": "13fd2a28ee61",
+  "d25": "2f1bfa8b7c52",
+  "d50": "f797121c594f",
+  "end": "d70e9d80ea46",
+  "day": 63,
+  "status": "won"
+ },
+ "US-S6#11": {
+  "d5": "8afc99c6ddde",
+  "end": "aaedad442fd6",
+  "day": 19,
+  "status": "medical"
+ },
+ "US-S6#222": {
+  "d5": "c222a6d8ad33",
+  "d25": "2fddf253c5ef",
+  "d50": "a9173ffdba84",
+  "end": "8876452fcd0f",
+  "day": 80,
+  "status": "won"
+ },
+ "US-S6#3333": {
+  "d5": "bac3f4910f0f",
+  "d25": "4541f85b1e73",
+  "d50": "906328df8de1",
+  "end": "ab86ef977108",
+  "day": 73,
+  "status": "tapped"
+ },
+ "US-S7#11": {
+  "d5": "0567d8358d3c",
+  "d25": "91ce609222c5",
+  "d50": "17d0379ea0d0",
+  "end": "7f98b3f16251",
+  "day": 83,
+  "status": "tapped"
+ },
+ "US-S7#222": {
+  "d5": "0df903807535",
+  "d25": "48f30ddd66d0",
+  "d50": "f5f1c33a5254",
+  "end": "1c68b9e9f6fd",
+  "day": 84,
+  "status": "tapped"
+ },
+ "US-S7#3333": {
+  "d5": "58afefe2a8db",
+  "d25": "1a1b48107112",
+  "d50": "e0587bbd9dce",
+  "end": "d84172bf4a3b",
+  "day": 75,
+  "status": "tapped"
+ },
+ "US-S8#11": {
+  "d5": "6dd9709b7386",
+  "d25": "69194dabbb0b",
+  "d50": "9e8ef4a6c5df",
+  "end": "008b5c202c47",
+  "day": 71,
+  "status": "tapped"
+ },
+ "US-S8#222": {
+  "d5": "7ad983f64ef0",
+  "d25": "a17ccf160fe5",
+  "d50": "b13dba8f8482",
+  "end": "a28da7a12257",
+  "day": 77,
+  "status": "tapped"
+ },
+ "US-S8#3333": {
+  "d5": "388f2700bf5c",
+  "d25": "85dbc54a032e",
+  "d50": "93e30c2b6e85",
+  "end": "310e7f6a1c37",
+  "day": 73,
+  "status": "tapped"
+ },
+ "US-S9#11": {
+  "d5": "c3e6c78706c3",
+  "d25": "1176de858743",
+  "d50": "ccb5520c0ffe",
+  "end": "5caf048a40dc",
+  "day": 75,
+  "status": "tapped"
+ },
+ "US-S9#222": {
+  "d5": "59f4e14dceb9",
+  "d25": "b0d799932b63",
+  "d50": "205930d1a801",
+  "end": "c5ef42f57a6d",
+  "day": 78,
+  "status": "tapped"
+ },
+ "US-S9#3333": {
+  "d5": "519d554b8416",
+  "d25": "a96ec6f78c6f",
+  "d50": "6e8e8c801b51",
+  "end": "acec31208b71",
+  "day": 76,
+  "status": "tapped"
+ },
+ "US-S10#11": {
+  "d5": "ffe227ad69e7",
+  "d25": "faed290c11f8",
+  "d50": "1a4be90fe90b",
+  "end": "7e60f13e4998",
+  "day": 56,
+  "status": "medical"
+ },
+ "US-S10#222": {
+  "d5": "6203402cf904",
+  "d25": "50072d98e463",
+  "end": "ea778cd8e79a",
+  "day": 35,
+  "status": "medical"
+ },
+ "US-S10#3333": {
+  "d5": "2ff0a635d0c2",
+  "d25": "b3b7d81bad32",
+  "end": "c66d22c70a1c",
+  "day": 28,
+  "status": "medical"
+ },
+ "US-S11#11": {
+  "d5": "12fbb2d460a8",
+  "d25": "f2adf3d4b033",
+  "d50": "db7e4908699a",
+  "end": "de9dfa9b2527",
+  "day": 57,
+  "status": "tapped"
+ },
+ "US-S11#222": {
+  "d5": "8eb3e196f5ce",
+  "d25": "13d254b9ccf2",
+  "d50": "8e0c45e1be0a",
+  "end": "756049be6530",
+  "day": 62,
+  "status": "tapped"
+ },
+ "US-S11#3333": {
+  "d5": "338e53201b27",
+  "d25": "59fc5b112a83",
+  "end": "6d014f42f756",
+  "day": 39,
+  "status": "tapped"
+ },
+ "US-S12#11": {
+  "d5": "dc6676903852",
+  "end": "09769d8a0a77",
+  "day": 14,
+  "status": "medical"
+ },
+ "US-S12#222": {
+  "d5": "a9d4e2cc1309",
+  "d25": "d880c25dc2cf",
+  "end": "30c56253bd58",
+  "day": 28,
+  "status": "medical"
+ },
+ "US-S12#3333": {
+  "d5": "e4ef7b8e2727",
+  "end": "d116d9e352c1",
+  "day": 14,
+  "status": "medical"
+ },
+ "US-S13#11": {
+  "d5": "89be67a2f129",
+  "d25": "2b3b28545ec0",
+  "d50": "c2222d90030c",
+  "end": "ee7125b578dc",
+  "day": 65,
+  "status": "tapped"
+ },
+ "US-S13#222": {
+  "d5": "f7f1b9630817",
+  "d25": "b4a59515efc8",
+  "d50": "94608d463335",
+  "end": "e68e19c35052",
+  "day": 70,
+  "status": "tapped"
+ },
+ "US-S13#3333": {
+  "d5": "1a55d870318b",
+  "d25": "fb2daa529cc3",
+  "d50": "d770f9cdab0a",
+  "end": "8a6576460ce4",
+  "day": 91,
+  "status": "won"
+ },
+ "US Frozen-S1#11": {
+  "d5": "77bd2c187a9c",
+  "d25": "0ea4cf0ada8f",
+  "d50": "d5d9dda89141",
+  "end": "36d05d53b1d8",
+  "day": 52,
+  "status": "tapped"
+ },
+ "US Frozen-S1#222": {
+  "d5": "5db2a74ac9c0",
+  "d25": "5fb281e52b43",
+  "end": "c55f8c070efd",
+  "day": 33,
+  "status": "tapped"
+ },
+ "US Frozen-S1#3333": {
+  "d5": "f112d762e185",
+  "end": "56cea4346fe8",
+  "day": 23,
+  "status": "medical"
+ },
+ "AU-S1#11": {
+  "d5": "a31ef55ba832",
+  "d25": "b96276a4dbde",
+  "end": "26eb275a349a",
+  "day": 41,
+  "status": "tapped"
+ },
+ "AU-S1#222": {
+  "d5": "85840035b280",
+  "d25": "d8bdaa1f33d5",
+  "end": "2850bcc7a9fe",
+  "day": 44,
+  "status": "tapped"
+ },
+ "AU-S1#3333": {
+  "d5": "6c1d45ee14f4",
+  "d25": "d8f909587fd6",
+  "d50": "545f113fd359",
+  "end": "fe2edb90d5b8",
+  "day": 54,
+  "status": "tapped"
+ },
+ "AU-S2#11": {
+  "d5": "80dcdfd18a51",
+  "d25": "fe995dbb653f",
+  "end": "6b06390ac7ab",
+  "day": 41,
+  "status": "medical"
+ },
+ "AU-S2#222": {
+  "d5": "049ac4e64add",
+  "d25": "b9d0abc7c7db",
+  "end": "9324afdd5635",
+  "day": 35,
+  "status": "medical"
+ },
+ "AU-S2#3333": {
+  "d5": "f4933ccbe99d",
+  "d25": "a0296b279b04",
+  "d50": "118d7f9164ef",
+  "end": "c416475f4f64",
+  "day": 63,
+  "status": "medical"
+ },
+ "AU-S3#11": {
+  "d5": "678f58eaf810",
+  "end": "bf90b2cb4580",
+  "day": 24,
+  "status": "medical"
+ },
+ "AU-S3#222": {
+  "d5": "e1eaac0b5e3c",
+  "d25": "382aa5f29788",
+  "end": "3a3b80f75d37",
+  "day": 49,
+  "status": "medical"
+ },
+ "AU-S3#3333": {
+  "d5": "c3f5a43a9110",
+  "d25": "489303f07861",
+  "d50": "815613e91696",
+  "end": "fc58ab47cb46",
+  "day": 70,
+  "status": "medical"
+ },
+ "AU-S4#11": {
+  "d5": "b91665c51ca4",
+  "d25": "141fe942c6b1",
+  "end": "ab09f56c875f",
+  "day": 28,
+  "status": "medical"
+ },
+ "AU-S4#222": {
+  "d5": "48b94548d90d",
+  "end": "e79574e49017",
+  "day": 21,
+  "status": "medical"
+ },
+ "AU-S4#3333": {
+  "d5": "3cf7ed547a1e",
+  "end": "8e809e046422",
+  "day": 21,
+  "status": "medical"
+ }
+}
