@@ -31,6 +31,15 @@ Keeping food now takes real time and can go wrong in real ways.
 - **The drying rack shows on the map**, with strips that darken as they dry and its roof if it has one.
 - Balance: median survival over 510 bot games unchanged at 49 days.
 
+## Fire and stoves update (Nov 1, 2026)
+
+- **Damp tinder:** tinder picked in rain or fog is damp (birch bark stays dry, punk wood mostly dry), and tinder left out in the rain with no roof or tarp soaks up water. It dries by the fire or under a roof. Damp tinder makes a ferro rod less reliable, and a bow-drill ember will not take in tinder over 20% damp.
+- **Stone hearth** (new, 6 stones): the fire uses 15% less wood, storms and wind put it out less often, it throws more heat, and the warm stones keep some cold off after the fire dies in the night.
+- **Soot in the chimney or stovepipe:** builds every night with the fire inside, faster with green wood. Signs show first; over 80% the flue spits sparks and can catch, scorching the roof. "Check the roof" sweeps it.
+- **Smoker flare-ups:** fatty fish and meat drip onto the coals; without a pot or pan underneath, the smoker can catch fire, burning some of the batch and needing a rebuild.
+- **Chink the walls** (new, for a debris hut, rock shelter or cabin): 4 moss or 3 clay, plus tallow for a tighter seal. Cuts drafts so the shelter holds about 15% more heat. Cracks over time, faster in storms and hard frost.
+- Balance: median survival over 510 bot games unchanged at 49 days.
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.

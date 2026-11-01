@@ -11,12 +11,15 @@ function makeBot(E, s, opts = {}) {
     if (s.carcass) pri.push('dress');
     if (s.raw.length) pri.push('clean', 'cook', 'smoke');
     // build each camp item once when it becomes possible, then use it
-    for (const c of [...(s.crafts.smoker >= 2 ? [] : ['craft_rack']), 'craft_smoker', 'craft_cache', 'craft_handline', 'craft_hooks', 'craft_fishtrap', 'craft_woodshed', 'craft_net', 'craft_stove', 'craft_snowshoes', 'craft_mittens']) if (s.day > 3) pri.push(c); // the engine says 'Built' once a craft is finished
+    for (const c of ['craft_hearth', ...(s.crafts.smoker >= 2 ? [] : ['craft_rack']), 'craft_smoker', 'craft_cache', 'craft_handline', 'craft_hooks', 'craft_fishtrap', 'craft_woodshed', 'craft_net', 'craft_stove', 'craft_snowshoes', 'craft_mittens']) if (s.day > 3) pri.push(c); // the engine says 'Built' once a craft is finished
     // preserve only a real surplus: a few portions of fresh meat beyond what spoils first
     const fresh = s.stores.filter(x => !x.smoked && !x.dried && !x.where && ['fish', 'game', 'organ'].includes(E.DATA.foods[x.id].kind)).reduce((a, x) => a + x.por, 0);
     if (fresh >= 3) pri.push(s.crafts.smoker >= 2 ? 'smoke' : 'dry_food'); // one station at a time: the smoker once it is built, the rack until then
     if (s.stores.filter(x => x.where === 'smoker').reduce((a, x) => a + x.por, 0) >= 2) pri.push('smoke'); // tend it
     if (s.stores.some(x => x.id === 'fat' && !x.rendered)) pri.push('render_fat');
+    if (s.shelterLvl >= 2 && E.sealOf(s) < 0.4) pri.push('caulk'); // re-chink when the seal is poor, not at every crack
+    if (s.sys && s.sys.soot > 0.5) pri.push('check_roof');
+    if (s.crafts.hearth !== 1 && s.mats.stone < 6 && s.day > 3) pri.push('stones');
     pri.push('craft_pemmican', 'cordage', 'checknet', 'setnet', 'checktraps', 'fish', 'snares', 'setlines', 'berries', 'shellfish', 'roots', 'greens', 'forage', 'cattail', 'hunt', 'boil', 'water');
     for (const p of pri) { if (s.today.done.filter(x => x === p).length >= 2) continue; if (ok(p)) return p; }
     return null;
