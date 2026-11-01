@@ -402,6 +402,13 @@ function skyAcc(s) { return Math.min(0.85, 0.65 + 0.02 * ((s.sys && s.sys.skyRea
 const SAY = { storm: "Mare's tails high up this afternoon, a ring round the moon, the wind backing. Weather tomorrow, and a lot of it.", rain: 'Low grey cloud thickening from the west and the smoke hanging low. Rain by morning.', snow: 'The air has gone soft and smells of snow.', fair: 'Clear and still, the smoke going straight up. Fair tomorrow.' };
 // new ice is thin: for about ten days after freeze-up it can give way under you
 function thinIce(s) { const f = season(s).climate.freeze; return frozen(s) && f != null && s.day - f < 10; }
+// wading the ford: wet to the knees, and now and then a slip on the stones. A staff to lean on cuts the slips by four fifths; the log bridge keeps you dry
+function wade(s, bridge) {
+  const L = []; if (bridge || frozen(s) || s.status !== 'playing') return L;
+  s.wet = Math.min(1, s.wet + 0.25); if (temperature(s) < 5) s.morale = Math.max(0, s.morale - 0.5);
+  if (chance(s, 0.04 * (s.crafts.staff >= 1 ? 0.2 : 1))) { s.wet = 1; s.morale = Math.max(0, s.morale - 3); s.health = Math.max(1, s.health - 2); L.push(['A stone rolled under your foot mid-river and you went down to the chest. Soaked through and shaking.', 'bad']); }
+  return L;
+}
 // ------------------------------------------------------------------ pottery: shape, dry for days, fire in a pit. A fired pot cooks like a metal one but cracks now and then
 const clayPots = s => (s.sys && s.sys.clayPots) || 0;
 function potLike(s) { return has(s, 'Pot') || clayPots(s) > 0; }
@@ -618,6 +625,7 @@ const ACTIONS = {
   craft_reflector: { label: 'Build a fire reflector', hours: 1.5, effort: 'moderate', group: 'Build' },
   craft_platform: { label: 'Build a raised bed frame', hours: 2, effort: 'moderate', group: 'Build' },
   work_hide: { label: 'Scrape and soften a hide', hours: 2, effort: 'moderate', group: 'Camp', where: 'camp' },
+  craft_staff: { label: 'Cut a wading staff', hours: 0.5, effort: 'light', group: 'Build' },
   craft_leader: { label: 'Tie a fine leader', hours: 0.5, effort: 'light', group: 'Build' },
   craft_lamp: { label: 'Make a fat lamp', hours: 0.5, effort: 'light', group: 'Build' },
   craft_hearth: { label: 'Build a stone hearth', hours: 1, effort: 'moderate', group: 'Build' },
@@ -768,6 +776,7 @@ function available(s, id) {
     case 'bury': { const o = (s.sys && s.sys.offal) || 0; return o < 0.5 ? r(false, 'No gut pile') : r(true, '', digger(s) ? 'a proper pit, covered' : 'a shallow scrape by hand'); }
     case 'scrub': { const k = (s.sys && s.sys.taint) || 0; return k <= 0 ? r(false, 'Nothing to scrub') : !s.fire ? r(false, 'Needs a fire for hot ash') : r(true, '', 'hot ash and sand'); }
     case 'work_hide': return s.mats.hide < 1 ? r(false, 'No hide') : !blade(s) && !(s.mats.stone >= 1) ? r(false, 'Needs a knife or a stone to scrape with') : r(true, '', `soft leather · ${(s.sys && s.sys.leather) || 0} made`);
+    case 'craft_staff': return s.crafts.staff >= 1 ? r(false, 'Made') : season(s).climate.water === 'scarce' ? r(false, 'No river to wade') : s.mats.poles < 1 ? r(false, 'Needs a pole') : r(true, '', 'a third leg in fast water');
     case 'craft_leader': return has(s, 'Fishing gear') ? r(false, 'Your line is already fine') : !(s.crafts.handline >= 1) ? r(false, 'Needs a handline first') : s.crafts.leader >= 1 ? r(false, 'Made') : !blade(s) ? r(false, 'Needs a knife') : s.mats.hide < 1 ? r(false, 'Needs sinew from a hide') : r(true, '', 'fish see thick cord; they bite more on a fine leader');
     case 'craft_lamp': return s.crafts.lamp >= 1 ? r(false, 'Made') : s.mats.stone < 1 ? r(false, 'Needs a flat stone for the dish') : !(s.mats.moss >= 1 || s.mats.cordage >= 1) ? r(false, 'Needs moss or cordage for a wick') : tallowPor(s) < 0.25 ? r(false, 'Needs rendered tallow to burn') : r(true, '', 'light for night work, burns tallow');
     case 'craft_hearth': return s.crafts.hearth >= 1 ? r(false, 'Built') : s.mats.stone < 6 ? r(false, 'Needs 6 flat stones') : r(true, '', 'shields the fire, holds the heat');
@@ -1308,6 +1317,7 @@ function doAction(s, id, lines, mod, opts) {
       if (k === 'reflector') { s.mats.poles -= 6; s.crafts.reflector = 1; lines.push(['Drove two stakes behind the fire and stacked poles between them into a wall as high as your chest. The heat comes back off it into the shelter.', 'good']); break; }
       if (k === 'platform') { s.mats.poles -= 6; s.mats.cordage -= 2; s.crafts.platform = 1; lines.push(['Lashed a frame of poles a forearm off the ground for the bed. The cold of the earth stays down there.', 'good']); break; }
       if (k === 'mittens' && s.sys && s.sys.leather >= 2) { s.sys.leather -= 2; s.mats.hide += 2; s.sys.softMittens = true; } // soft leather: warmer, and they bend round your hands
+      if (k === 'staff') { s.mats.poles -= 1; s.crafts.staff = 1; lines.push(['Trimmed a stout pole to shoulder height for a wading staff. Planted upstream, it is a third leg in the current.', 'good']); break; }
       if (k === 'leader') { s.mats.hide -= 1; s.crafts.leader = 1; lines.push(['Pulled a strand of sinew from the back of a hide, wet it and twisted it fine, and tied it between the hook and the cord. Nearly invisible in the water.', 'good']); break; }
       if (k === 'lamp') { s.mats.stone -= 1; if (s.mats.moss >= 1) s.mats.moss -= 1; else s.mats.cordage -= 1; s.crafts.lamp = 1; lines.push(['Pecked a hollow into a flat stone, laid a twist of wick in it and filled it with tallow. A small steady flame, and a smell like a kitchen.', 'good']); break; }
       if (k === 'hearth') { s.mats.stone -= 6; s.crafts.hearth = 1; sysOf(s).hearthWet = 3; lines.push(['Set a ring of flat stones round the fire and a tall one behind it to throw the heat back. The wind gets at it less, and the stones stay warm long after.', 'good']); break; }
@@ -1854,7 +1864,7 @@ function status(s) {
   return { lossFrac: lf, medLimit: medicalLimit(s), weather: weatherName(s), snowshoes: s.crafts.snowshoes >= 1, windChill: Math.round(temperature(s) - (s.storm ? 6 : s.wind ? 4 : 0)), moon: s.moon, aurora: !!s.aurora, windows: activeWindows(s), shelterCond: s.shelterCond ?? 1, shelterType: s.shelterType, canInside: canWorkInside(s), shelter: shelterName(s), shelterLevel: s.shelterLvl, temp: Math.round(temperature(s)), frozen: frozen(s), snowy: snowy(s), remaining: s.rivals.filter(r => !r.out).length, storeKcal: Math.round(storeKcal(s)), rawKcal: Math.round(rawKcal(s)), hoursLeft: hoursLeft(s), dayHours: dayHours(s), lowTide: lowTide(s), igniter: igniter(s) };
 }
 
-const API = { clothesOf, tomorrow, skyAcc, thinIce, potLike, clayPots, greenPots, bedWarmth, snowLoadOf, bedOf, lampOk, nightOk, haftOf, tinderDamp, fireOdds, sealOf, hasHearth, isDry, onStation, RACK_CAP, DRY_AT, dryDaysLeft, sysOf, cacheSign, low, matName, BIOMES, biomeOf, treeKind, realMedianOf: se => { const d = se.rivals.filter(r => r.days != null).map(r => r.days).sort((a, b) => a - b); return d[d.length >> 1]; }, WEIGHT, loadOf, carryCap, moveCampCost, moveCamp, collectSize, berryRipe, bushRipeDay, stockOf, stockWord, billFor, nightOk, NIGHT_OK, treeYield, treeNames, fishPool, sizeOf, SHELTERS, shelterOptions, chooseShelter, shelterName, canWorkInside, travel, activeWindows, windowOn, timeMult, weatherName, dayFrac, midday, setTune, DATA, C, MATS, ACTIONS, EVENTS, newGame, runDay, beginDay, act, endDay, choose, carryLoad, available, tapOut, placing, status, season, storeKcal, temperature, shelterLevel, SHELTER_NAMES, shelterBill, shelterMissing, matList, fishOdds, huntOdds, bowDrillOdds, dayHours, hoursLeft, phaseOf, lowTide, igniter, blade, cutter, chopper, hasRod, digger };
+const API = { wade, clothesOf, tomorrow, skyAcc, thinIce, potLike, clayPots, greenPots, bedWarmth, snowLoadOf, bedOf, lampOk, nightOk, haftOf, tinderDamp, fireOdds, sealOf, hasHearth, isDry, onStation, RACK_CAP, DRY_AT, dryDaysLeft, sysOf, cacheSign, low, matName, BIOMES, biomeOf, treeKind, realMedianOf: se => { const d = se.rivals.filter(r => r.days != null).map(r => r.days).sort((a, b) => a - b); return d[d.length >> 1]; }, WEIGHT, loadOf, carryCap, moveCampCost, moveCamp, collectSize, berryRipe, bushRipeDay, stockOf, stockWord, billFor, nightOk, NIGHT_OK, treeYield, treeNames, fishPool, sizeOf, SHELTERS, shelterOptions, chooseShelter, shelterName, canWorkInside, travel, activeWindows, windowOn, timeMult, weatherName, dayFrac, midday, setTune, DATA, C, MATS, ACTIONS, EVENTS, newGame, runDay, beginDay, act, endDay, choose, carryLoad, available, tapOut, placing, status, season, storeKcal, temperature, shelterLevel, SHELTER_NAMES, shelterBill, shelterMissing, matList, fishOdds, huntOdds, bowDrillOdds, dayHours, hoursLeft, phaseOf, lowTide, igniter, blade, cutter, chopper, hasRod, digger };
 if (typeof module !== 'undefined') module.exports = API; else root.Engine = API;
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
@@ -2701,7 +2711,7 @@ function update(dt) {
     if (!W.desert) { const sx = W.shoreX(ny) + 12; if (nx < sx) nx = sx; }
     const onBridge = W.river && S.crafts.bridge >= 2 && Math.abs(nx - W.river.bridgeX) < 22;
     if (W.river && nx < W.river.xEnd && (Math.abs(nx - W.river.ford) > 40 || S.spate) && !onBridge) { const r = W.river; if (ny > r.y0 - 10 && ny < r.y1 + 10) { if (p.y <= r.y0 - 10) ny = r.y0 - 10; else if (p.y >= r.y1 + 10) ny = r.y1 + 10; else if (Math.abs(p.x - r.ford) <= 40 && !S.spate) { nx = Math.max(r.ford - 40, Math.min(r.ford + 40, nx)); } else { ny = p.y < (r.y0 + r.y1) / 2 ? r.y0 - 10 : r.y1 + 10; } if (!W.riverHint || W.t - W.riverHint > 6) { W.riverHint = W.t; worldToast([[S.spate ? 'The river is in spate. Not today.' : 'Too deep here. The ford is where the water goes shallow and wide.', 'muted']], p.x, p.y - 10); } } }
-    if (W.river && ((p.y < (W.river.y0 + W.river.y1) / 2) !== (ny < (W.river.y0 + W.river.y1) / 2)) && nx < W.river.xEnd) { S.stats.ford = (S.stats.ford || 0) + 1; }
+    if (W.river && ((p.y < (W.river.y0 + W.river.y1) / 2) !== (ny < (W.river.y0 + W.river.y1) / 2)) && nx < W.river.xEnd) { S.stats.ford = (S.stats.ford || 0) + 1; const wl = E.wade(S, onBridge); if (wl.length) { worldToast(wl, p.x, p.y - 10); updateHud(); } }
     if (dist({ x: nx, y: ny }, W.cliff) < 38) { const a = Math.atan2(ny - W.cliff.y, nx - W.cliff.x); nx = W.cliff.x + Math.cos(a) * 38; ny = W.cliff.y + Math.sin(a) * 38; }
     for (const pl of W.pools || []) if (dist({ x: nx, y: ny }, pl) < 34) { const a = Math.atan2(ny - pl.y, nx - pl.x); nx = pl.x + Math.cos(a) * 34; ny = pl.y + Math.sin(a) * 34; }
     for (const t of W.trees) { if (t.gone || t.kind === 'log') continue; const d = dist(t, { x: nx, y: ny }); const m = t.age === 'sapling' ? 8 : 14; if (d < m) { const a = Math.atan2(ny - t.y, nx - t.x); nx = t.x + Math.cos(a) * m; ny = t.y + Math.sin(a) * m; } }

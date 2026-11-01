@@ -114,6 +114,12 @@ Keeping food now takes real time and can go wrong in real ways.
 - **Scrape and soften a hide** (new, by day or firelight, 2 hours): soft leather. A leather patch makes worn clothes as good as new, and mittens sewn from two pieces of soft leather are warmer than rawhide ones.
 - Balance unchanged: median 48, mean 48.1 (original 49 and 49.9).
 
+## River crossings (Nov 1, 2026)
+
+- **Wading the ford** wets you to the knees and, in cold weather, wears on you. Now and then a stone rolls underfoot and you go in to the chest.
+- **Cut a wading staff** (new, one pole): a third leg in the current; slips are 80% rarer.
+- **The log bridge** keeps you dry.
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.

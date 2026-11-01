@@ -4,6 +4,7 @@ let fails = 0, passes = 0; const check = (name, ok, detail) => { if (ok) passes+
 const GEAR = ['Axe', 'Ferro rod', 'Knife', 'Sleeping bag', 'Paracord', 'Fishing gear', 'Pot', 'Saw'];
 function camp(shelter, place = 'US-S7', seed = 3) { const s = E.newGame(place, GEAR, { seed, weight: 200 }); E.beginDay(s); s.event = null; s.storm = s.rain = s.fog = s.wind = s.snowfall = false; s.firewood = 20; s.stores = [{ id: 'ration', por: 30, left: Infinity, smoked: false }];
   if (shelter) { s.shelterType = shelter; s.shelterLvl = { tarp: 1, leanto: 1, hut: 2, rock: 3, cabin: 3 }[shelter]; s.shelterCond = 1; } return s; }
+const rate = (n, f) => { let k = 0; for (let i = 0; i < n; i++) if (f(i)) k++; return k / n; };
 const night = (s, w) => { s.event = null; Object.assign(s, { storm: false, rain: false, fog: false, wind: false, snowfall: false }, w || {}); E.endDay(s); E.beginDay(s); s.event = null; };
 { // the plan's test: a shallow roof suffers more under the same snow than a steep one
   const after = shelter => { const s = camp(shelter); s.sys.snowLoad = 2; for (let i = 0; i < 3; i++) night(s, { snowfall: true }); return s.shelterType === shelter ? s.shelterCond : 0; };
@@ -35,5 +36,11 @@ const night = (s, w) => { s.event = null; Object.assign(s, { storm: false, rain:
 { // the plan's test: snowshoes cut the effort of walking in deep snow by 60%
   const walk = shoes => { const s = camp(null, 'US-S7'); while (!E.status(s).snowy && s.day < 120) { s.event = null; E.endDay(s); E.beginDay(s); } s.event = null; s.phase = 0; s.hours = 0; if (shoes) s.crafts.snowshoes = 1; const b0 = s.today.burn; E.travel(s, 4000); return { burn: s.today.burn - b0, hours: s.hours }; };
   const no = walk(false), yes = walk(true); check('snowshoes: 60% less effort in deep snow', Math.abs(yes.burn / no.burn - 0.4) < 0.02, [no.burn, yes.burn]); check('and quicker', yes.hours < no.hours, [no.hours, yes.hours]);
+}
+{ // the plan's test: a wading staff makes the ford 80% steadier; the bridge keeps you dry
+  const slips = staff => rate(4000, i => { const s = camp(null, 'US-S2', 3000 + i); s.wet = 0; if (staff) s.crafts.staff = 1; return E.wade(s, false).length > 0; });
+  const bare = slips(false), staff = slips(true); check('fording: an occasional slip', bare > 0.02 && bare < 0.07, bare); check('a staff cuts slips by about 80%', Math.abs(staff / bare - 0.2) < 0.08, [bare, staff]);
+  const w = camp(null, 'US-S2'); w.wet = 0; E.wade(w, false); check('wading wets you', w.wet >= 0.25); const b = camp(null, 'US-S2'); b.wet = 0; E.wade(b, true); check('the bridge keeps you dry', b.wet === 0);
+  const c = camp(null, 'US-S2'); c.mats.poles = 1; check('a staff takes one pole', E.available(c, 'craft_staff').ok); E.act(c, 'craft_staff'); check('staff made', c.crafts.staff === 1 && c.mats.poles === 0);
 }
 console.log(fails ? `${fails} shelter check(s) failed, ${passes} passed.` : `All ${passes} shelter checks passed.`); process.exit(fails ? 1 : 0);
