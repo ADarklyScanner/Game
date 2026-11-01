@@ -31,4 +31,26 @@ const bearEvent = s => { s.event = { id: 'bear', optIds: E.EVENTS.bear.options.m
   s.hours = 1; s.phase = 0; check('a latrine is offered', E.available(s, 'dig_latrine').ok); E.act(s, 'dig_latrine'); const f0 = E.fouling(s); for (let i = 0; i < 5; i++) { s.event = null; E.endDay(s); E.beginDay(s); s.event = null; } check('with a latrine it clears', E.fouling(s) < f0, [f0, E.fouling(s)]);
   E.moveCamp(s, 400); check('a new camp starts clean', E.fouling(s) === 0 && !E.latrineOk(s));
 }
+{ // hot or cold smoke
+  const hang = mode => { const s = camp('US-S2'); s.fire = true; s.crafts.smoker = 2; s.stores = [{ id: 'ration', por: 30, left: Infinity, smoked: false }, { id: 'salmon', por: 4, left: 2, smoked: false }]; const w0 = s.firewood; E.act(s, 'smoke', { extra: { mode } }); return { s, wood: w0 - s.firewood, left: s.stores.find(x => x.id === 'salmon').left }; };
+  const hot = hang('hot'), cold = hang('cold'); check('hot smoke cooks the outside: a few safe days', hot.left >= 4); check('cold smoke does not cook it', cold.left < 4, cold.left); check('cold smoke uses less wood', cold.wood < hot.wood, [hot.wood, cold.wood]);
+  const moist = mode => { const s = hang(mode).s; s.today.early = { kcal: 1e6, units: {}, types: [], lean: 0, fat: 0, protein: 0 }; s.event = null; E.endDay(s); const x = s.stores.find(x => x.id === 'salmon'); return x ? x.moist : null; };
+  check('cold smoke dries slower', moist('cold') > moist('hot'), [moist('hot'), moist('cold')]);
+  const spoils = mode => { const s = hang(mode).s; for (let n = 0; n < 3; n++) { s.today.early = { kcal: 1e6, units: {}, types: [], lean: 0, fat: 0, protein: 0 }; s.event = null; E.endDay(s); E.beginDay(s); s.event = null; s.storm = s.rain = false; s.firewood = 20; s.fire = true; } return !s.stores.some(x => x.id === 'salmon'); };
+  check('cold-smoked fresh fish can spoil in mild weather before it dries; hot-smoked lasts', spoils('cold') && !spoils('hot'));
+  const flare = mode => rate(600, i => { const s = camp('US-S2', 2000 + i, ['Ferro rod', 'Axe']); s.fire = true; s.crafts.smoker = 2; s.stores.push({ id: 'salmon', por: 6, left: 4, smoked: false }); E.act(s, 'smoke', { extra: { mode } }); s.event = null; s.firewood = 10; E.endDay(s); return s.today.night.some(l => /smoker went up in flames/.test(l[0])); });
+  check('no flame, no flare-ups in cold smoke', flare('cold') === 0 && flare('hot') > 0);
+}
+{ // the log bridge: floods can tear a log loose; wet logs are slick
+  const torn = rate(1500, i => { const s = camp('US-S2', 3000 + i); s.crafts.bridge = 2; s.lastStorm = s.day; s.event = null; E.endDay(s); E.beginDay(s); return s.spate && s.crafts.bridge === 1; });
+  check('the flood after a storm can tear the bridge', torn > 0.2 && torn < 0.4, torn);
+  const slips = rate(4000, i => { const s = camp('US-S2', 5000 + i); s.rain = true; s.wet = 0; return E.wade(s, true).length > 0; }); check('wet logs are slick now and then', slips > 0.01 && slips < 0.035, slips);
+  const dry = camp('US-S2'); dry.wet = 0; E.wade(dry, true); check('the bridge keeps you dry in dry weather', dry.wet === 0);
+}
+{ // splints
+  const s = camp(); s.conditions.push({ name: 'Broken wrist from a fall', days: 14, dmg: 1.6 }); s.mats.poles = 1; s.mats.cordage = 1; check('splinting offered', E.available(s, 'splint').ok); E.act(s, 'splint');
+  const c = s.conditions.find(x => /wrist/.test(x.name)); check('a splint halves the pain and shortens it', c.splinted && Math.abs(c.dmg - 0.8) < 1e-9 && c.days === 11, JSON.stringify(c));
+  const t = camp(); t.conditions.push({ name: 'Sprained ankle from a fall', days: 6, dmg: 1 }); t.mats.bark = 2; t.mats.cordage = 1; E.act(t, 'splint', { extra: { good: false } }); const d = t.conditions[t.conditions.length - 1]; check('set crooked, it takes longer', d.days === 9, d.days);
+  check('nothing to splint, not offered', !E.available(camp(), 'splint').ok);
+}
 console.log(fails ? `${fails} check(s) failed, ${passes} passed.` : `All ${passes} checks passed.`); process.exit(fails ? 1 : 0);

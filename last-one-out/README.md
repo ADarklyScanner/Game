@@ -161,6 +161,12 @@ The crafts added in the realism update are now done by hand. How well you do it 
 
 The rest of the crafting is done by hand too: carving a bow drill, twisting a handline, grinding gorge hooks, charring a digging stick, tying a lure, knotting a net, lashing a smoker, food cache, woodshed and log bridge, staking a fish trap, punching a can stove, laying a clay chimney, pounding pemmican, bending and lacing snowshoes, and sewing mittens. Where a sloppy job matters, it costs: slack snowshoe lacing sags, loose mitten stitches let the cold in, a well or badly lashed cache is stronger or weaker against animals, gaps in a fish trap let fish out, badly mixed pemmican goes rancid in a couple of months, and a rough chimney fouls with soot faster.
 
+## Smoking, bridges and splints (Nov 1, 2026)
+
+- **Hot or cold smoke:** "Hot smoke" works as before: it cooks the outside, so the meat is safe for a few days, and dries it fastest, but fatty drips can flare. "Cold smoke" is a smoulder with no flame: half the wood and no flare-ups, but it does not cook the meat and dries it slower, so fresh fish can spoil in mild weather before it is dry.
+- **The log bridge:** the flood the morning after a storm can tear a log loose (about a third of the time); it needs re-lashing. Wet logs are slick and now and then put you in to the thighs.
+- **Splint the injury** (new, hands-on): for a sprain or a broken bone. It halves the pain and takes three days off; set crooked, it adds three. A bad unroped fall from the rock can now break a wrist rather than always ending the run.
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.

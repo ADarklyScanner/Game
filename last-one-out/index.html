@@ -430,7 +430,8 @@ const SAY = { storm: "Mare's tails high up this afternoon, a ring round the moon
 function thinIce(s) { const f = season(s).climate.freeze; return frozen(s) && f != null && s.day - f < 10; }
 // wading the ford: wet to the knees, and now and then a slip on the stones. A staff to lean on cuts the slips by four fifths; the log bridge keeps you dry
 function wade(s, bridge) {
-  const L = []; if (bridge || frozen(s) || s.status !== 'playing') return L;
+  const L = []; if (s.status !== 'playing' || frozen(s)) return L;
+  if (bridge) { if ((s.rain || s.storm || s.fog) && chance(s, 0.02)) { s.wet = Math.min(1, s.wet + 0.6); s.morale = Math.max(0, s.morale - 2); L.push(['Your boots went out from under you on the wet logs and you went in to the thighs.', 'warn']); } return L; }
   s.wet = Math.min(1, s.wet + 0.25); if (temperature(s) < 5) s.morale = Math.max(0, s.morale - 0.5);
   if (chance(s, 0.04 * (s.crafts.staff >= 1 ? 0.2 : 1))) { s.wet = 1; s.morale = Math.max(0, s.morale - 3); s.health = Math.max(1, s.health - 2); L.push(['A stone rolled under your foot mid-river and you went down to the chest. Soaked through and shaking.', 'bad']); }
   return L;
@@ -492,7 +493,7 @@ function sysOf(s) { if (!s.sys || typeof s.sys !== 'object' || Array.isArray(s.s
 // how much water a hanging piece loses in a day, before any random events
 function dryRate(s, where, x) {
   const T = temperature(s); const sys = sysOf(s);
-  if (where === 'smoker' && sys.smoking > 0) return x.thick ? 0.13 : 0.2; // a steady smoky fire: warm, dry air through the meat
+  if (where === 'smoker' && sys.smoking > 0) return sys.smokeMode === 'cold' ? (x.thick ? 0.08 : 0.12) : (x.thick ? 0.13 : 0.2); // a steady smoky fire: warm, dry air through the meat; a cold smoulder dries slower
   let r = T >= 20 ? 0.2 : T >= 10 ? 0.15 : T >= 0 ? 0.09 : 0.05; // below freezing it still dries, slowly, as the ice goes off it
   if (s.wind || s.storm) r *= 1.3; if (s.heat) r *= 1.2;
   if (where === 'rack' && s.fire) r += 0.03;
@@ -535,7 +536,7 @@ function keepFood(s, T, lines) {
   const damp = rack.filter(x => x.moist > 0.3);
   if (damp.length && sys.rackRoof && s.wetStreak >= 3 && chance(s, 0.25)) { for (const x of damp) x.left = Math.max(1, x.left - 2); lines.push(['Grey fuzz on the meat on the rack after days of wet air. Wipe it off and hope for sun.', 'warn']); }
   // fat dripping onto the coals flares up unless a pot or pan under the meat catches it
-  if (sys.smoking > 0 && !(potLike(s) || has(s, 'Frying pan'))) { const fatty = s.stores.filter(x => x.where === 'smoker' && DATA.foods[x.id].ing.includes('fat'));
+  if (sys.smoking > 0 && sys.smokeMode !== 'cold' && !(potLike(s) || has(s, 'Frying pan'))) { const fatty = s.stores.filter(x => x.where === 'smoker' && DATA.foods[x.id].ing.includes('fat'));
     if (fatty.length && chance(s, 0.1)) { let lost = 0; for (const x of fatty) { const l = round1(x.por * 0.3); x.por = round1(x.por - l); lost += l * DATA.foods[x.id].kcal; } s.crafts.smoker = 1; sys.smoking = 0; s.morale -= 4;
       lines.push([`Fat dripped onto the coals and the smoker went up in flames. You knocked it down and saved most of the fish, but ${Math.round(lost).toLocaleString('en-US')} kcal burned and the frame needs rebuilding. Something under the meat would have caught the drips.`, 'bad']); } }
   if (sys.smoking > 0) sys.smoking -= 1;
@@ -651,6 +652,7 @@ const ACTIONS = {
   craft_reflector: { label: 'Build a fire reflector', hours: 1.5, effort: 'moderate', group: 'Build' },
   craft_platform: { label: 'Build a raised bed frame', hours: 2, effort: 'moderate', group: 'Build' },
   work_hide: { label: 'Scrape and soften a hide', hours: 2, effort: 'moderate', group: 'Camp', where: 'camp' },
+  splint: { label: 'Splint the injury', hours: 1, effort: 'light', group: 'Camp', where: 'camp' },
   dig_latrine: { label: 'Dig a latrine', hours: 1, effort: 'moderate', group: 'Camp', where: 'camp' },
   climb: { label: 'Climb the rock for a look around', hours: 1.5, effort: 'heavy', group: 'Materials', where: 'any' },
   craft_stoneblade: { label: 'Knap a stone blade', hours: 1, effort: 'light', group: 'Build' },
@@ -700,7 +702,7 @@ function inSeason(s, id) {
 }
 
 // jobs you can do after dark by firelight or inside, two and a half hours of them at most
-const NIGHT_OK = ['craft_stoneblade', 'craft_mat', 'craft_bow', 'tiller_bow', 'work_hide', 'craft_leader', 'mend', 'read_sky', 'shape_pot', 'craft_lamp', 'fix_axe', 'render_fat', 'melt_snow', 'whittle', 'cordage', 'talk_camera', 'read_letter', 'sharpen', 'boil', 'needle_tea', 'bone_broth', 'rest', 'craft_hooks', 'craft_arrows', 'craft_lure', 'craft_bowdrill', 'craft_handline', 'clean', 'cook', 'light_fire', 'dry', 'fire_in', 'tend_fire', 'craft_mittens', 'craft_pemmican'];
+const NIGHT_OK = ['splint', 'craft_stoneblade', 'craft_mat', 'craft_bow', 'tiller_bow', 'work_hide', 'craft_leader', 'mend', 'read_sky', 'shape_pot', 'craft_lamp', 'fix_axe', 'render_fat', 'melt_snow', 'whittle', 'cordage', 'talk_camera', 'read_letter', 'sharpen', 'boil', 'needle_tea', 'bone_broth', 'rest', 'craft_hooks', 'craft_arrows', 'craft_lure', 'craft_bowdrill', 'craft_handline', 'clean', 'cook', 'light_fire', 'dry', 'fire_in', 'tend_fire', 'craft_mittens', 'craft_pemmican'];
 function nightOk(s, id) { const A = ACTIONS[id]; return !!A && NIGHT_OK.includes(id) && (s.fire || lampOk(s) || (canWorkInside(s) && DARK_OK.includes(id)) || id === 'light_fire') && (s.nightHours || 0) + A.hours <= 2.5; }
 // Returns {ok, why, odds} for one action in the current state.
 function available(s, id) {
@@ -812,6 +814,7 @@ function available(s, id) {
     case 'bury': { const o = (s.sys && s.sys.offal) || 0; return o < 0.5 ? r(false, 'No gut pile') : r(true, '', digger(s) ? 'a proper pit, covered' : 'a shallow scrape by hand'); }
     case 'scrub': { const k = (s.sys && s.sys.taint) || 0; return k <= 0 ? r(false, 'Nothing to scrub') : !s.fire ? r(false, 'Needs a fire for hot ash') : r(true, '', 'hot ash and sand'); }
     case 'work_hide': return s.mats.hide < 1 ? r(false, 'No hide') : !blade(s) && !(s.mats.stone >= 1) ? r(false, 'Needs a knife or a stone to scrape with') : r(true, '', `soft leather · ${(s.sys && s.sys.leather) || 0} made`);
+    case 'splint': { const c = s.conditions.find(x => /sprain|broken|fracture/i.test(x.name) && !x.splinted); if (!c) return r(false, 'Nothing to splint'); if (!(s.mats.poles >= 1 || s.mats.bark >= 2)) return r(false, 'Needs a pole or 2 bark for the splint'); if (s.mats.cordage < 1) return r(false, 'Needs cordage to bind it'); return r(true, '', `${low(c.name)} · heals faster held still`); }
     case 'dig_latrine': return latrineOk(s) ? r(false, 'The latrine is fine for now') : s.day < 2 ? r(false, 'Not yet needed') : r(true, '', digger(s) ? 'downhill, well away from the water' : 'a shallow trench by hand, away from the water');
     case 'climb': return s.storm || s.wind ? r(false, 'Too much wind up there') : (s.sys && s.sys.climbDay === s.day) ? r(false, 'Once is enough today') : r(true, '', `${climbAnchor(s) ? 'roped' : 'no rope'} · ${(fallChance(s) * 100).toFixed(fallChance(s) < 0.01 ? 1 : 0)}% chance of a fall${s.rain || s.snowfall || s.fog || frozen(s) ? ' · the rock is slick' : ''}`);
     case 'craft_stoneblade': return (has(s, 'Knife') || has(s, 'Multitool')) ? r(false, 'You have a knife') : s.crafts.stoneblade >= 1 ? r(false, 'Made') : flintOf(s) < 1 ? r(false, 'Needs fine-grained stone (look among the stones you gather)') : s.mats.stone < 1 ? r(false, 'Needs a hammerstone') : r(true, '', 'a sharp edge, brittle · it can shatter');
@@ -1008,7 +1011,7 @@ function beginDay(s) {
   if (s.storm) lines.push([s.hail ? 'A storm, and hail with it: the ground goes white for an hour and the fish go deep.' : s.thunder ? 'Thunder rolling in off the hills all day. Lightning on the ridge.' : pick1(s, ['A storm blows through.', 'Gale from the west. Trees down in the night.', 'Sideways rain and a wind that finds every gap in the walls.']), 'bad']); else if (s.rain) lines.push([s.wetStreak >= 3 ? `Rain again. ${s.wetStreak} days of it now, and the ground is a sponge.` : s.thunder ? 'Rain with thunder behind it.' : pick1(s, ['Rain all day.', 'Grey drizzle from first light.', 'Cold rain, on and off.']), 'muted']); else if (s.snowfall) lines.push(['Snowing. Fresh sign on every trail.', 'info']); else if (s.fog) lines.push(['Fog to the ground. Nothing to shoot at until it lifts.', 'muted']); else if (s.wind) lines.push(['A hard wind all day. Casting is poor and the fire eats wood.', 'muted']); else if (s.heat) lines.push(['A hot one. Nothing moves at midday, and you will drink more.', 'warn']);
   for (const w of s.windows) if (w.from === s.day) lines.push([w.text, w.id === 'freezeup' || w.id === 'redtide' ? 'warn' : 'good']);
   if (se.climate.snow && s.day === se.climate.snow - 8) lines.push(['First hard frost. The greens are gone black; the cranberries just got sweet.', 'info']);
-  if (s.storm && s.day > 1 && !s.snowfallPrev) {} s.spate = (s.day - s.lastStorm === 1) && !frozen(s) && se.climate.water !== 'scarce'; if (s.spate) lines.push(['The river is up and brown after the storm. The ford will not go today.', 'warn']);
+  if (s.storm && s.day > 1 && !s.snowfallPrev) {} s.spate = (s.day - s.lastStorm === 1) && !frozen(s) && se.climate.water !== 'scarce'; if (s.spate) { lines.push(['The river is up and brown after the storm. The ford will not go today.', 'warn']); if (s.crafts.bridge >= 2 && chance(s, 0.3)) { s.crafts.bridge = 1; lines.push(['The flood tore one of the bridge logs loose from its lashings. It needs re-lashing before it will take your weight.', 'bad']); } }
   if (s.setlines) { s.setlines = false; const lg = s.lineGear || { hooks: 2, cord: true, line: 0 }; s.lineGear = null; let lostHooks = 0; const iced = frozen(s) && temperature(s) < -15; for (let k = 0; k < lg.hooks; k++) if (chance(s, iced ? 0.4 : 0.12)) lostHooks++; if (iced && lostHooks) lines.push(['The set-line holes froze solid overnight with the lines in them.', 'muted']); s.hooks += lg.hooks - lostHooks; if (lg.cord) s.mats.cordage += 2; else s.line += lg.line; if (lostHooks) { s.stats.hooksLost += lostHooks; lines.push([`Pulled the set lines in. ${lostHooks === 1 ? 'One hook' : 'Both hooks'} snagged and gone.`, 'muted']); } if (chance(s, 0.4 * se.mult.fish * stockOf(s, 'lake'))) { const n = 1 + Math.floor(rnd(s) * 2); takeStock(s, 'lake', n); for (let k = 0; k < n; k++) addRaw(s, pickW(s, se.pools.fish), lines, 'On the set lines:'); } else lines.push(['The set lines were bare, bait gone.', 'muted']); }
   if (snowy(s) && !s.storm && !s.fog && !s.snowfall && !has(s, 'Sunglasses') && chance(s, 0.03) && !s.conditions.some(c => /Snow blind/.test(c.name))) { s.conditions.push({ name: 'Snow blindness', days: 2, dmg: 1 }); s.morale -= 4; lines.push(['Bright sun on new snow all day yesterday. Your eyes feel full of sand and the world is a glare.', 'bad']); }
   if (s.snowfall) s.wet = Math.min(1, s.wet + 0.15);
@@ -1263,21 +1266,22 @@ function doAction(s, id, lines, mod, opts) {
     }
     case 'smoke': {
       let n = 0; if (s.hideRaw) { lines.push([`Hung ${s.hideRaw} hide${s.hideRaw > 1 ? 's' : ''} in the smoke to dry.`, 'info']); s.hideRaw = 0; s.hideAge = 0; }
-      const before = new Set(s.stores.filter(x => x.where === 'smoker')); n = hang(s, 'smoker');
-      // the first hot smoke cooks and seals the outside: a few safe days even before it is dry
-      for (const x of s.stores) if (x.where === 'smoker' && !before.has(x)) x.left = Math.max(x.left, 4);
-      s.firewood = Math.max(0, s.firewood - 0.5); sysOf(s).smoking = 2; s.sys.litDay = s.day; s.stats.smoked = (s.stats.smoked || 0) + n;
+      const cold = X.mode === 'cold'; const before = new Set(s.stores.filter(x => x.where === 'smoker')); n = hang(s, 'smoker');
+      // hot smoke cooks and seals the outside: a few safe days even before it is dry. Cold smoke is a smoulder: no cooking, slower, less wood
+      if (!cold) for (const x of s.stores) if (x.where === 'smoker' && !before.has(x)) x.left = Math.max(x.left, 4);
+      s.firewood = Math.max(0, s.firewood - (cold ? 0.25 : 0.5)); sysOf(s).smoking = 2; s.sys.smokeMode = cold ? 'cold' : 'hot'; s.sys.litDay = s.day; s.stats.smoked = (s.stats.smoked || 0) + n;
       const inS = onStation(s, 'smoker'); const w = Math.round(100 * Math.max(...s.stores.filter(x => x.where === 'smoker').map(x => x.moist)));
-      lines.push([n > 0 ? `Cut ${Math.round(n)} portion${Math.round(n) === 1 ? '' : 's'} into strips and hung them in the smoker over a low, smoky fire. It needs feeding to keep going, and two or three days to dry right through.` : `Fed the smoker and damped the fire down to smoke. ${Math.round(inS)} portions inside, about ${w}% water.`, 'good']);
+      lines.push([n > 0 ? `Cut ${Math.round(n)} portion${Math.round(n) === 1 ? '' : 's'} into strips and hung them in the smoker over ${cold ? 'a cool smoulder of punk wood and green boughs, no flame' : 'a low, smoky fire'}. It needs feeding to keep going, and two or three days to dry right through.` : `Fed the smoker and damped the fire down to smoke. ${Math.round(inS)} portions inside, about ${w}% water.`, 'good']);
       break;
     }
     case 'boil': s.potWater -= 1; s.boiled = 2; lines.push([`Boiled a pot of water. Safe to drink for a day${s.potWater ? ` (${s.potWater} more at camp)` : ''}.`, 'info']); break;
     case 'water': { const cap = waterCap(s); if (season(s).climate.water === 'scarce') { s.water = cap ? 3 : 1; s.potWater = cap; lines.push([cap ? 'Hauled water from the pool. Enough to drink for three days.' : 'Drank your fill at the pool. Nothing to carry any back in.', 'info']); } else { s.potWater = cap; lines.push([`Carried ${cap === 1 ? 'a potful' : cap + ' potfuls'} of water back to camp.`, 'info']); } break; }
     case 'work_hide': { const sys = sysOf(s); if (X.good === false && chance(s, 0.35)) { s.mats.hide -= 1; lines.push(['Scraped too hard in one place and went right through the skin. The hide tore along the cut and is only good for scraps.', 'bad']); break; } s.mats.hide -= 1; sys.leather = (sys.leather || 0) + 1; lines.push([`Scraped the last fat and membrane off over a log, rubbed it with ${s.stores.some(x => x.id === 'organ') ? 'brains and liver' : 'fat'}, then pulled and worked it over a pole as it dried until it went soft and white.`, 'good']); break; }
+    case 'splint': { const c = s.conditions.find(x => /sprain|broken|fracture/i.test(x.name) && !x.splinted); if (s.mats.poles >= 1) s.mats.poles -= 1; else s.mats.bark -= 2; s.mats.cordage -= 1; c.splinted = true; c.dmg *= 0.5; if (X.good === false) { c.days += 3; lines.push(['Splinted and bound it, but it is set a little crooked. It will be stiff a while longer.', 'warn']); } else { c.days = Math.max(3, c.days - 3); lines.push(['Padded it with moss, laid split wood either side and bound it firm. The throbbing eases once it cannot move.', 'good']); } break; }
     case 'dig_latrine': { const sys = sysOf(s); sys.latrineDay = s.day; lines.push([digger(s) ? 'Dug a deep trench downhill from camp and well away from the water, with a pile of earth and a stick to cover each use.' : 'Scraped a trench by hand downhill from camp, well away from the water. It will do.', 'info']); break; }
     case 'climb': {
       const sys = sysOf(s); sys.climbDay = s.day;
-      if (chance(s, fallChance(s))) { const serious = !climbAnchor(s) && chance(s, 0.15); if (serious) { end(s, 'medical', 'Medically evacuated: fell from the rock face.'); lines.push(['A handhold broke away and you fell the height of a house onto the scree. The medics came for you.', 'bad']); break; }
+      if (chance(s, fallChance(s))) { const serious = !climbAnchor(s) && chance(s, 0.15); if (serious && chance(s, 0.5)) { s.conditions.push({ name: 'Broken wrist from a fall', days: 14, dmg: 1.6 }); s.health -= 12; s.morale -= 10; lines.push(['A handhold broke away and you fell onto the scree. Your wrist is wrong: swollen and bent where it should not bend. Splint it.', 'bad']); break; } if (serious) { end(s, 'medical', 'Medically evacuated: fell from the rock face.'); lines.push(['A handhold broke away and you fell the height of a house onto the scree. The medics came for you.', 'bad']); break; }
         s.conditions.push({ name: 'Sprained ankle from a fall', days: 6, dmg: 1 }); s.health -= 6; s.morale -= 6; lines.push([climbAnchor(s) ? 'Your foot slipped on the wet rock and the rope caught you, but not before you smashed an ankle into the face.' : 'A hold crumbled and you slid down the face on your front, landing hard on one foot.', 'bad']); break; }
       sys.lookout = s.day; s.morale += 4; lines.push(['From the top the whole country is laid out: the shore, the river, the timber, the bare ground beyond. You fix it in your head.', 'good']); break;
     }
@@ -2909,7 +2913,7 @@ function interactions() {
     if (!S.shelterGoal) { if (E.shelterOptions(S).length) out.push({ label: S.shelterType ? 'Upgrade shelter' : 'Build shelter', sub: S.shelterType ? 'pick what to build next' : 'pick a design', fn: openShelterChoice }); }
     else if (push('shelter', null, startBuild)) out[out.length - 1].sub = E.available(S, 'shelter').odds;
     else { const miss = E.shelterMissing(S); if (miss && miss.length) out.push({ label: `${E.SHELTERS[S.shelterGoal].name}`, sub: 'Needs ' + miss.join(', '), fn: openShelterChoice, dim: true }); }
-    push('cook'); push('melt_snow'); if (S.cachePlace === 'camp') push('repair_cache'); push('fire_in'); push('fire_out'); push('mend', null, () => startCraft('mend')); push('work_hide', null, () => startCraft('work_hide')); push('smoke_clothes'); push('read_sky'); push('shape_pot', null, () => startCraft('shape_pot')); push('fire_pots', null, () => startCraft('fire_pots')); push('clear_roof'); push('dig_latrine'); push('bed', null, () => startCraft('bed')); push('bury'); push('scrub'); push('check_roof'); push('caulk', null, () => startCraft('caulk')); push('fix_axe'); push('repair', null, startRepair); push('boil'); push('needle_tea'); push('bone_broth'); push('dry'); push('smoke'); push('dry_food'); push('render_fat'); push('talk_camera'); push('cordage', null, startCordage); push('sharpen', null, startSharpen); push('rest');
+    push('cook'); push('melt_snow'); if (S.cachePlace === 'camp') push('repair_cache'); push('fire_in'); push('fire_out'); push('mend', null, () => startCraft('mend')); push('work_hide', null, () => startCraft('work_hide')); push('smoke_clothes'); push('read_sky'); push('shape_pot', null, () => startCraft('shape_pot')); push('fire_pots', null, () => startCraft('fire_pots')); push('clear_roof'); push('splint', null, () => startCraft('splint')); push('dig_latrine'); push('bed', null, () => startCraft('bed')); push('bury'); push('scrub'); push('check_roof'); push('caulk', null, () => startCraft('caulk')); push('fix_axe'); push('repair', null, startRepair); push('boil'); push('needle_tea'); push('bone_broth'); push('dry'); if (push('smoke', 'Hot smoke', () => doAct('smoke', { mode: 'hot' }))) { const ref = out[out.length - 1]; push('smoke', 'Cold smoke', () => doAct('smoke', { mode: 'cold' })); if (out[out.length - 1] !== ref) out[out.length - 1].sub = 'a smoulder, no flame · slower, less wood, does not cook it'; } push('dry_food'); push('render_fat'); push('talk_camera'); push('cordage', null, startCordage); push('sharpen', null, startSharpen); push('rest');
     if (Object.keys(E.ACTIONS).some(k => k.startsWith('craft_') && av(k).ok)) out.push({ label: 'Craft…', sub: '', fn: () => openBuild(false) });
     return overflow(out);
   }
@@ -3406,6 +3410,7 @@ function startPour(id, inside) {
 function startCraft(id, inside, extra) {
   const ring = n => Array.from({ length: n }, (_, i) => [150 + 70 * Math.cos(i / n * 6.283), 50 + 30 * Math.sin(i / n * 6.283)]);
   const P = {
+    splint: () => startTaps(id, [[90, 35], [150, 35], [210, 35], [120, 65], [180, 65]], `<rect x="60" y="40" width="180" height="20" rx="8" fill="#d8b89a"/><rect x="60" y="30" width="180" height="6" fill="#8a6a44"/><rect x="60" y="64" width="180" height="6" fill="#8a6a44"/>`, 'Hold it straight and bind each wrap, firm but not tight.', { inside }),
     craft_bowdrill: () => startStrokes(id, { need: 6, inside, art: `<rect x="40" y="38" width="220" height="14" rx="4" fill="#a08060"/><rect x="40" y="62" width="220" height="10" rx="3" fill="#8a6a44"/>`, intro: 'Carve the spindle round and true with long strokes, then the notch in the board.', rough: 'Gouged it. Slower.' }),
     craft_handline: () => startSteps(id, { steps: ['Twist', 'Fold'], need: 6, inside, intro: 'Twist the line tight, fold it back on itself. Then carve the gorges.' }),
     craft_hooks: () => startStrokes(id, { need: 5, inside, art: `<rect x="40" y="58" width="220" height="16" rx="4" fill="#6a6a66"/><path d="M 140 30 L 170 30 L 172 40 L 138 40 Z" fill="#e8e0c8"/>`, y: 36, intro: 'Grind the bone splinter to a point on the stone, both ends.', rough: 'Too hard. It will snap.' }),

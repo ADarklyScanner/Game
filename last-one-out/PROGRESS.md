@@ -41,6 +41,10 @@ fire reflector, bed frame and raft, knapping a stone blade, weaving a door mat, 
 The older crafts are hands-on too: bow drill, handline, gorge hooks, digging stick, lure, net, smoker, food cache, fish trap, can stove,
 clay chimney, woodshed, log bridge, pemmican, snowshoes and mittens.
 
+## Smaller details
+
+Hot and cold smoking, bridges torn loose by floods and slick when wet, and splints for sprains and broken bones: done.
+
 ## Left out on purpose
 
 Things that only pay off over a longer time than a run lasts: farming and crop growing, bark girdling (it kills a tree over years), and the plan's general job scheduler and kilogram material lots (internal plumbing with nothing to show a player).
