@@ -8,6 +8,7 @@ function makeBot(E, s, opts = {}) {
     if ((s.sys && s.sys.axeOff) || (E.haftOf ? E.haftOf(s) : 1) < 0.35) pri.push('fix_axe');
     if (s.axeEdge < 0.5) pri.push('sharpen');
     if (((s.bagHoles || 0) > 0 || (E.clothesOf ? E.clothesOf(s) : 1) < 0.6) && s.phase >= 2) pri.push('mend');
+    if (s.mats.tinder < 2) pri.push('tinder'); // keep something to light a fire with
     if (!s.fire) pri.push('light_fire');
     if (s.firewood < 6) pri.push('firewood');
     if (s.shelterLvl < 3) pri.push('shelter', 'cut_poles', 'boughs', 'cut_logs', 'moss', 'bark');
@@ -28,11 +29,11 @@ function makeBot(E, s, opts = {}) {
     if (s.shelterLvl >= 2 && (E.sealOf ? E.sealOf(s) : 1) < 0.4) pri.push('caulk'); // re-chink when the seal is poor, not at every crack
     if (s.sys && s.sys.soot > 0.5) pri.push('check_roof');
     if (s.crafts.hearth !== 1 && s.mats.stone < 6 && s.day > 3) pri.push('stones');
-    pri.push('craft_pemmican', 'cordage', 'checknet', 'setnet', 'checktraps', 'fish', ...(E.available(s, 'snares').ok && E.ACTIONS.scout && !(s.sys && s.sys.scoutDay === s.day) ? ['scout'] : []), 'snares', 'setlines', 'berries', 'shellfish', 'roots', 'greens', 'forage', 'cattail', 'hunt', 'boil', 'water');
+    pri.push('craft_pemmican', 'cordage', 'checknet', 'setnet', 'checktraps', 'fish', ...(E.available(s, 'snares').ok && E.ACTIONS.scout && !(s.sys && s.sys.scoutDay === s.day) ? ['scout'] : []), 'snares', 'setlines', 'berries', 'shellfish', ...(E.ACTIONS.inspect && !(s.sys && s.sys.inspectDay === s.day) && (E.available(s, 'roots').ok || E.available(s, 'greens').ok) ? ['inspect'] : []), 'roots', 'greens', 'forage', 'cattail', 'hunt', 'boil', 'water');
     for (const p of pri) { if (s.today.done.filter(x => x === p).length >= 2) continue; if (ok(p)) return p; }
     return null;
   };
-  policy.event = () => 0;
+  policy.event = x => x.event && x.event.id === 'strangeberries' ? Math.max(0, x.event.optIds.indexOf(2)) : 0; // a sensible player leaves berries they do not know
   return policy;
 }
 // the food-preservation actions; 'core' baseline games never use them

@@ -167,6 +167,18 @@ The rest of the crafting is done by hand too: carving a bow drill, twisting a ha
 - **The log bridge:** the flood the morning after a storm can tear a log loose (about a third of the time); it needs re-lashing. Wet logs are slick and now and then put you in to the thighs.
 - **Splint the injury** (new, hands-on): for a sprain or a broken bone. It halves the pain and takes three days off; set crooked, it adds three. A bad unroped fall from the rock can now break a wrist rather than always ending the run.
 
+## Learning by consequence (Nov 1, 2026)
+
+The game never tells you how to survive; things happen, and the journal keeps track.
+- **Field notes:** the journal now opens with notes on what you tried and what came of it: mushrooms you ate and what they looked like, worms from a meal days earlier, a plant that made you sick, a test that came back clean.
+- **Look-alike plants:** now and then a root or a handful of greens is the wrong plant, and it makes you badly sick. "Look closely before you pick" (15 minutes) makes that rare for the rest of the day. The details are invented on purpose, so nobody takes them as a real-world rule.
+- **Berries you do not know:** eat a handful (about a third of the time you are sick), spend the rest of the day testing them (right about three times in four, never certain), or leave them.
+- **Cold that creeps up:** after wet or exposed nights with no fire in a row: hard shivering, then clumsy hands the next day (a fire is harder to light), then slurred words and a strange warmth. One warm night breaks it.
+- **Smoke in a shut cabin:** a fire inside a sealed cabin with no chimney or stove gives dull headaches and heavy sleep; sealed tight with a door mat, now and then you wake confused and sick.
+- **Direction:** a shadow stick on a sunny morning gives you a heading that keeps you on course for the rest of the day, even in fog later. Checking which side the moss grows on tells you nothing; it grows on every side here.
+- **Fixed while testing:** getting lost had briefly become certain on every check because of a code slip; caught by the new tests.
+- **Balance:** the test bot now gathers tinder so it can relight its fire (before, it often could not, which skewed every comparison). Against the original game played by the same bot: median 56 days both, mean 56.4 vs 55.9.
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.

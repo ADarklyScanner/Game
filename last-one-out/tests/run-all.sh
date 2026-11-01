@@ -16,6 +16,7 @@ node mend.js
 node bowmap.js
 node crafts.js
 node finish.js
+node conseq.js
 node balance.js
 node fuzz.js 20
 node ui-check.js

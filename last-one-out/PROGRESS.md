@@ -45,6 +45,10 @@ clay chimney, woodshed, log bridge, pemmican, snowshoes and mittens.
 
 Hot and cold smoking, bridges torn loose by floods and slick when wet, and splints for sprains and broken bones: done.
 
+## Learning by consequence
+
+Field notebook, look-alike plants and looking closely, unknown berries (eat, test for a day, or leave), cold that creeps up in stages, smoke in a shut cabin, shadow stick vs the moss rule: done.
+
 ## Left out on purpose
 
 Things that only pay off over a longer time than a run lasts: farming and crop growing, bark girdling (it kills a tree over years), and the plan's general job scheduler and kilogram material lots (internal plumbing with nothing to show a player).
@@ -52,6 +56,6 @@ Things that only pay off over a longer time than a run lasts: farming and crop g
 ## Rules every phase follows
 
 - `tests/run-all.sh` must pass before anything is published.
-- Bot survival (median and mean over 1,020 games) must stay within 5% of the original game: median 49, mean 49.9 days.
-- Standing after Phase 9: median 48 (-2.0%), mean 48.1 (-3.6%). Later phases need to add realistic advantages as well as hazards to stay inside the limit.
+- Bot survival (median and mean over 1,020 games) must stay within 5% of the original game played by the same bot: median 56, mean 56.4 days.
+- Standing now: median 56 (0.0%), mean 55.9 (-0.9%).
 - Saves from older versions must keep loading.

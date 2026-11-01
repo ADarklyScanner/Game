@@ -1,24 +1,24 @@
 {
- "median": 49,
- "mean": 49.9,
+ "median": 56,
+ "mean": 56.4,
  "places": {
-  "US-S1": 43,
-  "US-S2": 42,
-  "US-S3": 42,
-  "US-S5": 35,
-  "US-S6": 78,
-  "US-S7": 77,
-  "US-S8": 70,
-  "US-S9": 69,
-  "US-S10": 49,
+  "US-S1": 46,
+  "US-S2": 49,
+  "US-S3": 56,
+  "US-S5": 62,
+  "US-S6": 80,
+  "US-S7": 81,
+  "US-S8": 73,
+  "US-S9": 73,
+  "US-S10": 63,
   "US-S11": 64,
-  "US-S12": 19,
-  "US-S13": 78,
-  "US Frozen-S1": 46,
-  "AU-S1": 50,
-  "AU-S2": 35,
-  "AU-S3": 49,
-  "AU-S4": 26
+  "US-S12": 13,
+  "US-S13": 79,
+  "US Frozen-S1": 51,
+  "AU-S1": 55,
+  "AU-S2": 49,
+  "AU-S3": 56,
+  "AU-S4": 28
  },
- "preservedShare": 41
+ "preservedShare": 59
 }
