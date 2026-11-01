@@ -93,6 +93,13 @@ Keeping food now takes real time and can go wrong in real ways.
 - **Thin ice:** for about ten days after freeze-up, fishing or netting on the new ice can put you through it, soaked and chilled.
 - Balance against the original game: median 48 days (was 49), mean 48.2 (was 49.9).
 
+## Clothes and spirits update (Nov 1, 2026)
+
+- **Clothes wear out:** chopping, cutting, hauling boughs, hunting and tracking through brush wear them a little, and storms with no real shelter more. Worn clothes let up to 20% more cold in. The camp panel says when they are worn or in rags.
+- **Mend clothes and bag** (new, by day or by firelight, 1 hour): the first time, carve a bone needle (needs a knife and a bone); each mend uses a length of cordage as thread. It patches a hole in the sleeping bag (until now those were permanent), or puts back 90% of the warmth worn clothes had lost.
+- **Tea by the fire:** a hot drink and a warm fire at the end of the day lifts your spirits.
+- Balance against the original game: median 48 days (was 49), mean 48.1 (was 49.9).
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.

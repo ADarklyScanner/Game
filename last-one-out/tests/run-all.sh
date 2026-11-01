@@ -12,6 +12,7 @@ node hygiene.js
 node shelter.js
 node pottery.js
 node wild.js
+node mend.js
 node balance.js
 node fuzz.js 20
 node ui-check.js

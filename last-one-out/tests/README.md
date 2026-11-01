@@ -18,6 +18,7 @@ Run these before publishing any change. They test the real `../index.html`.
 | `node shelter.js` | Shelter rules: snow on the roof, the fire reflector, the raised bed frame, cabin logs shrinking, snowshoes. | ~3 s |
 | `node pottery.js` | Pottery: shaping, drying, pit firing, and using a clay pot. | ~3 s |
 | `node wild.js` | Reading the land: catches left in snares, forecasting from the sky, smoke on your clothes, thin ice, game sign. | ~10 s |
+| `node mend.js` | Clothes and spirits: wear, mending, sleeping-bag holes, tea by the fire. | ~2 s |
 | `node balance.js` | Survival over 1,020 bot games, per place and overall, against the original game before the realism update (`reference/original-game.html`). Fails if the overall median or mean moves more than 5%. | ~25 s |
 | `node fuzz.js [runs]` | Random play in every place, looking for crashes, broken numbers and days that never end. | ~10 s |
 | `node ui-check.js` | Opens the page in a headless browser at phone width: starts a new run, loads saves from older versions, and shows late-game and win, pulled-out and tap-out screens in every place. Fails on any page error. | ~3 min |

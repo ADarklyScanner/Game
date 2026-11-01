@@ -19,7 +19,8 @@ Each phase is committed and published on its own, so stopping between phases nev
 | 7 | Pottery: shape with or without grit, dry for days (rain undoes it, fast drying cracks plain clay), pit-fire (damp pots burst); a fired clay pot boils, stews and carries water like a small pot and cracks now and then | Done |
 | 8 | Reading the land: catches left in snares lost to scavengers (15% a night), reading the sky for tomorrow's weather (65% to 85% with practice), smoking clothes to mask scent for hunting, thin new ice, looking for game sign so snares on real runs catch 50% more | Done (part) |
 | 8 later | Bow tillering, arrow straightening, tackle and leaders, ice holes freezing, downwind hunting, tracks fading in snow, navigation and landmarks, climbing, wading staffs, bear spray, noise, cairns | Left for later |
-| 9 (next) | Textiles, clothing repair, hides, ecology and regrowth, farming, trading, social, mental strain | Not started |
+| 9 | Clothes wear from work and storms and let the cold in; mending with a bone needle restores 90% of the lost warmth and patches sleeping-bag holes (which were permanent); tea by the fire lifts spirits | Done (part) |
+| 9 later | Textiles and weaving, hide tanning and softening, picking patches selectively, farming. Trading and social contact are on hold: the plan gates them behind a review, since they clash with a solo survival game | Left for later |
 
 Not built from the plan's architecture: a general job scheduler, typed material lots in kilograms, and action receipts.
 Each system is built directly on the game's existing rules instead, which keeps saves and balance safe.
@@ -28,5 +29,5 @@ Each system is built directly on the game's existing rules instead, which keeps 
 
 - `tests/run-all.sh` must pass before anything is published.
 - Bot survival (median and mean over 1,020 games) must stay within 5% of the original game: median 49, mean 49.9 days.
-- Standing after Phase 8: median 48 (-2.0%), mean 48.2 (-3.4%). Later phases need to add realistic advantages as well as hazards to stay inside the limit.
+- Standing after Phase 9: median 48 (-2.0%), mean 48.1 (-3.6%). Later phases need to add realistic advantages as well as hazards to stay inside the limit.
 - Saves from older versions must keep loading.

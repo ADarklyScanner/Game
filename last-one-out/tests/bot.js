@@ -7,6 +7,7 @@ function makeBot(E, s, opts = {}) {
     const pri = [];
     if ((s.sys && s.sys.axeOff) || (E.haftOf ? E.haftOf(s) : 1) < 0.35) pri.push('fix_axe');
     if (s.axeEdge < 0.5) pri.push('sharpen');
+    if (((s.bagHoles || 0) > 0 || (E.clothesOf ? E.clothesOf(s) : 1) < 0.6) && s.phase >= 2) pri.push('mend');
     if (!s.fire) pri.push('light_fire');
     if (s.firewood < 6) pri.push('firewood');
     if (s.shelterLvl < 3) pri.push('shelter', 'cut_poles', 'boughs', 'cut_logs', 'moss', 'bark');
