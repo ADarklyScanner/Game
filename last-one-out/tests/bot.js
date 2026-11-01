@@ -5,13 +5,15 @@ function makeBot(E, s, opts = {}) {
   const policy = () => {
     if (!s.shelterGoal || s.shelterGoal === s.shelterType) { const o = E.shelterOptions(s); if (o.length) E.chooseShelter(s, o[o.length - 1]); }
     const pri = [];
-    if ((s.sys && s.sys.axeOff) || E.haftOf(s) < 0.35) pri.push('fix_axe');
+    if ((s.sys && s.sys.axeOff) || (E.haftOf ? E.haftOf(s) : 1) < 0.35) pri.push('fix_axe');
     if (s.axeEdge < 0.5) pri.push('sharpen');
     if (!s.fire) pri.push('light_fire');
     if (s.firewood < 6) pri.push('firewood');
     if (s.shelterLvl < 3) pri.push('shelter', 'cut_poles', 'boughs', 'cut_logs', 'moss', 'bark');
     if (s.carcass) pri.push('dress');
     if (s.raw.length) pri.push('clean', 'cook', 'smoke');
+    if (s.sys && s.sys.offal >= 1) pri.push('bury');
+    if (s.sys && s.sys.taint > 0) pri.push('scrub');
     // build each camp item once when it becomes possible, then use it
     for (const c of ['craft_hearth', ...(s.crafts.smoker >= 2 ? [] : ['craft_rack']), 'craft_smoker', 'craft_cache', 'craft_handline', 'craft_hooks', 'craft_fishtrap', 'craft_woodshed', 'craft_net', 'craft_stove', 'craft_snowshoes', 'craft_mittens']) if (s.day > 3) pri.push(c); // the engine says 'Built' once a craft is finished
     // preserve only a real surplus: a few portions of fresh meat beyond what spoils first
@@ -19,7 +21,8 @@ function makeBot(E, s, opts = {}) {
     if (fresh >= 3) pri.push(s.crafts.smoker >= 2 ? 'smoke' : 'dry_food'); // one station at a time: the smoker once it is built, the rack until then
     if (s.stores.filter(x => x.where === 'smoker').reduce((a, x) => a + x.por, 0) >= 2) pri.push('smoke'); // tend it
     if (s.stores.some(x => x.id === 'fat' && !x.rendered)) pri.push('render_fat');
-    if (s.shelterLvl >= 2 && E.sealOf(s) < 0.4) pri.push('caulk'); // re-chink when the seal is poor, not at every crack
+    if (s.shelterLvl >= 1 && (E.bedOf ? E.bedOf(s) : 1) < 0.3) pri.push('bed', 'boughs');
+    if (s.shelterLvl >= 2 && (E.sealOf ? E.sealOf(s) : 1) < 0.4) pri.push('caulk'); // re-chink when the seal is poor, not at every crack
     if (s.sys && s.sys.soot > 0.5) pri.push('check_roof');
     if (s.crafts.hearth !== 1 && s.mats.stone < 6 && s.day > 3) pri.push('stones');
     pri.push('craft_pemmican', 'cordage', 'checknet', 'setnet', 'checktraps', 'fish', 'snares', 'setlines', 'berries', 'shellfish', 'roots', 'greens', 'forage', 'cattail', 'hunt', 'boil', 'water');

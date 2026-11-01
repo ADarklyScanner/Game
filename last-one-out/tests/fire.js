@@ -59,4 +59,12 @@ const rate = (n, f) => { let k = 0; for (let i = 0; i < n; i++) if (f(i)) k++; r
   check('storms crack the chinking faster', d.sys.seal < e.sys.seal, [e.sys.seal, d.sys.seal]);
   E.moveCamp(c, 500); check('moving camp leaves the chinking and hearth behind', E.sealOf(c) === 0 && !c.crafts.hearth);
 }
+{ // a bough bed keeps the ground cold off; it packs down; moving camp leaves it behind
+  const cold = bed => { const s = camp(FERRO, 'US-S6', 9); s.shelterType = 'leanto'; s.shelterLvl = 1; s.fire = false; s.sys.bed = bed; E.endDay(s); return s.lastDay.cold; };
+  check('a bough bed cuts the night cold', cold(1) < cold(0) * 0.9, [cold(0), cold(1)]);
+  const s = camp(); s.shelterType = 'leanto'; s.shelterLvl = 1; s.mats.boughs = 8; check('a bed takes 8 boughs', E.available(s, 'bed').ok); E.act(s, 'bed'); check('bed laid', E.bedOf(s) === 1 && s.mats.boughs === 0);
+  for (let i = 0; i < 10; i++) { s.event = null; E.endDay(s); E.beginDay(s); s.event = null; } check('it packs down night by night', E.bedOf(s) < 0.8 && E.bedOf(s) > 0.6, E.bedOf(s));
+  s.mats.boughs = 4; s.sys.bed = 0.5; check('4 boughs fluff it up', E.available(s, 'bed').ok); E.act(s, 'bed'); check('fluffed up', E.bedOf(s) === 1 && s.mats.boughs === 0);
+  E.moveCamp(s, 400); check('moving camp leaves the bed behind', E.bedOf(s) === 0);
+}
 console.log(fails ? `${fails} fire check(s) failed, ${passes} passed.` : `All ${passes} fire checks passed.`); process.exit(fails ? 1 : 0);

@@ -57,6 +57,15 @@ Keeping food now takes real time and can go wrong in real ways.
 - **Bone broth** left on the coals with the fire burning all night comes out 45% richer by morning.
 - Balance: median survival over 510 bot games unchanged at 49 days.
 
+## Water, hygiene and bedding update (Nov 1, 2026)
+
+- **Salvaged cans:** an oil drum, fuel can or bleach jug found on the shore still holds water, but water carried in it can make you sick from what it used to hold. Boiling does not help. "Scrub out a salvaged can" (hot ash and sand by the fire) makes it safe.
+- **Hands after butchery:** cleaning a catch or dressing a carcass ends with a rinse. With soap your hands come out clean; with cold water alone a little grease stays and there is a small chance of a stomach bug.
+- **Gut piles:** mammal and bird guts left at camp draw raiders to your food and bring flies in warm weather, fading over about a week. Fish guts go back in the water or the bait tin. "Bury the guts" in a pit (proper with a shovel or digging stick, a shallow scrape by hand) clears it.
+- **Bough bed** (new): 8 boughs, cuts the night cold by up to 15%, packs down over about a month, 4 boughs fluff it back up.
+- **Correction:** a dull axe no longer costs extra energy per hour on top of the wood it already loses. It still slips into your leg more often.
+- Balance against the original game: median 48 days (was 49), mean 47.8 (was 49.9).
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.

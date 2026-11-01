@@ -6,8 +6,8 @@ function camp(gear = GEAR, place = 'US-S6', seed = 3) { const s = E.newGame(plac
 const rate = (n, f) => { let k = 0; for (let i = 0; i < n; i++) if (f(i)) k++; return k / n; };
 
 { // a dull axe costs more effort and slips more
-  const burn = edge => { const s = camp(); s.axeEdge = edge; E.act(s, 'firewood'); return s.today.burn; };
-  check('a dull axe costs more effort', burn(0.2) > burn(1) * 1.2, [burn(1), burn(0.2)]);
+  const wood = edge => { const s = camp(); s.axeEdge = edge; s.firewood = 0; E.act(s, 'firewood'); return s.firewood; };
+  check('a dull axe gets less wood for the same hours (more work per load)', wood(0.2) < wood(1), [wood(1), wood(0.2)]);
   const hurt = edge => rate(1500, i => { const s = camp(GEAR, 'US-S6', 500 + i); s.axeEdge = edge; s.sys.haft = 1; const L = E.act(s, 'cut_logs'); return s.conditions.some(c => /axe glanced/.test(c.name)) || s.status === 'medical'; });
   const sharp = hurt(1), dull = hurt(0.1); check('a dull edge glances off into your leg more often', dull > sharp, [sharp, dull]);
 }
