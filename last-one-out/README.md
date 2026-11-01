@@ -23,6 +23,14 @@ Keeping food now takes real time and can go wrong in real ways.
 - **Older saves**: smoked meat from before counts as dried, so it still makes pemmican. Raw fat has to be rendered first.
 - **Balance**: over 510 bot games the median survival is unchanged (49 days before and after).
 
+## Cooking update (Nov 1, 2026)
+
+- **Bug fixed:** choosing "Raw" with a fire going carried no risk. Raw meat is now risky whether or not there is a fire.
+- **Worms in pig and predator meat:** boar, warthog, fox, wolverine, marten, weasel and otter can carry trichinella. Eaten raw it is about a 15% chance; roasted, thick pieces can stay pink inside (about 3%); a stew in a pot is safe. Drying does not kill them. Symptoms arrive 7 to 12 days later, and the log names the meal and the day.
+- **Raw fish** now carries a small risk of food poisoning (it had none).
+- **The drying rack shows on the map**, with strips that darken as they dry and its roof if it has one.
+- Balance: median survival over 510 bot games unchanged at 49 days.
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.

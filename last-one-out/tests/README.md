@@ -10,6 +10,7 @@ Run these before publishing any change. They test the real `../index.html`.
 |---|---|---|
 | `node baseline.js` | Plays 51 fixed games (3 seeds in every place) with a simple bot and compares a fingerprint of each game at days 5, 25, 50 and the end with the recorded references. **Core** games never preserve food and must never change unless the core rules change on purpose. **Full** games use everything. | ~4 s |
 | `node food.js` | The food-keeping rules: drying on the rack, the smoker, rain, flies, rendering fat, pemmican, older saves. | <1 s |
+| `node cooking.js` | Cooking rules: raw meat and fish, worms in pig and predator meat, what boiling and roasting do. | ~5 s |
 | `node balance.js` | Median survival over 510 bot games, per place and overall. Fails if the overall median moves more than 5% from the reference. | ~12 s |
 | `node fuzz.js [runs]` | Random play in every place, looking for crashes, broken numbers and days that never end. | ~10 s |
 | `node ui-check.js` | Opens the page in a headless browser at phone width: starts a new run, loads saves from older versions, and shows late-game and win, pulled-out and tap-out screens in every place. Fails on any page error. | ~3 min |

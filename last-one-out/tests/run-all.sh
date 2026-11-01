@@ -4,6 +4,7 @@ set -e
 cd "$(dirname "$0")"
 node baseline.js
 node food.js
+node cooking.js
 node balance.js
 node fuzz.js 20
 node ui-check.js

@@ -367,6 +367,9 @@ function addFood(s, id, portions, days, keep) {
   s.stores.push({ id, por: round1(portions), left: d, smoked: false });
 }
 function storeKcal(s) { return s.stores.reduce((a, x) => a + x.por * DATA.foods[x.id].kcal, 0); }
+// meat that can carry trichinella worms: pigs and the animals that eat other animals. Only thorough cooking kills them.
+const WORM_HOSTS = ['boar', 'warthog', 'fox', 'wolverine', 'marten', 'weasel', 'otter'];
+const COOK_RISKS = true;
 function rawKcal(s) { return s.raw.reduce((a, x) => a + x.por * DATA.foods[x.id].kcal, 0); }
 
 // ------------------------------------------------------------------ keeping food: the drying rack and the smoker
@@ -1504,7 +1507,16 @@ function nightAndBody(s, burn, done, lines) {
   const soap = has(s, 'Soap') ? 0.7 : 1;
   const treated = s.boiled > 0 || c.water === 'scarce';
   if (!treated && chance(s, (has(s, 'Pot') || has(s, 'Canteen') ? 0.004 : 0.012) * soap)) sick(s, 'Giardia from untreated water', lines);
-  if (!fire && ate.rawMeat && chance(s, 0.04 * soap)) sick(s, 'Food poisoning from raw meat', lines);
+  if (ate.rawMeat && (!fire || (COOK_RISKS && s.cook === 'raw')) && chance(s, 0.04 * soap)) sick(s, 'Food poisoning from raw meat', lines);
+  if (ate.rawFish && chance(s, 0.02 * soap)) sick(s, 'Food poisoning from raw fish', lines);
+  if (ate.worms && !s.conditions.some(c => c.name === 'Trichinosis') && !((s.sys && s.sys.latent) || []).length && chance(s, ate.wormsRaw ? 0.15 : 0.03)) {
+    const sys = sysOf(s); sys.latent = [{ name: 'Trichinosis', food: ate.worms, ate: s.day, due: s.day + 7 + Math.floor(rnd(s) * 6), raw: !!ate.wormsRaw }];
+  }
+  if (s.sys && s.sys.latent && s.sys.latent.length) {
+    const due = s.sys.latent.filter(l => l.due <= s.day); s.sys.latent = s.sys.latent.filter(l => l.due > s.day);
+    for (const l of due) { s.conditions.push({ name: 'Trichinosis', days: 14, dmg: 1.2 }); s.morale -= 8;
+      lines.push([`Aching muscles, a fever, puffy eyes. It started slow. The ${low(DATA.foods[l.food].name)} you ate ${l.raw ? 'raw' : 'roasted'} on day ${l.ate}, ${s.day - l.ate} days ago, was carrying worms.`, 'bad']); }
+  }
   if (ate.oldMeat && chance(s, 0.03 * soap)) sick(s, 'Stomach bug from old meat', lines);
   if (s.day > 8 && !s.recent.flat().some(t => DATA.foods[t] && DATA.foods[t].kind === 'plant') && !s.conditions.some(c => /Bound up/.test(c.name)) && chance(s, 0.02)) { s.conditions.push({ name: 'Bound up (no greens for a week)', days: 3, dmg: 1 }); s.morale -= 4; lines.push(['A week of nothing but meat. Your guts have stopped. Eat something green.', 'warn']); }
   if (ate.tox) { s.conditions.push({ name: 'Mushroom poisoning', days: 4, dmg: 4 }); s.morale -= 10; lines.push(['Those mushrooms were not what you thought. Vomiting all night.', 'bad']); }
@@ -1574,7 +1586,7 @@ function nightAndBody(s, burn, done, lines) {
 function medicalLimit(s) { const bmi0 = s.weight0 * 0.4536 / 3.17; return clamp(1 - 17.5 / bmi0, 0.22, 0.42); }
 function sick(s, name, lines) { if (s.conditions.some(c => c.name === name)) return; s.conditions.push({ name, days: 5, dmg: 2 }); s.morale -= 6; lines.push([`Sick: ${name.toLowerCase()}.`, 'bad']); }
 
-function mergeAte(a, b) { if (!a) return b; if (!b) return a; const units = Object.assign({}, a.units); for (const k in b.units) units[k] = (units[k] || 0) + b.units[k]; return { kcal: a.kcal + b.kcal, units, types: [...new Set([...a.types, ...b.types])], lean: a.lean + b.lean, fat: a.fat + b.fat, protein: a.protein + b.protein, rawMeat: a.rawMeat || b.rawMeat, oldMeat: a.oldMeat || b.oldMeat, tox: a.tox || b.tox, hard: a.hard || b.hard }; }
+function mergeAte(a, b) { if (!a) return b; if (!b) return a; const units = Object.assign({}, a.units); for (const k in b.units) units[k] = (units[k] || 0) + b.units[k]; return { kcal: a.kcal + b.kcal, units, types: [...new Set([...a.types, ...b.types])], lean: a.lean + b.lean, fat: a.fat + b.fat, protein: a.protein + b.protein, rawMeat: a.rawMeat || b.rawMeat, oldMeat: a.oldMeat || b.oldMeat, tox: a.tox || b.tox, hard: a.hard || b.hard, ...(a.rawFish || b.rawFish ? { rawFish: true } : {}), ...(a.worms || b.worms ? { worms: a.worms || b.worms } : {}), ...(a.wormsRaw || b.wormsRaw ? { wormsRaw: true } : {}) }; }
 // eat from stores up to target kcal; spoiling food first, fat alongside lean meat
 // what has to be carried home, in kg a unit (a 'day' of firewood is about ten kilos of split wood)
 const WEIGHT = { poles: 4, logs: 22, boughs: 1.2, moss: 0.8, stone: 5, clay: 4, firewood: 10 };
@@ -1602,13 +1614,19 @@ function waterCap(s) { return (has(s, 'Pot') ? 2 : 0) + (has(s, 'Canteen') ? 1 :
 // a stew needs a pot of water from the shore; without one the meal goes on the coals instead
 function eatCooked(s, target, L) { const stew = s.cook === 'boil' && has(s, 'Pot') && s.fire; if (stew && !(s.potWater >= 1)) { s.cook = 'roast'; const a = eat(s, target); s.cook = 'boil'; if (a.kcal > 0 && L) L.push(['No water at camp for a stew. Roasted it instead.', 'muted']); return a; } const a = eat(s, target); if (stew && a.kcal > 0) s.potWater -= 1; return a; }
 function eat(s, target) {
-  const units = {}; const types = new Set(); let kcal = 0, lean = 0, fat = 0, protein = 0, rawMeat = false, oldMeat = false, tox = false, hard = false;
+  const units = {}; const types = new Set(); let kcal = 0, lean = 0, fat = 0, protein = 0, rawMeat = false, oldMeat = false, tox = false, hard = false, rawFish = false, worms = null, wormsRaw = false;
   const order = s.stores.slice().sort((a, b) => (a.left - b.left) || (DATA.foods[b.id].kcal - DATA.foods[a.id].kcal));
   const eatOne = (x, por) => {
     const f = DATA.foods[x.id]; x.por = round1(x.por - por); kcal += por * f.kcal; types.add(x.id === 'ration' ? 'ration' : x.id);
     if (x.tox) tox = true;
     if (f.kind === 'fat') fat += por; else if (['game', 'fish', 'shellfish', 'insect'].includes(f.kind)) { if (f.ing.includes('fat')) fat += por * 0.4; else lean += por; }
     if (['game', 'organ'].includes(f.kind) && (!s.fire || s.cook === 'raw') && !x.smoked && !x.dried) rawMeat = true;
+    if (COOK_RISKS) {
+      const raw = !s.fire || s.cook === 'raw';
+      if (['fish', 'shellfish'].includes(f.kind) && raw && !x.smoked && !x.dried) rawFish = true;
+      // drying and cold smoking do not kill the worms; a stew does, and roasting mostly does
+      if (WORM_HOSTS.includes(x.id) && !(s.fire && s.cook === 'boil' && has(s, 'Pot'))) { worms = x.id; if (raw) wormsRaw = true; }
+    }
     if (['game', 'fish'].includes(f.kind) && s.fire && s.cook !== 'raw') { if (s.cook === 'boil' && has(s, 'Pot')) { kcal += por * f.kcal * 0.08; fat += por * 0.1; } else if (s.cook === 'roast' && f.ing.includes('fat')) { if (has(s, 'Frying pan')) { kcal += por * f.kcal * 0.05; fat += por * 0.05; } else fat -= por * 0.15; } else if (s.cook === 'boil' && has(s, 'Frying pan')) { kcal += por * f.kcal * 0.04; } }
     if (['game', 'fish'].includes(f.kind) && !x.smoked && !x.dried && x.left <= 1 && temperature(s) > 3) oldMeat = true;
     if (x.smoked || x.dried || x.id === 'pemmican') hard = true;
@@ -1618,7 +1636,9 @@ function eat(s, target) {
   if (lean > 3 && fat < 1.5) { const fx = s.stores.find(x => x.id === 'fat' && x.por > 0); if (fx) eatOne(fx, Math.min(fx.por, 1.5)); }
   s.stores = s.stores.filter(x => x.por > 0.05);
   protein = units['Protein'] || 0;
-  return { kcal, units, types: [...types], lean, fat, protein, rawMeat, oldMeat, tox, hard };
+  const res = { kcal, units, types: [...types], lean, fat, protein, rawMeat, oldMeat, tox, hard };
+  if (rawFish) res.rawFish = true; if (worms) { res.worms = worms; if (wormsRaw) res.wormsRaw = true; } // only written when true, so older meal records stay the same
+  return res;
 }
 
 // how hard the long game on the mind bites by day: barely at all for the first few weeks, full strength at twice the median rival exit day (six weeks at the least)
@@ -3681,6 +3701,12 @@ function drawCampRaw() {
   } else if (S.firstFire) { cx.fillStyle = 'rgba(200,200,200,.5)'; cx.beginPath(); cx.ellipse(c.x, c.y, 7, 4, 0, 0, 6.28); cx.fill(); }
   // smoker, cache, raw catch, carcass meat
   if (S.crafts.smoker >= 2) { const x = c.x - 36, y = c.y - 46; shadow(x + 12, y + 26, 14, 4, 0.6); cx.strokeStyle = '#6b5a44'; cx.lineWidth = 2; cx.beginPath(); cx.moveTo(x, y + 26); cx.lineTo(x + 12, y - 4); cx.lineTo(x + 24, y + 26); cx.moveTo(x + 12, y - 4); cx.lineTo(x + 14, y + 24); cx.moveTo(x - 2, y + 10); cx.lineTo(x + 26, y + 10); cx.stroke(); if (S.stores.some(z => z.smoked || z.where === 'smoker')) { cx.fillStyle = '#b5633a'; for (let i = 0; i < 3; i++) { cx.beginPath(); cx.moveTo(x + 3 + i * 8, y + 11); cx.lineTo(x + 7 + i * 8, y + 21); cx.lineTo(x - 1 + i * 8, y + 21); cx.closePath(); cx.fill(); } } if ((S.today && S.today.done.includes('smoke')) || (S.sys && S.sys.smoking > 0 && S.stores.some(z => z.where === 'smoker'))) { cx.fillStyle = 'rgba(200,210,220,.25)'; for (let i = 0; i < 3; i++) { const k = (t * 0.4 + i / 3) % 1; cx.beginPath(); cx.arc(x + 12 + Math.sin(k * 5) * 3, y - 6 - k * 26, 2 + k * 5, 0, 6.28); cx.fill(); } } }
+  // drying rack: two A-frames and a crossbar; strips go from red to dark brown as they dry
+  if (S.crafts.rack >= 1) { const x = c.x + 40, y = c.y - 58; shadow(x + 14, y + 26, 18, 4, 0.5); cx.strokeStyle = '#6b5a44'; cx.lineWidth = 2; cx.beginPath();
+    for (const ox of [0, 28]) { cx.moveTo(ox + x - 5, y + 26); cx.lineTo(ox + x, y + 4); cx.lineTo(ox + x + 5, y + 26); } cx.moveTo(x - 3, y + 6); cx.lineTo(x + 31, y + 6); cx.stroke();
+    if (S.sys && S.sys.rackRoof) { cx.fillStyle = S.gear.includes('Tarp') ? '#3d6f8a' : '#3f5a36'; cx.beginPath(); cx.moveTo(x - 7, y + 2); cx.lineTo(x + 14, y - 8); cx.lineTo(x + 35, y + 2); cx.closePath(); cx.fill(); }
+    const hung = S.stores.filter(z => z.where === 'rack'); const n = Math.min(6, Math.ceil(hung.reduce((a, z) => a + z.por, 0) / 2));
+    if (n) { const m = Math.max(...hung.map(z => z.moist || 0)); const k = Math.max(0, Math.min(1, (0.75 - m) / 0.6)); cx.fillStyle = `rgb(${Math.round(168 - 58 * k)},${Math.round(72 - 14 * k)},${Math.round(62 - 26 * k)})`; for (let i = 0; i < n; i++) cx.fillRect(x + 1 + i * 5, y + 7, 3, 12 - k * 3); } }
   if (S.crafts.cache >= 2) { const x = S.cachePlace === 'away' ? c.x + (W.cacheAway.x - c.x) / CS : c.x + 74, y = S.cachePlace === 'away' ? c.y + (W.cacheAway.y - c.y) / CS : c.y + 20; shadow(x + 2, y + 24, 8, 3, 0.5); cx.fillStyle = '#5a4833'; cx.fillRect(x, y, 3, 24); cx.fillStyle = '#8a7352'; cx.fillRect(x - 9, y - 8, 21, 10); cx.fillStyle = '#6a5a44'; cx.fillRect(x - 9, y - 8, 21, 2); cx.strokeStyle = '#c9b58a'; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(x - 5, y - 8); cx.lineTo(x - 5, y + 2); cx.moveTo(x + 7, y - 8); cx.lineTo(x + 7, y + 2); cx.stroke(); }
   if (S.raw.length) { const x = c.x + 26, y = c.y + 24; cx.fillStyle = '#7a7a76'; cx.beginPath(); cx.ellipse(x + 14, y + 2, 20, 7, 0, 0, 6.28); cx.fill(); for (let i = 0; i < Math.min(4, S.raw.length); i++) { const f = D.foods[S.raw[i].id]; const fish = f.kind === 'fish'; cx.fillStyle = fish ? '#8fb0c0' : '#8a6a5a'; cx.beginPath(); cx.ellipse(x + 4 + i * 8, y, 6, 2.6, 0.2, 0, 6.28); cx.fill(); if (fish) { cx.beginPath(); cx.moveTo(x - 2 + i * 8, y); cx.lineTo(x - 5 + i * 8, y - 2.5); cx.lineTo(x - 5 + i * 8, y + 2.5); cx.closePath(); cx.fill(); } } }
   if (W.carrying === false && S.stores.some(z => D.foods[z.id].kind === 'game' && !z.smoked)) { const x = c.x + 44, y = c.y - 12; cx.fillStyle = '#9a4a44'; cx.beginPath(); cx.ellipse(x, y, 7, 4, 0.5, 0, 6.28); cx.fill(); cx.fillStyle = '#e8e0d0'; cx.fillRect(x + 4, y - 4, 4, 1.5); }
@@ -3831,7 +3857,7 @@ function openCamp() {
     sh.append($(`<div class="sect">Cooking</div>`));
     const cseg = $(`<div class="seg"><button data-c="roast">Roast</button><button data-c="boil">Boil</button><button data-c="raw">Raw</button></div>`);
     const cnote = $(`<div class="muted" style="font-size:12.5px"></div>`);
-    const setC = () => { cnote.textContent = { roast: S.gear.includes('Frying pan') ? 'Fried in the pan: the fat renders instead of dripping away.' : 'Fat drips into the fire. Simple, no pot needed.', boil: S.gear.includes('Pot') ? `Keeps the fat and the broth. Uses a pot of water each meal (${S.potWater || 0} at camp).` : 'You have no pot. Roasting instead.', raw: 'No fire needed. Parasites and food poisoning are real.' }[S.cook || 'roast']; };
+    const setC = () => { cnote.textContent = { roast: S.gear.includes('Frying pan') ? 'Fried in the pan: the fat renders instead of dripping away.' : 'Fat drips into the fire. Simple, no pot needed. Thick pieces can stay pink in the middle.', boil: S.gear.includes('Pot') ? `Keeps the fat and the broth. Uses a pot of water each meal (${S.potWater || 0} at camp).` : 'You have no pot. Roasting instead.', raw: 'No fire needed. Parasites and food poisoning are real.' }[S.cook || 'roast']; };
     cseg.querySelectorAll('button').forEach(b => { b.setAttribute('aria-pressed', (S.cook || 'roast') === b.dataset.c); b.onclick = () => { S.cook = b.dataset.c; save(); cseg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); setC(); }; });
     setC(); sh.append(cseg, cnote);
     sh.append($(`<div class="sect">Food stores</div>`));
