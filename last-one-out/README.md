@@ -40,6 +40,16 @@ Keeping food now takes real time and can go wrong in real ways.
 - **Chink the walls** (new, for a debris hut, rock shelter or cabin): 4 moss or 3 clay, plus tallow for a tighter seal. Cuts drafts so the shelter holds about 15% more heat. Cracks over time, faster in storms and hard frost.
 - Balance: median survival over 510 bot games unchanged at 49 days.
 
+## Tools and materials update (Nov 1, 2026)
+
+- **Dull axe:** chopping with a dull edge costs more effort and the axe glances off into your leg more often.
+- **Sharpening without a whetstone:** an axe can be honed on a flat river stone, but only to a rough working edge. The sharpening stone still gives a full edge.
+- **Axe heads work loose:** every chopping job loosens the head a little, twice as fast in hard frost. Signs come first; ignored, the head flies off and the axe is useless until refitted. "Refit the axe head" takes a carved wedge (needs a knife if the head is off); a strip of wet rawhide shrinks tight as it dries and makes it loosen half as fast.
+- **Bursting hearth stones:** river stones have water inside; in the first three fires of a new hearth one can burst.
+- **Clay needs temper:** clay chinking with no moss worked in shrinks and cracks as it dries, losing much of its seal in the first days.
+- The axe's edge and head show on the camp panel.
+- Balance: median survival over 510 bot games unchanged at 49 days.
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.

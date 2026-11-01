@@ -5,6 +5,8 @@ function makeBot(E, s, opts = {}) {
   const policy = () => {
     if (!s.shelterGoal || s.shelterGoal === s.shelterType) { const o = E.shelterOptions(s); if (o.length) E.chooseShelter(s, o[o.length - 1]); }
     const pri = [];
+    if ((s.sys && s.sys.axeOff) || E.haftOf(s) < 0.35) pri.push('fix_axe');
+    if (s.axeEdge < 0.5) pri.push('sharpen');
     if (!s.fire) pri.push('light_fire');
     if (s.firewood < 6) pri.push('firewood');
     if (s.shelterLvl < 3) pri.push('shelter', 'cut_poles', 'boughs', 'cut_logs', 'moss', 'bark');

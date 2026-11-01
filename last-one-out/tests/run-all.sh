@@ -6,6 +6,7 @@ node baseline.js
 node food.js
 node cooking.js
 node fire.js
+node tools.js
 node balance.js
 node fuzz.js 20
 node ui-check.js

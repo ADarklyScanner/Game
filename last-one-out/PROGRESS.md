@@ -9,8 +9,9 @@ Each phase is committed and published on its own, so stopping between phases nev
 | 1 | Food that keeps: drying rack, smoker, fat rendering, pemmican, storage | Done |
 | 1+ | Cooking risks (raw meat and fish, worms), drying rack on the map, drop sites ordered by difficulty | Done |
 | 2 | Fire and stoves: damp tinder, stone hearth, flue soot and chimney fires, smoker flare-ups, chinking walls | Done |
-| 3 | Materials and tools: wood, timber, stone, clay, fibre, bark, salvage, cordage, carpentry, hafting, sharpening | Next |
-| 4 | More cooking and camp lighting | Not started |
+| 3 | Materials and tools: dull axes cost effort and cause injuries, honing on river stones, axe heads working loose and refitting with rawhide, bursting hearth stones, clay temper | Done (part) |
+| 3 later | Fibre and cordage strength, bark girdling, salvage contamination, carpentry joints, stone grades | Left for later |
+| 4 | More cooking and camp lighting | Next |
 | 5 | Water safety, medicine, hygiene, sanitation, waste | Not started |
 | 6 | Shelters, cabins, camp layout, bridges, rafts, snowshoes, bedding and sleep | Not started |
 | 7 | Pottery and kiln firing | Not started |
