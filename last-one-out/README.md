@@ -149,6 +149,14 @@ The crafts added in the realism update are now done by hand. How well you do it 
 - **Cabin joints:** the cabin's building sessions are notching. A sloppy notch leaves a loose joint, and a cabin with loose joints wears up to twice as fast in storms.
 - **Build a raft** (new, two sessions, 4 logs and 4 cordage): fishing from it in deeper water gets about 30% more bites, wind can roll it, and left in the water it soaks up 5% of its float a day until you pull it up to dry.
 
+## Bear spray, climbing, noise and the latrine (Nov 1, 2026)
+
+- **Bear spray:** in bear country your safety kit holds a can with two good blasts. When a bear comes into camp, spraying it turns it about 90% of the time; otherwise the wind takes it and the bear leaves with some food.
+- **Climb the rock for a look around** (new, at the rock face): from the top a wide stretch of your map fills in. Wet or icy rock makes a fall likelier; with a rope anchored above (Rope, Paracord or 4 cordage) the chance is under 1%. An unroped fall can sprain an ankle, or end the run.
+- **Noise when stalking:** rain, fog and falling snow hide your steps; the dry leaves before the snow and a hard winter crust give you away.
+- **Dig a latrine** (new, at camp): without one the ground near camp and the water get fouled over the weeks, and untreated water makes you sick more often. A latrine dug downhill, away from the water, lets it clear; it lasts about a month.
+- Balance against the original game: median 48 days (was 49), mean 48.0 (was 49.9).
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.
