@@ -120,6 +120,10 @@ Keeping food now takes real time and can go wrong in real ways.
 - **Cut a wading staff** (new, one pole): a third leg in the current; slips are 80% rarer.
 - **The log bridge** keeps you dry.
 
+## Double-tap protection (Nov 1, 2026)
+
+- Tapping the same job twice in quick succession on a phone now runs it once. Before, a double tap on Rest spent four hours instead of two.
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.

@@ -26,7 +26,7 @@ Each phase is committed and published on its own, so stopping between phases nev
 | 9 later (a) | Scrape and soften hides into leather: leather patches make clothes as good as new, leather mittens are warmer. Patch regrowth already exists in the game | Done |
 | 9 later (b) | Textiles and weaving, farming. Trading and social contact are on hold: the plan gates them behind a review, since they clash with a solo survival game | Left for later |
 
-Not built from the plan's architecture: a general job scheduler, typed material lots in kilograms, and action receipts.
+From the plan's architecture: double-tap protection is done (the same job tapped twice within 0.4 s runs once). Not built: a general job scheduler and typed material lots in kilograms. Drying racks, the smoker, pottery and lamps already run as day-by-day jobs on the game's own clock, and portions stay the unit, as agreed.
 Each system is built directly on the game's existing rules instead, which keeps saves and balance safe.
 
 ## Rules every phase follows

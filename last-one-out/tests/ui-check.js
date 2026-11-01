@@ -24,6 +24,15 @@ async function tapAround(p, n) { for (let i = 0; i < n; i++) { await p.evaluate(
     if (errs.length) fail('new run', errs.slice(0, 2)); if (await p.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)) fail('new run', 'wider than a phone screen');
     await ctx.close();
   }
+  { // a double tap runs a job once
+    const s = E.newGame('US-S2', ['Ferro rod', 'Axe', 'Pot'], { seed: 4, weight: 200 }); E.beginDay(s); s.event = null;
+    const { p, ctx, errs } = await page(b, save(s)); await p.waitForTimeout(400);
+    const h0 = await p.evaluate(k => JSON.parse(localStorage.getItem(k)).hours, KEY);
+    const tapped = await p.evaluate(() => { const btn = [...document.querySelectorAll('button')].find(e => /^rest/i.test(e.textContent.trim())); if (!btn) return false; btn.click(); btn.click(); return true; });
+    await p.waitForTimeout(300); const h1 = await p.evaluate(k => JSON.parse(localStorage.getItem(k)).hours, KEY);
+    if (!tapped) fail('double tap', 'no rest button to tap'); else if (Math.abs(h1 - h0 - 2) > 0.01) fail('double tap', `hours went ${h0} -> ${h1}, expected one two-hour rest`);
+    if (errs.length) fail('double tap', errs.slice(0, 2)); await ctx.close();
+  }
   for (const [k, v] of Object.entries(oldSaves)) for (let t = 0; t < 3; t++) { // 2. saves from older versions load, show no real names, and the map keeps running
     const { p, ctx, errs } = await page(b, v); await tapAround(p, 30);
     const g = await p.evaluate(k => JSON.parse(localStorage.getItem(k)), KEY); const txt = await p.evaluate(() => document.body.innerText);

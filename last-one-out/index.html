@@ -2972,6 +2972,8 @@ function loadFromPile(p) {
 function dropLoad() { const pk = S.pack || {}; addPile(W.player.x, W.player.y, pk); for (const k of BULKY) if (pk[k]) setBulky(k, bulkyNow()[k] - pk[k]); worldToast([[`Stacked ${packText(pk)} here.`, 'muted']], W.player.x, W.player.y); S.pack = {}; sfx.play('tap'); updateHud(); save(); lastActs = ''; }
 function doAct(id, extra, mod, inside) {
   if (!S || S.status !== 'playing' || S.phase < 0 || (S.phase > 2 && !E.nightOk(S, id))) return;
+  // a quick double tap on a phone must not run the same job twice
+  const now = performance.now(); if (doAct.last && doAct.last.id === id && now - doAct.last.t < 400) return; doAct.last = { id, t: now };
   if (S.event && S.event.id === 'bear') { banner([['Deal with the bear first.', 'warn']]); return; }
   autoResolve();
   const before = snap(); const p = W.player;
