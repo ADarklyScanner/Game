@@ -27,7 +27,6 @@ Each phase is committed and published on its own, so stopping between phases nev
 | 9 | Clothes wear from work and storms and let the cold in; mending with a bone needle restores 90% of the lost warmth and patches sleeping-bag holes (which were permanent); tea by the fire lifts spirits | Done (part) |
 | 9 later (a) | Scrape and soften hides into leather: leather patches make clothes as good as new, leather mittens are warmer. Patch regrowth already exists in the game | Done |
 | 9 later (b) | Weaving a door mat: a tight weave keeps most of the wind out of the shelter, a loose one less | Done |
-| 9 later (c) | Trading and social contact are on hold: the plan gates them behind a review, since they clash with a solo survival game | On hold |
 
 From the plan's architecture: double-tap protection is done (the same job tapped twice within 0.4 s runs once). Not built: a general job scheduler and typed material lots in kilograms. Drying racks, the smoker, pottery and lamps already run as day-by-day jobs on the game's own clock, and portions stay the unit, as agreed.
 Each system is built directly on the game's existing rules instead, which keeps saves and balance safe.
@@ -50,6 +49,8 @@ Hot and cold smoking, bridges torn loose by floods and slick when wet, and splin
 Field notebook, look-alike plants and looking closely, unknown berries (eat, test for a day, or leave), cold that creeps up in stages, smoke in a shut cabin, shadow stick vs the moss rule: done.
 
 ## Left out on purpose
+
+Trading and social contact: dropped, the game stays solo.
 
 Things that only pay off over a longer time than a run lasts: farming and crop growing, bark girdling (it kills a tree over years), and the plan's general job scheduler and kilogram material lots (internal plumbing with nothing to show a player).
 
