@@ -1,6 +1,6 @@
 # Game
 
-This repository now contains a minimal standalone Android app project that builds into an APK.
+This repository contains a minimal standalone Android app project that builds into an APK, and the browser game **Last One Out** in [`last-one-out/`](last-one-out/).
 
 ## Build
 
