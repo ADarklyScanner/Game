@@ -124,6 +124,13 @@ Keeping food now takes real time and can go wrong in real ways.
 
 - Tapping the same job twice in quick succession on a phone now runs it once. Before, a double tap on Rest spent four hours instead of two.
 
+## Bow and landmarks (Nov 1, 2026)
+
+- **Carve a bow** (new, two sessions, needs a knife): split a stave from a pole and rough out the limbs, then tiller and string it (2 cordage). A homemade bow casts a little weaker than a bought one, and you make its arrows yourself. A first bow often comes out with uneven limbs, which costs a quarter of its power; **re-tiller the bow** to even them up (works about 60% of the time).
+- **Landmarks:** every map now has five you can steer by: a lightning pine, a split boulder, a bare knoll, a standing stone and a blazed spruce. They are drawn in the world and named on your map once you have been near them. Existing maps keep their layout.
+- **Build a cairn** (new, 4 stones, anywhere away from camp): a knee-high stack you can see even in fog. Shown on your map.
+- **Losing your bearings:** in fog, snowfall, a storm or the dark, more than half a kilometre from camp, every hundred metres you walk can cost half an hour going in a circle. With one landmark or cairn in sight the risk halves; with two there is none.
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.
