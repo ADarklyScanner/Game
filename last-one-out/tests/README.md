@@ -23,6 +23,7 @@ Run these before publishing any change. They test the real `../index.html`.
 | `node crafts.js` | Stone blades, woven door mats, cabin joints, rafts. | ~10 s |
 | `node finish.js` | Bear spray, climbing the rock, noise when stalking, the latrine. | ~10 s |
 | `node conseq.js` | Learning by consequence: the field notebook, look-alike plants, unknown berries, creeping cold, smoke in a shut cabin, shadow stick and moss. | ~15 s |
+| `node regress.js` | One check per bug fixed in the bug hunt (see ../BUGS.md). | ~30 s |
 | `node balance.js` | Survival over 1,020 bot games, per place and overall, against the original game before the realism update (`reference/original-game.html`). Fails if the overall median or mean moves more than 5%. | ~25 s |
 | `node fuzz.js [runs]` | Random play in every place, looking for crashes, broken numbers and days that never end. | ~10 s |
 | `node handson.js` | Plays each newer hands-on craft through the real page and checks the result, including deliberately sloppy runs. Uses a temporary copy of the game with a test hook. | ~2 min |
@@ -37,6 +38,7 @@ Run these before publishing any change. They test the real `../index.html`.
 | `node coverage-report.js` | Lists every inventory item no test has touched yet. |
 | `node exhaustive.js [n]` | Builds n varied situations; asks every action, runs allowed ones, checks a refusal changes nothing, forces every event that could fire there and takes every choice, then plays the night. Rules are checked after each step. |
 | `node styles.js [n]` | Eight kinds of player (random, careless, fisher, hunter, forager, starved of gear, night owl, mover) in every place; rules checked after every action and night; same seed gives the same game; saves round-trip; save size limit. |
+| `node screens.js` | Opens every panel in every game phase at five screen sizes (320 px to desktop), presses the safe buttons, starts and abandons every mini-game, and checks every screen function ran. |
 
 ## When the baseline changes
 

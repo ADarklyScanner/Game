@@ -17,10 +17,12 @@ node bowmap.js
 node crafts.js
 node finish.js
 node conseq.js
+node regress.js
 node balance.js
 node fuzz.js 20
 node exhaustive.js 4000
 node styles.js 2
 node ui-check.js
 node handson.js
+node screens.js
 echo "Everything passed."

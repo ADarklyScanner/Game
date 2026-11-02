@@ -34,7 +34,7 @@ const night = (s, w) => { s.event = null; Object.assign(s, { storm: false, rain:
   s.mats.clay = 3; s.mats.moss = 1; E.act(s, 'caulk'); check('chinking closes the gaps', s.sys.gaps === false && E.sealOf(s) > 0.8);
 }
 { // the plan's test: snowshoes cut the effort of walking in deep snow by 60%
-  const walk = shoes => { const s = camp(null, 'US-S7'); while (!E.status(s).snowy && s.day < 120) { s.event = null; E.endDay(s); E.beginDay(s); } s.event = null; s.phase = 0; s.hours = 0; if (shoes) s.crafts.snowshoes = 1; const b0 = s.today.burn; E.travel(s, 4000); return { burn: s.today.burn - b0, hours: s.hours }; };
+  const walk = shoes => { const s = camp(null, 'US-S7'); while (!E.status(s).snowy && s.day < 120 && s.status === 'playing') { s.event = null; s.morale = 80; s.health = 90; E.endDay(s); E.beginDay(s); } s.event = null; s.phase = 0; s.hours = 0; if (shoes) s.crafts.snowshoes = 1; const b0 = s.today.burn; E.travel(s, 4000); return { burn: s.today.burn - b0, hours: s.hours }; };
   const no = walk(false), yes = walk(true); check('snowshoes: 60% less effort in deep snow', Math.abs(yes.burn / no.burn - 0.4) < 0.02, [no.burn, yes.burn]); check('and quicker', yes.hours < no.hours, [no.hours, yes.hours]);
 }
 { // the plan's test: a wading staff makes the ford 80% steadier; the bridge keeps you dry

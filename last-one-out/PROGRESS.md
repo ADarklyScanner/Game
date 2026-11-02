@@ -48,6 +48,10 @@ Hot and cold smoking, bridges torn loose by floods and slick when wet, and splin
 
 Field notebook, look-alike plants and looking closely, unknown berries (eat, test for a day, or leave), cold that creeps up in stages, smoke in a shut cabin, shadow stick vs the moss rule: done.
 
+## Whole-game bug hunt
+
+Steps 0 to 3 of TESTPLAN.md (inventory, coverage, every action and event, eight player styles) plus helper reviews of the engine, the screens and a fresh-eyes playtest: done, 75 bugs fixed, listed in BUGS.md. Engine fixes each have a regression check (tests/regress.js); screen fixes were checked in the browser. The saves review is still running.
+
 ## Left out on purpose
 
 Trading and social contact: dropped, the game stays solo.
@@ -58,5 +62,5 @@ Things that only pay off over a longer time than a run lasts: farming and crop g
 
 - `tests/run-all.sh` must pass before anything is published.
 - Bot survival (median and mean over 1,020 games) must stay within 5% of the original game played by the same bot: median 56, mean 56.4 days.
-- Standing now: median 56 (0.0%), mean 55.9 (-0.9%).
+- Standing now: median 56 (0.0%), mean 54.8 (-2.8%).
 - Saves from older versions must keep loading.

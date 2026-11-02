@@ -179,6 +179,24 @@ The game never tells you how to survive; things happen, and the journal keeps tr
 - **Fixed while testing:** getting lost had briefly become certain on every check because of a code slip; caught by the new tests.
 - **Balance:** the test bot now gathers tinder so it can relight its fire (before, it often could not, which skewed every comparison). Against the original game played by the same bot: median 56 days both, mean 56.4 vs 55.9.
 
+## Bug hunt (Nov 2, 2026)
+
+A whole-game bug hunt (see TESTPLAN.md and BUGS.md) found and fixed 75 bugs. The ones you would notice:
+- **Resting all day no longer keeps you going.** A break after a job still lifts you. Lying about with nothing done gives a little once a day and nothing after, so a run of only resting now ends around day 30 to 35 instead of lasting up to two months.
+- **Cleaning birds and fish gives bone and feathers again.**
+- **"Check which side the moss grows" no longer gathers moss.** Gathering moss is its own job again.
+- **Bears sleep in winter:** no bear on your kill once they are denned.
+- **Paid shelter materials are not lost silently.** Dropping a plan gives back what is not built in; moving camp or a collapse saves about half.
+- **Set lines need bait** to catch well, and the same illness no longer stacks two or three times.
+- **Hanging meat is eaten last,** so a rack of drying meat lasts until it is dry.
+- Over-shaving a bow leaves it weak; a homemade bow with no arrows no longer blocks the slingshot.
+- Raft fishing tires the water like fishing from shore.
+- **Space no longer ends your day by accident.** Turning in early with real light left goes last and asks twice.
+- **Distances are right:** "back to camp" and map pins showed kilometres 9.5 times too large.
+- **Reloading keeps you where you stood,** and a bear, grouse or carcass you were dealing with comes back with you.
+- **Fumbling matters:** a missed bite costs most of the fishing session, a ferro rod left unblown goes out, and a rushed bed or roof repair comes out worse.
+- **Phone screens:** long messages wrap, things to pick up show above the trees, map labels no longer overlap, and the Craft menu is always there at camp.
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.

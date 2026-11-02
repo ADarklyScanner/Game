@@ -34,7 +34,7 @@ const rate = (n, f) => { let k = 0; for (let i = 0; i < n; i++) if (f(i)) k++; r
   const g = camp(); g.mats.hide = 1; check('not needed with real fishing gear', !E.available(g, 'craft_leader').ok);
 }
 { // ice holes freeze over: the first ice fishing of a cold day costs half an hour of chopping
-  const s = camp('US-S7'); const f = E.DATA.seasons.find(x => x.key === 'US-S7').climate.freeze; s.stores = [{ id: 'ration', por: 300, left: Infinity, smoked: false }]; let d = 0; while ((!E.status(s).frozen || E.temperature(s) >= -5 || !E.available(Object.assign(s, { storm: false, hours: 1, phase: 0 }), 'fish').ok) && d++ < 160) { s.event = null; s.phase = 0; E.endDay(s); E.beginDay(s); }
+  const s = camp('US-S7'); const f = E.DATA.seasons.find(x => x.key === 'US-S7').climate.freeze; s.stores = [{ id: 'ration', por: 300, left: Infinity, smoked: false }]; let d = 0; while ((!E.status(s).frozen || E.temperature(s) >= -5 || !E.available(Object.assign(s, { storm: false, hours: 1, phase: 0 }), 'fish').ok) && d++ < 160) { s.event = null; s.phase = 0; s.morale = 80; s.health = 90; E.endDay(s); E.beginDay(s); }
   s.event = null; s.storm = false; s.hours = 1; s.phase = 0; const h0 = s.hours; E.act(s, 'fish'); const first = s.hours - h0; s.event = null; const h1 = s.hours; E.act(s, 'fish'); const second = s.hours - h1;
   check('re-chopping the hole costs half an hour, once a day', Math.abs(first - second - 0.5) < 0.01, [first, second]);
 }
