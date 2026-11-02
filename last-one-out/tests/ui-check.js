@@ -39,7 +39,7 @@ async function tapAround(p, n) { for (let i = 0; i < n; i++) { await p.evaluate(
     if (errs.length) fail('old save ' + k, errs.slice(0, 2));
     if (!g || g.rivalsV !== 1) fail('old save ' + k, 'not migrated');
     if (!g || !g.sys || g.sys.schema !== 1) fail('old save ' + k, 'no sys block after loading');
-    const leak = oldNames.filter(n => txt.includes(n) || (g && (g.rivals || []).some(r => r.name === n))); if (leak.length) fail('old save ' + k, 'old names: ' + leak.slice(0, 3));
+    const leak = oldNames.filter(n => new RegExp('\\b' + n + '\\b').test(txt) || (g && (g.rivals || []).some(r => r.name === n))); if (leak.length) fail('old save ' + k, 'old names: ' + leak.slice(0, 3));
     await ctx.close();
   }
   { // food: meat drying on the rack and in the smoker shows in the camp sheet with its progress

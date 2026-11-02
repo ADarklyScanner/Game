@@ -96,6 +96,16 @@ Severity: **crash**, **wrong rule** (the game does something its own rules say i
 | 74 | "Stacked 1 poles", "20 snare wire (snare wire)", "Every one of these can be built", "Get back to camp" said at camp, "Searched around camp" at the old camp | cosmetic | Fixed |
 | 75 | Reloading the page put you back at camp | wrong rule | You stay where you stood |
 
+### Found by the saves review
+
+Old saves from all 24 earlier versions load and play on, and save, reload and continue gives exactly the same game. These were fixed:
+
+| # | Bug | Severity | Fix |
+|---|---|---|---|
+| 76 | A save that could not be read dropped silently to the setup screen, and the next new run overwrote it | data loss | It is kept aside, a notice says so, and a new run does not overwrite it |
+| 77 | Loading only filled missing fields; a damaged one (null, a word where a number belongs, an unknown food or shelter) crashed the game screen | crash | Damaged fields are rebuilt. Of 3,428 single-field damages, none crash or break a number; the 40 that remove the version or the place are kept aside |
+| 78 | A broken number in health, weight or morale was saved as empty and came back as 0 | data loss | Never saved; a sane value is used instead |
+
 ### Test-side problems (not game bugs)
 
 - The shelter suite hung and one wildlife check failed. Their test players sat for weeks with no fire, quit, and the wait loops never ended. Those loops now stop when the run ends and keep the test player's morale up.
@@ -111,6 +121,9 @@ Severity: **crash**, **wrong rule** (the game does something its own rules say i
 - The overnight fire's wood is rounded to a tenth.
 
 ## Suspects (not bugs as far as the hunt could tell)
+
+- A test hook (`window.__g`) ships in the game file. It only helps the test scripts; anyone could also use it from the browser console.
+- If phone storage were ever full, saving would stop without a message. Real saves are 95 to 166 KB at day 200, far below any limit.
 
 - Rivals are marked out the night after their last day, so the "remaining" count is a day late.
 - "Build the fire up" choices read the same with no fire lit and no wood.

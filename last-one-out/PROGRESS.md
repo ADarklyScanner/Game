@@ -50,7 +50,7 @@ Field notebook, look-alike plants and looking closely, unknown berries (eat, tes
 
 ## Whole-game bug hunt
 
-Steps 0 to 3 of TESTPLAN.md (inventory, coverage, every action and event, eight player styles) plus helper reviews of the engine, the screens and a fresh-eyes playtest: done, 75 bugs fixed, listed in BUGS.md. Engine fixes each have a regression check (tests/regress.js); screen fixes were checked in the browser. The saves review is still running.
+Steps 0 to 3 of TESTPLAN.md (inventory, coverage, every action and event, eight player styles) plus helper reviews of the engine, the screens, saves from every old version and a fresh-eyes playtest: done, 78 bugs fixed, listed in BUGS.md. Engine fixes each have a regression check (tests/regress.js); screen fixes were checked in the browser.
 
 ## Left out on purpose
 

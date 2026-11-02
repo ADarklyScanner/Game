@@ -1918,10 +1918,12 @@ function nightAndBody(s, burn, done, lines) {
   if (gone.length) s.heliDay = s.day + 1;
   for (const r of gone) { r.out = true; if (s.opts.showRemaining) lines.push(['Someone else has tapped out.', 'info']); }
 
+  if (!Number.isFinite(s.health)) s.health = 50; if (!Number.isFinite(s.morale)) s.morale = 50; if (!Number.isFinite(s.weight)) s.weight = (s.weight0 || 180) * 0.9;
   s.history.push({ day: s.day, weight: s.weight, health: Math.round(s.health), morale: Math.round(s.morale), kcal: Math.round(ate.kcal), tdee: Math.round(tdee) });
   s.lastDay = { tdee: Math.round(tdee), ate: Math.round(ate.kcal), burn: Math.round(burn), cold: Math.round(cold), temp: Math.round(T), fire };
   s.restedToday = false;
 
+  if (!Number.isFinite(s.health)) s.health = 50; if (!Number.isFinite(s.morale)) s.morale = 50; if (!Number.isFinite(s.weight)) s.weight = (s.weight0 || 180) * 0.9; /* never save a broken number */
   if (s.health <= 0) end(s, 'medical', 'Collapsed. The medical team pulled you out.');
   else if (s.morale <= 0) end(s, 'tapped', 'Your will to keep going ran out. You tapped out.');
   else if (s.day - s.lastMed >= C.medicalEvery) {
@@ -1996,7 +1998,7 @@ function eat(s, target) {
 // how hard the long game on the mind bites by day: barely at all for the first few weeks, full strength at twice the median rival exit day (six weeks at the least)
 function willRamp(s, se) { const full = Math.max(42, 2 * (se.realMedian || 21)); const f = clamp(s.day / full, 0, 1); return 0.08 + 0.92 * Math.pow(f, 2.5); }
 function addCond(s, c) { const o = s.conditions.find(x => x.name === c.name); if (o) { o.days = Math.max(o.days, c.days); o.dmg = Math.max(o.dmg, c.dmg); return o; } s.conditions.push(c); return c; }
-function floorHealth(s, lines) { if (s.health > 100) s.health = 100; if (s.health <= 0) { s.health = 0; if (s.status === 'playing') { lines.push(['Your legs go and you cannot get up. You press the button.', 'bad']); end(s, 'medical', 'Collapsed. The medical team pulled you out.'); } } }
+function floorHealth(s, lines) { if (!Number.isFinite(s.health)) s.health = 50; if (!Number.isFinite(s.morale)) s.morale = 50; if (!Number.isFinite(s.weight)) s.weight = (s.weight0 || 180) * 0.9; if (s.health > 100) s.health = 100; if (s.health <= 0) { s.health = 0; if (s.status === 'playing') { lines.push(['Your legs go and you cannot get up. You press the button.', 'bad']); end(s, 'medical', 'Collapsed. The medical team pulled you out.'); } } }
 function end(s, status, reason) { if (s.status !== 'playing') return; s.status = status; s.endReason = reason; }
 function tapOut(s) { if (s.status === 'playing') { end(s, 'tapped', 'You tapped out.'); logDay(s, s.day, [['You pressed the button. The boat is on its way.', 'info']]); } }
 function logDay(s, day, lines) { s.log.push({ day, lines }); if (s.log.length > 140) s.log.shift(); }
@@ -4604,17 +4606,62 @@ function scrubRivals(g) { // old saves carry the earlier roster's names: map by 
   if (g.replaced) { const gap = se.rivals.find(b => b.place !== 1 && !have.has(b.place)); g.replaced = (gap || se.rivals[hash(g.replaced) % se.rivals.length]).name; }
 }
 function migrate(g) { // fill anything a newer build added, so a save survives updates
+  repairSave(g);
   const needRivals = g.rivalsV !== 1;
   if (g.sys !== undefined && (!g.sys || typeof g.sys !== 'object' || Array.isArray(g.sys) || g.sys.schema !== 1)) { console.warn('Save had an unreadable sys block; reset it.'); g.sys = undefined; }
   if (g.mapV === undefined) g.mapV = 1; // saves from before drop sites varied keep the map they started on
   const fresh = E.newGame(g.seasonKey, g.gear || [], { weight: g.weight0, seed: g.seed });
   const fill = (dst, src) => { for (const k in src) { if (dst[k] === undefined) dst[k] = src[k]; else if (src[k] && typeof src[k] === 'object' && !Array.isArray(src[k]) && dst[k] && typeof dst[k] === 'object' && !Array.isArray(dst[k])) fill(dst[k], src[k]); } };
-  fill(g, fresh); if (!g.stats.walked) g.stats.walked = 0; if (g.shelterLvl && !g.shelterType) g.shelterType = ['', 'leanto', 'hut', 'cabin'][g.shelterLvl]; for (const x of (g.stores || []).concat(g.raw || [])) if (x.left == null || x.left > 1e8) x.left = Infinity; if (needRivals) scrubRivals(g); g.rivalsV = 1; g._at = null; g.v = 2; return g;
+  fill(g, fresh); conformSave(g, fresh); if (!g.stats.walked) g.stats.walked = 0; if (g.shelterLvl && !g.shelterType) g.shelterType = ['', 'leanto', 'hut', 'cabin'][g.shelterLvl]; for (const x of (g.stores || []).concat(g.raw || [])) if (x.left == null || x.left > 1e8) x.left = Infinity; if (needRivals) scrubRivals(g); g.rivalsV = 1; g._at = null; g.v = 2; return g;
+}
+/* a damaged field (null, wrong type, unknown id) is treated as missing, so migrate rebuilds it instead of the game screen crashing */
+function repairSave(g) {
+  const obj = v => !!v && typeof v === 'object' && !Array.isArray(v); let fixed = 0;
+  const drop = (k, ok) => { if (g[k] !== undefined && !ok(g[k])) { g[k] = undefined; fixed++; } };
+  for (const k of ['day', 'hours', 'health', 'morale', 'weight', 'weight0', 'firewood', 'phase', 'arrows', 'hooks', 'line', 'snares', 'deadfalls', 'wet', 'shelterLvl', 'shelterCond', 'shelterWork', 'potWater', 'slingAmmo'])
+    { if (typeof g[k] === 'string' && g[k].trim() !== '' && isFinite(+g[k])) g[k] = +g[k]; drop(k, v => typeof v === 'number' && isFinite(v)); }
+  drop('gear', v => Array.isArray(v) && v.every(x => typeof x === 'string'));
+  for (const k of ['mats', 'crafts', 'stats', 'today', 'partial', 'regrow']) drop(k, obj);
+  for (const k of ['stores', 'raw', 'rivals', 'conditions', 'log', 'recent', 'found', 'pins', 'piles']) drop(k, Array.isArray);
+  if (g.mats) for (const k in g.mats) if (typeof g.mats[k] !== 'number' || !isFinite(g.mats[k])) { g.mats[k] = +g.mats[k] || 0; fixed++; }
+  for (const k of ['stores', 'raw']) if (g[k]) { const n = g[k].length; g[k] = g[k].filter(x => obj(x) && D.foods[x.id] && typeof x.por === 'number' && isFinite(x.por)); fixed += n - g[k].length; }
+  if (g.rivals) g.rivals = g.rivals.filter(r => obj(r) && typeof r.name === 'string');
+  if (g.conditions) g.conditions = g.conditions.filter(c => obj(c) && typeof c.name === 'string').map(c => Object.assign(c, { days: +c.days || 1, dmg: +c.dmg || 0 }));
+  if (g.shelterType != null && !E.SHELTERS[g.shelterType]) { g.shelterType = null; g.shelterLvl = 0; fixed++; }
+  if (g.shelterGoal != null && !E.SHELTERS[g.shelterGoal]) { g.shelterGoal = null; fixed++; }
+  if (g.campPos !== undefined && !(obj(g.campPos) && isFinite(g.campPos.x) && isFinite(g.campPos.y))) { g.campPos = undefined; fixed++; }
+  if (g.event && !(obj(g.event) && E.EVENTS[g.event.id])) { g.event = null; fixed++; }
+  if (g.at !== undefined && !(obj(g.at) && isFinite(g.at.x) && isFinite(g.at.y))) g.at = undefined;
+  if (g.carcass != null && !(obj(g.carcass) && D.foods[g.carcass.id] && isFinite(g.carcass.por))) { g.carcass = null; fixed++; }
+  if (g.net != null && !(obj(g.net) && Array.isArray(g.net.catch))) { g.net = null; fixed++; }
+  if (g.lineGear != null && !(obj(g.lineGear) && isFinite(g.lineGear.hooks))) { g.lineGear = null; g.setlines = false; fixed++; }
+  if (g.cacheCond != null && !(typeof g.cacheCond === 'number' && isFinite(g.cacheCond))) { g.cacheCond = 1; fixed++; }
+  if (typeof g.shelterLvl === 'number') g.shelterLvl = Math.max(0, Math.min(3, Math.round(g.shelterLvl)));
+  if (g.ration !== undefined && !['full', 'moderate', 'lean'].includes(g.ration)) { g.ration = 'full'; fixed++; }
+  if (obj(g.crafts)) for (const k in g.crafts) if (typeof g.crafts[k] !== 'number' || !isFinite(g.crafts[k])) { g.crafts[k] = +g.crafts[k] || 0; fixed++; }
+  if (obj(g.today) && g.today.early != null && !(obj(g.today.early) && Array.isArray(g.today.early.types))) { g.today.early = null; fixed++; }
+  if (g.event && !(Array.isArray(g.event.options) && Array.isArray(g.event.optIds))) { g.event = null; fixed++; }
+  for (const k of ['skill', 'meters', 'history', 'windows', 'trapsCatch', 'today', 'stats', 'crafts', 'mats', 'stores', 'raw', 'rivals', 'conditions', 'log', 'recent']) if (g[k] === null) { g[k] = undefined; fixed++; }
+  if (fixed) console.warn(`Save had ${fixed} damaged field(s); rebuilt them.`);
+  return g;
+}
+/* after filling gaps: a field whose kind differs from a new game's (a word where a number belongs, a list where a record belongs) takes the new game's value */
+const SYS_NUMS = ['clothes', 'tinderDamp', 'starved', 'snowLoad', 'seal', 'haft', 'goodSnares', 'fit', 'bed', 'soot', 'chill', 'smoking', 'crooked', 'tiller', 'taint', 'hands', 'fouling', 'spray', 'skyReads', 'bagHoles'];
+function conformSave(dst, src, nested) {
+  for (const k in src) { const a = dst[k], b = src[k];
+    if (typeof b === 'number') { if (a === null || typeof a === 'number' && !isFinite(a) || (a !== undefined && typeof a !== 'number')) dst[k] = typeof a === 'string' && a.trim() !== '' && isFinite(+a) ? +a : b; }
+    else if (Array.isArray(b)) { if ((a === null && nested) || (a !== null && a !== undefined && !Array.isArray(a))) dst[k] = b; }
+    else if (typeof b === 'string') { if (typeof a !== 'string') dst[k] = b; }
+    else if (b && typeof b === 'object') { if ((a === null && nested) || (a !== null && (typeof a !== 'object' || Array.isArray(a)))) dst[k] = b; else if (a) conformSave(a, b, true); } }
+  if (dst.sys && typeof dst.sys === 'object') for (const k of SYS_NUMS) { const v = dst.sys[k]; if (v !== undefined && (typeof v !== 'number' || !isFinite(v))) { if (typeof v === 'string' && v.trim() !== '' && isFinite(+v)) dst.sys[k] = +v; else delete dst.sys[k]; } }
 }
 function start(hot) {
   const raw = (hot && hot.game) || store.get(SAVE);
-  if (raw) { try { const g = typeof raw === 'string' ? JSON.parse(raw) : raw; if (g && g.v >= 2 && D.seasons.some(x => x.key === g.seasonKey)) S = migrate(g); } catch (e) { S = null; } }
-  if (!S) { setup.gear = POPULAR.slice(); renderSetup(); }
+  let broken = false;
+  if (raw) { try { const g = typeof raw === 'string' ? JSON.parse(raw) : raw; if (g && g.v >= 2 && D.seasons.some(x => x.key === g.seasonKey)) S = migrate(g); else broken = true; } catch (e) { S = null; broken = true; } }
+  /* a save that cannot be read is kept to one side, not overwritten by the next run */
+  if (broken && typeof raw === 'string') { try { localStorage.setItem(SAVE + '-unreadable', raw); } catch (e) {} }
+  if (!S) { setup.gear = POPULAR.slice(); renderSetup(); if (broken) { const n = document.createElement('div'); n.className = 'muted'; n.style.cssText = 'margin:12px 16px;padding:10px 12px;border-radius:10px;background:rgba(200,80,60,.12);font-size:13px'; n.textContent = 'Your last run could not be loaded. It has been kept aside, and a new run will not overwrite it.'; app.prepend(n); } }
   else renderGame();
 }
 window.claude?.hot?.snapshot?.(() => ({ game: S }));
