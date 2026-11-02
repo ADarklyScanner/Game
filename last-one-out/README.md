@@ -181,7 +181,7 @@ The game never tells you how to survive; things happen, and the journal keeps tr
 
 ## Bug hunt (Nov 2, 2026)
 
-A whole-game bug hunt (see TESTPLAN.md and BUGS.md) found and fixed 78 bugs. The ones you would notice:
+A whole-game bug hunt (see TESTPLAN.md and BUGS.md) found and fixed 84 bugs. The ones you would notice:
 - **Resting all day no longer keeps you going.** A break after a job still lifts you. Lying about with nothing done gives a little once a day and nothing after, so a run of only resting now ends around day 30 to 35 instead of lasting up to two months.
 - **Cleaning birds and fish gives bone and feathers again.**
 - **"Check which side the moss grows" no longer gathers moss.** Gathering moss is its own job again.

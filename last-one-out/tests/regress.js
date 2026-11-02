@@ -118,4 +118,28 @@ const snowDay = place => E.DATA.seasons.find(x => x.key === place).climate.snow;
   const s = camp('US-S7', 9); let txt = ''; for (let i = 0; i < 40 && !txt; i++) { s.hours = 1; s.today.done = []; const L = E.act(s, 'search', { extra: { ruin: true } }); const l = L.find(x => /old camp/.test(x[0])); if (l) txt = l[0]; if (L.some(x => /Searched around camp/.test(x[0]))) { txt = 'WRONG'; } }
   check('the ruin search never says "around camp"', txt !== 'WRONG', txt);
 }
+{ // every hands-on craft remembers a rushed job, and it works less well
+  const make = (id, good, setup) => { const s = camp(); s.fire = true; Object.assign(s.mats, { poles: 20, cordage: 20, boughs: 20, stone: 20, feathers: 2, bone: 2 }); s.shelterType = 'leanto'; s.shelterLvl = 1; if (setup) setup(s); for (let i = 0; i < 4; i++) { s.hours = 1; s.phase = 0; E.act(s, id, { extra: { good } }); } return s; };
+  for (const [id, k] of [['craft_reflector', 'reflector'], ['craft_platform', 'platform'], ['craft_hearth', 'hearth'], ['craft_rack', 'rack'], ['craft_staff', 'staff'], ['craft_diggingstick', 'diggingstick'], ['craft_woodshed', 'woodshed'], ['craft_smoker', 'smoker']]) {
+    const bad = make(id, false), good = make(id, true);
+    check(`${k}: a rushed one is remembered`, bad.sys.poor && bad.sys.poor[k] === true, bad.sys.poor); check(`${k}: a careful one is not`, !(good.sys.poor && good.sys.poor[k]), good.sys.poor);
+  }
+  const rk = make('craft_rack', false); check('a sagging rack holds less', E.available(rk, 'hang') && true);
+  const warm = (poor) => { const s = camp('US-S6', 3); s.crafts.platform = 1; s.sys.bed = 1; if (poor) s.sys.poor = { platform: true }; return E.bedWarmth(s); };
+  check('a sagging bed frame keeps you less warm', warm(true) < warm(false), [warm(false), warm(true)]);
+  const wood = (poor) => { const s = camp('US-S6', 3); s.crafts.stove = 1; s.fire = true; s.firewood = 10; s.storm = false; s.wind = false; if (poor) s.sys.poor = { stove: true }; E.endDay(s); return 10 - s.firewood; };
+  check('a leaky stove burns more wood', wood(true) > wood(false), [wood(false), wood(true)]);
+}
+{ // a rushed cairn can come down in a storm; a careful one stands
+  let fell = 0, stood = 0; for (let i = 0; i < 300; i++) { const s = camp('US-S6', 2000 + i); s.storm = true; s.sys.cairns = [{ x: 1, y: 1, day: 1, loose: true }, { x: 2, y: 2, day: 1 }]; s.event = null; E.endDay(s); if (!s.sys.cairns.some(c => c.loose)) fell++; if (s.sys.cairns.some(c => !c.loose)) stood++; }
+  check('loose cairns fall in storms', fell > 60 && fell < 160, fell); check('careful cairns stand', stood === 300, stood);
+}
+{ // snares set with the wrong loop size catch less
+  const caught = poor => { let n = 0; for (let i = 0; i < 1500; i++) { const s = camp('US-S6', 3000 + i); s.snares = 10; s.deadfalls = 0; s.fishTrap = false; s.trapsCatch = []; if (poor) s.sys.poorSnares = 10; s.event = null; E.endDay(s); n += s.trapsCatch.length; } return n; };
+  const a = caught(false), b = caught(true); check('badly sized loops catch about 40% less', b < a * 0.75 && b > a * 0.45, [a, b]);
+}
+{ // calories and wood are not lost to rounding
+  const s = camp(); s.fire = true; s.stores = [{ id: 'trout', por: 4, left: 60, smoked: false, dried: true, moist: 0.1 }, { id: 'fat', por: 2, left: 90, smoked: false, rendered: true }]; const k0 = E.storeKcal(s);
+  if (E.available(s, 'craft_pemmican').ok) { E.act(s, 'craft_pemmican'); check('pemmican keeps its calories (within 2 kcal)', Math.abs(E.storeKcal(s) - k0) < 2, [k0, E.storeKcal(s)]); } else passes++;
+}
 console.log(fails ? `${fails} regression check(s) failed, ${passes} passed.` : `All ${passes} regression checks passed.`); process.exitCode = fails ? 1 : 0;

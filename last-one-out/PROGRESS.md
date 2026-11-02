@@ -50,7 +50,7 @@ Field notebook, look-alike plants and looking closely, unknown berries (eat, tes
 
 ## Whole-game bug hunt
 
-Steps 0 to 3 of TESTPLAN.md (inventory, coverage, every action and event, eight player styles) plus helper reviews of the engine, the screens, saves from every old version and a fresh-eyes playtest: done, 78 bugs fixed, listed in BUGS.md. Engine fixes each have a regression check (tests/regress.js); screen fixes were checked in the browser.
+Steps 0 to 3 of TESTPLAN.md (inventory, coverage, every action and event, eight player styles) plus helper reviews of the engine, the screens, saves from every old version and a fresh-eyes playtest: done, 84 bugs fixed, listed in BUGS.md. Engine fixes each have a regression check (tests/regress.js); screen fixes were checked in the browser.
 
 ## Left out on purpose
 
@@ -62,5 +62,5 @@ Things that only pay off over a longer time than a run lasts: farming and crop g
 
 - `tests/run-all.sh` must pass before anything is published.
 - Bot survival (median and mean over 1,020 games) must stay within 5% of the original game played by the same bot: median 56, mean 56.4 days.
-- Standing now: median 56 (0.0%), mean 54.8 (-2.8%).
+- Standing now: median 56 (0.0%), mean 54.9 (-2.7%).
 - Saves from older versions must keep loading.

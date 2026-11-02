@@ -110,15 +110,20 @@ Old saves from all 24 earlier versions load and play on, and save, reload and co
 
 - The shelter suite hung and one wildlife check failed. Their test players sat for weeks with no fire, quit, and the wait loops never ended. Those loops now stop when the run ends and keep the test player's morale up.
 
-## Open (cosmetic)
+## Open
 
-- Some hands-on crafts still give the same result rushed or careful: hearth, drying rack, reflector, bed frame, lure, staff, cairn, stove, smoker, woodshed, bridge, digging stick, handline, net and the snare loop.
-- Messages about wood or poles count what was left in the field when the pack was full.
-- The drying-rack lashing shows the lean-to frame.
+Nothing.
 
-- Raids and spoilage subtract unrounded portions, so the smoker can show 8.1 of 8.
-- Pemmican rounding loses up to about 16 kcal a batch.
-- The overnight fire's wood is rounded to a tenth.
+### Fixed from the open list (Nov 2)
+
+| # | Bug | Fix |
+|---|---|---|
+| 79 | Fifteen hands-on crafts gave the same result rushed or careful | A rushed job is remembered and works less well: a leaning reflector, a sagging bed frame, loose hearth stones and drying rack, a leaky smoker and stove, a thin woodshed roof, a bridge that tears loose sooner, an uneven net, a crooked staff, a lure that spins, a kinking handline, a soft digging stick that splits, a cairn that falls in a storm, and snare loops the wrong size. A careful rebuild clears it |
+| 80 | Messages about wood or poles counted what was left in the field | The count says what reached your pack or camp, and what was left out |
+| 81 | The drying-rack lashing showed the lean-to frame | Its own drawing |
+| 82 | Raids and spoilage took unrounded portions, so the smoker could show 8.1 of 8 | Rounded; the rack and smoker never overfill |
+| 83 | Pemmican rounding lost up to 16 kcal a batch | Kept to a hundredth of a cake |
+| 84 | The overnight fire's wood was rounded to a tenth | Kept to a hundredth |
 
 ## Suspects (not bugs as far as the hunt could tell)
 
@@ -133,4 +138,4 @@ Old saves from all 24 earlier versions load and play on, and save, reload and co
 
 ## Balance after all fixes
 
-The full test bot, 1,020 games, against the original game: median 56 → 56 days (0.0%), mean 56.4 → 54.8 (−2.8%). No place moved more than 10%.
+The full test bot, 1,020 games, against the original game: median 56 → 56 days (0.0%), mean 56.4 → 54.9 (−2.7%). No place moved more than 10%.
