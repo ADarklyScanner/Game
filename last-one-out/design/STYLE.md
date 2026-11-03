@@ -81,6 +81,14 @@ The wreck on the far side of each map is the first thing drawn with the painting
 - **The bear** is painted in three poses. **The player** is a painted body, head, hat and pack (darker when wet); legs, arms and tools still move frame by frame so every job still shows.
 - **Carcasses** whole or dressed, **tracks** in mud or snow, set **snares and deadfalls**, the wreck's **debris** (life ring, case, line and float), **landmarks** (dead pine, boulders, knoll, standing stone, blazed tree) and **boulders** are painted. Blood is a darker, duller red.
 
+## How the insides are painted (phase 6)
+
+- **The room is one painting** made at the screen's size, with the doorway cut out of it, for each shelter, condition, bed (bag or blanket) and the tools you own. Behind the doorway sits a small painting of the land outside (trees and ground, snow in winter), with the sky's colour for the hour and rain, snow or fog moving over it.
+- **Walls:** the tarp is two sloped panels with seams and creases; the lean-to and debris hut are poles laced with needle boughs (the hut darker, with leaf litter); the rock shelter is the overhang's stone with a dry-stone wall and pole roof; the cabin is chinked log courses under a plate log, with a shelf. Wear lets daylight through the gaps; a broken shelter has holes and a fallen pole.
+- **The doorway** fits the shelter: the tarp's open end, the lean-to's open side, the hut's low arch, a lintel over the rock shelter's door, a plank door standing open in the cabin.
+- **Light:** daylight falls in from the door, warmer at dawn and evening; dusk and night darken the room; a fire inside (painted ring and flames) warms it and smokes it without a chimney.
+- **Layout:** the floor sits higher on phones so the bed, the fire and you show above the job list.
+
 ## What stays the same
 
 All game rules, odds and the engine. This is a change to how things are drawn and laid out, not to what happens. The 1,100-plus checks and the bots keep testing the rules unchanged.
@@ -103,7 +111,7 @@ Each phase ends with the full test run, the picture sheet updated, and a commit.
 | 3 | Trees and plants (done Nov 3) | Every tree kind and age, bushes, moss, cut and used states |
 | 4 | Camp and shelters (done Nov 3) | Fire, every shelter type at every build stage and condition, drying rack, smoker, cache, woodshed, cairns, piles |
 | 5 | Animals, people, tracks (done Nov 3) | Player, animals, carcasses, blood trails, debris, landmarks |
-| 6 | Interiors | Inside every shelter type, by weather and time of day |
+| 6 | Interiors (done Nov 3) | Inside every shelter type, by weather and time of day |
 | 7 | Mini-games | All 26 as close-ups |
 | 8 | Panels | Pack, map, journal and body, camp, build, menu, records, how to play, setup and end screens |
 | 9 | Finish | Phone speed checks, a full picture-sheet review, old saves, and publishing |

@@ -72,6 +72,21 @@ add(A, 'animals-south', 'Wallaby, warthog, springbok, possum, snake', P, null, z
 add(A, 'animals-dead', 'A kill, before it is dressed', P, null, zoo([['deer', -50, -40], ['hare', 50, 30]], 'dead'));
 add(A, 'bear', 'A bear at the edge of camp', P, null, () => { const W = window.__t.W(); W.actor = { kind: 'bear', x: W.player.x - 70, y: W.player.y - 40, vx: 1 }; });
 add(A, 'signs', 'Tracks, a snare, a deadfall, a carcass, wreck debris, landmarks', P, s => { s.carcass = { id: 'deer', dressed: true, big: true }; }, () => { const W = window.__t.W(), P = W.player; W.carcassPos = { x: P.x + 60, y: P.y - 60 }; W.tracks = [{ x: P.x - 90, y: P.y + 50 }, { x: P.x - 20, y: P.y + 70, set: true }, { x: P.x + 60, y: P.y + 60, set: true, deadfall: true }]; W.debris = [0, 1, 2].map(v => ({ x: P.x - 100 + v * 40, y: P.y - 50, look: v })); W.landmarks = [{ kind: 'pine', x: P.x + 120, y: P.y - 10 }, { kind: 'stone', x: P.x - 140, y: P.y + 10 }]; });
+// inside every shelter, by time of day and weather
+const I = 'Inside';
+const inside = () => { window.__t.W().inside = true; };
+const room = (type, o = {}) => s => { kit(s); shel(s, type, o.cond ?? 1); if (o.fireIn) { s.fireInside = true; s.fire = true; } else s.fire = !!o.fire; if (o.ph === 'night') { s.hours = E.dayHours(s); s.phase = 3; } if (o.ph === 'dusk') { s.hours = E.dayHours(s) - 0.6; s.phase = 2; } if (o.rain) s.rain = true; if (o.snow) snowDay(s); if (o.chim) s.crafts.chimney = 2; if (o.smoked) s.stores.push({ id: 'hare', por: 3, left: 9, smoked: true }, { id: 'hare', por: 3, left: 9, smoked: true }); if (o.nobag) s.gear = s.gear.filter(g => g !== 'Sleeping bag'); if (o.tarp) s.gear.push('Tarp'); };
+add(I, 'in-tarp', 'Under the tarp, morning', P, room('tarp', { tarp: 1 }), inside);
+add(I, 'in-tarp-rain', 'Under a torn tarp in the rain', P, room('tarp', { tarp: 1, cond: 0.4, rain: 1 }), inside);
+add(I, 'in-leanto', 'In the lean-to, fire outside, dusk', P, room('leanto', { fire: 1, ph: 'dusk' }), inside);
+add(I, 'in-leanto-worn', 'Lean-to, worn, no sleeping bag', P, room('leanto', { cond: 0.6, nobag: 1 }), inside);
+add(I, 'in-hut', 'In the debris hut, night', P, room('hut', { ph: 'night', fire: 1 }), inside);
+add(I, 'in-hut-broken', 'Debris hut, broken open, rain', P, room('hut', { cond: 0.4, rain: 1 }), inside);
+add(I, 'in-rock', 'Rock shelter, fire inside, night', P, room('rock', { fireIn: 1, ph: 'night', smoked: 1 }), inside);
+add(I, 'in-rock-snow', 'Rock shelter, snow outside', P, room('rock', { snow: 1 }), inside);
+add(I, 'in-cabin', 'Cabin, fire inside, chimney, smoked meat', P, room('cabin', { fireIn: 1, chim: 1, smoked: 1 }), inside);
+add(I, 'in-cabin-snow', 'Cabin at dusk in snow', P, room('cabin', { snow: 1, ph: 'dusk', fireIn: 1, chim: 1 }), inside);
+add(I, 'in-cabin-worn', 'Cabin, roof going, rain', P, room('cabin', { cond: 0.4, rain: 1 }), inside);
 add('Choices and mini-games', 'event', 'A choice to make', P, s => { s.event = { id: 'wolves', title: 'Wolves', text: 'Wolves howling close, after dark.', options: [{ label: 'Build the fire up and keep to camp', sub: 'Two hours, two days of wood. Nerves settle.' }, { label: 'Carry on', sub: '' }], optIds: [0, 1], phase: 0 }; });
 add('Choices and mini-games', 'mini-fish', 'Fishing: the cast', P, null, () => { window.__t.call('startFish', false); });
 add('Choices and mini-games', 'mini-fire', 'Lighting the fire', P, s => { s.fire = false; }, () => { window.__t.call('startFire'); });

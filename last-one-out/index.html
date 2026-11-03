@@ -4436,10 +4436,158 @@ function drawCarcassRaw(c, k) {
   else { cx.fillStyle = sp.c; cx.beginPath(); cx.ellipse(c.x, c.y, w, w * 0.45, 0.35, 0, 6.28); cx.fill(); cx.beginPath(); cx.arc(c.x + w * 0.95, c.y + w * 0.2, w * 0.3, 0, 6.28); cx.fill(); cx.fillStyle = 'rgba(0,0,0,.35)'; cx.fillRect(c.x + w * 0.9, c.y + w * 0.1, 2, 2); cx.fillStyle = 'rgba(150,20,20,.7)'; cx.beginPath(); cx.ellipse(c.x - w * 0.3, c.y + w * 0.35, 6, 2.5, 0.3, 0, 6.28); cx.fill(); }
 }
 
-// ---------- inside the shelter: a cutaway, the weather in the doorway
+// ---------- inside, painted (phase 6): the room is one painting with the doorway cut out of it; the world outside shows through
+function intGeom(cw, ch) { const floorY = Math.round(ch * (ch > cw * 1.4 ? 0.45 : 0.55)), /* above the job list on a phone */ dw = cw * 0.34, dx = cw * 0.63, dy = floorY - cw * 0.5; return { floorY, dw, dx, dy, dh: floorY - dy }; }
+function doorPath(type, g) {
+  const { dx, dy, dw, floorY: fy } = g, F = F1;
+  if (type === 'tarp') return `M${F(dx - 8)} ${F(fy)} L${F(dx + dw / 2)} ${F(dy - 6)} L${F(dx + dw + 8)} ${F(fy)}Z`;
+  if (type === 'rock') return `M${F(dx + 4)} ${F(fy)} L${F(dx + 6)} ${F(dy + 22)} L${F(dx + dw - 6)} ${F(dy + 20)} L${F(dx + dw - 4)} ${F(fy)}Z`;
+  if (type === 'cabin') return `M${F(dx + dw * 0.12)} ${F(fy)} L${F(dx + dw * 0.12)} ${F(dy + 8)} L${F(dx + dw * 0.88)} ${F(dy + 8)} L${F(dx + dw * 0.88)} ${F(fy)}Z`;
+  if (type === 'leanto') return `M${F(dx - 4)} ${F(fy)} L${F(dx - 4)} ${F(dy + 4)} L${F(dx + dw + 30)} ${F(dy - 30)} L${F(dx + dw + 30)} ${F(fy)}Z`;
+  return `M${F(dx)} ${F(fy)} L${F(dx)} ${F(dy + dw / 2)} A${F(dw / 2)} ${F(dw / 2)} 0 0 1 ${F(dx + dw)} ${F(dy + dw / 2)} L${F(dx + dw)} ${F(fy)}Z`;
+}
+/* a bough seen close: a twig with needles brushed off both sides */
+function needleBough(r, x, y, L, a, col, hi, op = 0.9) { const ca = Math.cos(a), sa = Math.sin(a); let d = `M${F1(x)} ${F1(y)} L${F1(x + ca * L)} ${F1(y + sa * L)}`, d2 = ''; const n = Math.round(L / 3.2);
+  for (let i = 1; i < n; i++) { const t = i / n, px = x + ca * L * t, py = y + sa * L * t, nl = L * 0.16 * (1 - t * 0.55); for (const sd of [-1, 1]) { const b = a + sd * 1.0 + (r() - 0.5) * 0.3; const seg = ` M${F1(px)} ${F1(py)} l${F1(Math.cos(b) * nl)} ${F1(Math.sin(b) * nl)}`; if (sd < 0) d2 += seg; else d += seg; } }
+  return `<g opacity="${op}" filter="url(#tw)"><path d="${d}" stroke="${col}" stroke-width="1.7" stroke-linecap="round" fill="none"/><path d="${d2}" stroke="${hi}" stroke-width="1.5" stroke-linecap="round" fill="none"/></g>`; }
+function interiorArt(type, cb, bag, gear, cw, ch) {
+  const C = campCols(), r = CA.rng('int', type, cb, bag, gear, cw, ch); const g = intGeom(cw, ch); const { floorY: fy, dx, dy, dw } = g; const door = doorPath(type, g);
+  let wall = '', s = '';
+  const W2 = cw + 40; const blob = (x, y, rx, ry, n = 10, j = 0.2) => P3.blob(r, x, y, rx, ry, n, j);
+  const hole = (x, y, rx, ry) => `<path d="${blob(x, y, rx, ry)}" fill="#c9cfc8" opacity=".55" filter="url(#tw)"/>`;
+  if (type === 'cabin') {
+    wall += `<rect x="-10" y="-10" width="${W2}" height="${fy + 10}" fill="#4e3e2c"/>`;
+    for (let y = fy - 26, i = 0; y > -30; y -= 27, i++) { wall += `<path d="M-10 ${F1(y)} Q${F1(cw / 2)} ${F1(y - 3 + r() * 3)} ${W2} ${F1(y)} L${W2} ${F1(y + 25)} L-10 ${F1(y + 25)}Z" fill="${i % 2 ? '#6a5438' : '#735c3e'}" filter="url(#tw)"/>` + `<path d="M-10 ${F1(y + 5)} L${W2} ${F1(y + 4)}" stroke="#94795a" stroke-width="3" opacity=".45" filter="url(#tw)"/>` + `<path d="M-10 ${F1(y + 22)} L${W2} ${F1(y + 22)}" stroke="#1e160e" stroke-width="5" opacity=".35"/>`;
+      if (!(cb === 2 && i === 3)) wall += `<path d="M-10 ${F1(y + 25.5)} L${W2} ${F1(y + 25.5)}" stroke="${C.moss2}" stroke-width="3" opacity=".8" filter="url(#tw)"/>`;
+      for (let k = 0; k < 3; k++) { const x = r() * cw; wall += `<path d="M${F1(x)} ${F1(y + 9 + r() * 8)} q${F1(14 + r() * 20)} ${F1(r() * 2 - 1)} ${F1(30 + r() * 30)} 0" stroke="#3e2f20" stroke-width="1" opacity=".5" fill="none"/>`; } }
+    wall += `<path d="M-10 0 L${W2} 0 L${W2} 22 L-10 22Z" fill="#2e2418" filter="url(#tw)"/>`; /* the plate log under the roof */
+    for (let i = 0; i < 2; i++) { const x = cw * (0.2 + i * 0.5); wall += `<path d="M${F1(x - 4)} 22 L${F1(x + 4)} 22 L${F1(x + 4)} 34 L${F1(x - 4)} 34Z" fill="#5a4630"/>`; }
+    if (cb) for (let i = 0; i < cb * 2; i++) wall += `<path d="M${F1(r() * cw)} ${F1(fy - 30 - r() * (fy - 60))} l${F1(20 + r() * 30)} 0" stroke="#d4d8cc" stroke-width="1.6" opacity=".5"/>`; /* daylight through the chinking */
+    /* a shelf with what you have */
+    wall += `<path d="M${F1(cw * 0.04)} ${F1(fy - 190)} L${F1(cw * 0.42)} ${F1(fy - 190)} L${F1(cw * 0.42)} ${F1(fy - 183)} L${F1(cw * 0.04)} ${F1(fy - 183)}Z" fill="#8a6e4c" filter="url(#tw)"/><path d="M${F1(cw * 0.06)} ${F1(fy - 183)} l8 10 M${F1(cw * 0.4)} ${F1(fy - 183)} l-8 10" stroke="#5a4630" stroke-width="3"/>`;
+    wall += `<path d="M${F1(cw * 0.08)} ${F1(fy - 190)} l0 -16 l14 0 l0 16Z" fill="#6e6a62" filter="url(#tw)"/><path d="M${F1(cw * 0.22)} ${F1(fy - 190)} q6 -14 12 0Z" fill="#9a8a6a" filter="url(#tw)"/><path d="M${F1(cw * 0.3)} ${F1(fy - 190)} l2 -20 l8 0 l2 20Z" fill="#4e5a52" filter="url(#tw)"/>`;
+  } else if (type === 'rock') {
+    wall += `<rect x="-10" y="-10" width="${W2}" height="${fy + 10}" fill="${mixHex(C.stone, '#22221e', 0.45)}"/>`;
+    for (let i = 0; i < 26; i++) { const x = r() * cw, y = r() * (fy - 90); wall += P3.wash(blob(x, y, 40 + r() * 50, 20 + r() * 24, 11, 0.25), mixHex(C.stone, i % 3 ? '#2a2a26' : '#8a8a80', 0.25 + r() * 0.3), 0.7, 0.4); }
+    for (let i = 0; i < 6; i++) wall += `<path d="M${F1(r() * cw)} ${F1(r() * fy * 0.6)} l${F1(r() * 60 - 30)} ${F1(40 + r() * 50)}" stroke="#1a1a16" stroke-width="1.5" opacity=".45" fill="none" filter="url(#tw)"/>`;
+    for (let row = 0; row < 4; row++) { let x = -20 + (row % 2) * 22; while (x < cw + 20) { const w = 36 + r() * 18; if (!(cb === 2 && row === 0 && r() < 0.3)) wall += CA.stone(r, x + w / 2, fy - 12 - row * 22, w / 2, 10.5, C); x += w + 2; } }
+    if (cb) for (let i = 0; i < cb * 2; i++) wall += hole(r() * cw, fy - 20 - r() * 70, 8, 5);
+    for (let i = 0; i < 14; i++) wall += CA.pole(cw * i / 13, -10, cw * i / 13 + 6, 26, 9, C, '#3a3024'); /* the roof poles under the lip */
+    for (let i = 0; i < 8; i++) wall += `<path d="${blob(r() * cw, 28 + r() * 6, 10 + r() * 12, 4)}" fill="${C.moss}" opacity=".75" filter="url(#tw)"/>`;
+  } else if (type === 'hut' || type === 'leanto') {
+    const hut = type === 'hut';
+    wall += `<rect x="-10" y="-10" width="${W2}" height="${fy + 10}" fill="${hut ? '#2c2318' : '#33301f'}"/>`;
+    for (let x = -40; x < cw + 60; x += hut ? 30 : 38) wall += CA.pole(x, fy + 4, x + (hut ? 30 : 70), -14, hut ? 7 : 8, C, '#6e5a40');
+    const n = hut ? 150 : 110; for (let i = 0; i < n; i++) { const x = r() * (cw + 40) - 20, y = r() * (fy - 10); const k = i % 3; wall += needleBough(r, x - 20, y, 34 + r() * 22, -0.6 + r() * 0.5, [C.bough[0], C.bough[1], mixHex(C.bough[0], '#14120e', 0.4)][k], C.bough[k === 1 ? 2 : 1], 0.85); }
+    if (hut) for (let i = 0; i < 30; i++) wall += `<path d="${blob(r() * cw, r() * (fy - 20), 12 + r() * 10, 5 + r() * 3)}" fill="${[C.litter, '#5e4630', C.moss2][i % 3]}" opacity=".7" filter="url(#tw)"/>`;
+    wall += `<path d="M-10 -10 L${W2} -10 L${W2} ${F1(fy * 0.35)} Q${F1(cw / 2)} ${F1(fy * 0.1)} -10 ${F1(fy * 0.35)}Z" fill="#0e0c08" opacity="${hut ? 0.45 : 0.25}" filter="url(#soft)"/>`;
+    const gaps = cb === 0 ? (hut ? 0 : 3) : cb === 1 ? 5 : 10; for (let i = 0; i < gaps; i++) wall += hole(r() * cw, 20 + r() * (fy - 80), 6 + r() * (cb === 2 ? 14 : 6), 3 + r() * 4);
+    if (cb === 2) wall += CA.pole(cw * 0.1, fy - 20, cw * 0.5, fy * 0.3, 10, C, '#6e5a40');
+  } else { /* tarp: two sloped panels meeting at the ridge, light coming through */
+    wall += `<rect x="-10" y="-10" width="${W2}" height="${fy + 10}" fill="${C.tarp}"/>`;
+    wall += `<path d="M-10 -10 L${F1(cw / 2)} -10 L-10 ${fy}Z" fill="${C.tarpHi}" opacity=".55" filter="url(#tw)"/><path d="M${F1(cw / 2)} -10 L${W2} -10 L${W2} ${fy}Z" fill="${C.tarpDk}" opacity=".45" filter="url(#tw)"/>`;
+    for (let i = 0; i < 7; i++) { const x = cw * (i / 6); wall += `<path d="M${F1(cw / 2)} -10 L${F1(x)} ${fy}" stroke="${C.tarpDk}" stroke-width="1" opacity=".35"/>`; }
+    for (let i = 0; i < 10; i++) { const x = r() * cw, y = r() * fy; wall += `<path d="M${F1(x)} ${F1(y)} q${F1(10 + r() * 20)} ${F1(-4 + r() * 8)} ${F1(30 + r() * 30)} ${F1(r() * 6)}" stroke="#2e3c42" stroke-width="1.2" opacity=".3" fill="none"/>`; }
+    wall += `<path d="M${F1(cw / 2)} -10 L${F1(cw / 2)} 30" stroke="#2a2a26" stroke-width="3" opacity=".6"/>`;
+    if (cb) wall += `<path d="M${F1(cw * 0.18)} ${F1(fy * 0.3)} l14 8 l-6 10 l12 6" stroke="#2a3438" stroke-width="2" fill="none"/>` + (cb === 2 ? `<path d="${blob(cw * 0.3, fy * 0.25, 22, 12)}" fill="#d8dcd4" opacity=".7" filter="url(#tw)"/>` : '');
+  }
+  /* things hung on the wall */
+  const gx = cw * 0.08, gy = fy - 150;
+  if (gear & 1) wall += CA.pole(gx, gy, gx + 10, gy + 60, 4, C, '#7a5e40') + `<path d="M${F1(gx - 4)} ${F1(gy - 2)} L${F1(gx - 22)} ${F1(gy - 14)} L${F1(gx - 22)} ${F1(gy + 14)} L${F1(gx + 2)} ${F1(gy + 6)}Z" fill="#7a7c76" filter="url(#tw)"/><path d="M${F1(gx - 22)} ${F1(gy - 14)} L${F1(gx - 22)} ${F1(gy + 14)}" stroke="#b4b6ae" stroke-width="2"/>`;
+  if (gear & 2) wall += `<path d="M${F1(gx + 40)} ${F1(gy - 30)} L${F1(gx + 48)} ${F1(gy + 90)}" stroke="#b49468" stroke-width="2.5" stroke-linecap="round" filter="url(#tw)"/><path d="M${F1(gx + 40)} ${F1(gy - 30)} Q${F1(gx + 52)} ${F1(gy + 20)} ${F1(gx + 46)} ${F1(gy + 60)}" stroke="#d8d4c8" stroke-width=".6" fill="none" opacity=".7"/>`;
+  if (gear & 4) wall += `<path d="M${F1(gx + 87)} ${F1(gy - 9)} A40 40 0 0 1 ${F1(gx + 87)} ${F1(gy + 69)}" stroke="#7a5e40" stroke-width="3.4" fill="none" stroke-linecap="round" filter="url(#tw)"/><path d="M${F1(gx + 87)} ${F1(gy - 9)} L${F1(gx + 87)} ${F1(gy + 69)}" stroke="#ddd6c6" stroke-width="1"/>`;
+  /* floor: packed earth, boughs, a hide in the cabin */
+  s += `<rect x="-10" y="${fy}" width="${W2}" height="${ch - fy + 10}" fill="${type === 'cabin' ? '#3e3226' : type === 'rock' ? '#454238' : '#382f22'}"/>`;
+  s += `<path d="M-10 ${fy} L${W2} ${fy} L${W2} ${fy + 26} Q${F1(cw / 2)} ${fy + 14} -10 ${fy + 26}Z" fill="#100c08" opacity=".35" filter="url(#tw)"/>`;
+  for (let i = 0; i < 16; i++) s += `<path d="${blob(r() * cw, fy + 30 + r() * (ch - fy - 40), 30 + r() * 30, 8 + r() * 6)}" fill="${['#4a3e2e', '#2e261c', '#544634'][i % 3]}" opacity=".45" filter="url(#tw)"/>`;
+  if (type === 'cabin') s += P3.wash(blob(cw * 0.6, fy + 150, cw * 0.28, 36, 14, 0.12), '#8a7258', 0.9, 0.5) + P3.wash(blob(cw * 0.6, fy + 150, cw * 0.2, 22, 12, 0.12), '#a08a6c', 0.5, 0.1);
+  else for (let i = 0; i < 26; i++) s += needleBough(r, r() * cw - 20, fy + 36 + r() * (ch - fy - 60), 40 + r() * 24, -0.3 + r() * 0.6, i % 2 ? C.bough[0] : mixHex(C.bough[1], '#4a3e2e', 0.35), C.bough[1], 0.65);
+  /* the bed: a bough mattress, then the bag or the blanket */
+  const bx = cw * 0.05, by = fy + 28, bw = cw * 0.44;
+  for (let i = 0; i < 9; i++) s += needleBough(r, bx - 14 + i * bw * 0.12, by + 26 + (i % 3) * 7, bw * 0.3, -0.15 + r() * 0.3, C.bough[i % 2], C.bough[2], 0.95);
+  if (bag) s += P3.wash(`M${F1(bx)} ${F1(by + 18)} Q${F1(bx)} ${F1(by)} ${F1(bx + 22)} ${F1(by + 2)} L${F1(bx + bw - 10)} ${F1(by + 8)} Q${F1(bx + bw + 4)} ${F1(by + 26)} ${F1(bx + bw - 12)} ${F1(by + 44)} L${F1(bx + 18)} ${F1(by + 46)} Q${F1(bx)} ${F1(by + 40)} ${F1(bx)} ${F1(by + 18)}Z`, C.bag, 0.97, 0.55) + P3.wash(blob(bx + bw * 0.55, by + 14, bw * 0.38, 6), C.bagHi, 0.6, 0.1) + `<ellipse cx="${F1(bx + 16)}" cy="${F1(by + 22)}" rx="11" ry="12" fill="#22261c" opacity=".75"/>` + [0.3, 0.5, 0.7].map(t => `<path d="M${F1(bx + bw * t)} ${F1(by + 4)} q4 20 0 40" stroke="#2f3626" stroke-width="1.2" fill="none" opacity=".5"/>`).join('');
+  else s += P3.wash(`M${F1(bx + 4)} ${F1(by + 10)} Q${F1(bx + bw / 2)} ${F1(by)} ${F1(bx + bw)} ${F1(by + 12)} L${F1(bx + bw - 6)} ${F1(by + 46)} Q${F1(bx + bw / 2)} ${F1(by + 52)} ${F1(bx + 2)} ${F1(by + 44)}Z`, C.wool, 0.97, 0.55) + `<path d="M${F1(bx + 10)} ${F1(by + 16)} L${F1(bx + bw - 10)} ${F1(by + 18)} M${F1(bx + 10)} ${F1(by + 22)} L${F1(bx + bw - 10)} ${F1(by + 24)}" stroke="#8a3c2a" stroke-width="2" opacity=".6"/>`;
+  if (gear & 8) s += `<path d="M${F1(cw * 0.3)} ${F1(fy - 10)} L${F1(cw * 0.3 + 2)} ${F1(fy - 34)} Q${F1(cw * 0.3 + 18)} ${F1(fy - 38)} ${F1(cw * 0.3 + 34)} ${F1(fy - 34)} L${F1(cw * 0.3 + 36)} ${F1(fy - 10)} Q${F1(cw * 0.3 + 18)} ${F1(fy - 6)} ${F1(cw * 0.3)} ${F1(fy - 10)}Z" fill="#2a2826" filter="url(#tw)"/><path d="M${F1(cw * 0.3 + 2)} ${F1(fy - 34)} Q${F1(cw * 0.3 + 18)} ${F1(fy - 38)} ${F1(cw * 0.3 + 34)} ${F1(fy - 34)}" stroke="#6a6862" stroke-width="2" fill="none"/>`;
+  /* the doorway's frame */
+  let frame = '';
+  if (type === 'cabin') frame += CA.pole(dx + dw * 0.1, fy, dx + dw * 0.1, dy + 4, 10, C, '#5a4630') + CA.pole(dx + dw * 0.9, fy, dx + dw * 0.9, dy + 4, 10, C, '#5a4630') + CA.pole(dx + dw * 0.06, dy + 6, dx + dw * 0.94, dy + 6, 11, C, '#5a4630') + P3.wash(`M${F1(dx + dw * 0.12)} ${F1(fy)} L${F1(dx + dw * 0.12)} ${F1(dy + 10)} L${F1(dx - dw * 0.12)} ${F1(dy + 22)} L${F1(dx - dw * 0.12)} ${F1(fy + 8)}Z`, '#5d4a36', 0.97, 0.5) + [0.2, 0.45, 0.7].map(t => `<path d="M${F1(dx + dw * 0.12 - dw * 0.24 * t)} ${F1(dy + 10 + 12 * t)} L${F1(dx + dw * 0.12 - dw * 0.24 * t)} ${F1(fy + 6 * t)}" stroke="#3a2e22" stroke-width="1" opacity=".7"/>`).join('');
+  else if (type === 'rock') frame += CA.log(dx - 8, dx + dw + 8, dy + 18, 8, C, 'lr') + CA.stone(r, dx - 2, fy - 20, 10, 18, C) + CA.stone(r, dx + dw + 2, fy - 22, 10, 18, C);
+  else if (type === 'tarp') frame += `<path d="M${F1(dx - 8)} ${F1(fy)} L${F1(dx + dw / 2)} ${F1(dy - 6)} L${F1(dx + dw + 8)} ${F1(fy)}" stroke="${C.tarpDk}" stroke-width="5" fill="none" stroke-linejoin="round" filter="url(#tw)"/>` + CA.pole(dx + dw / 2, fy, dx + dw / 2, dy - 6, 5, C);
+  else if (type === 'leanto') frame += CA.pole(dx - 4, fy + 4, dx - 4, dy, 10, C) + CA.pole(dx - 20, dy + 10, dx + dw + 40, dy - 34, 11, C);
+  else frame += `<path d="${door}" stroke="#5a4630" stroke-width="10" fill="none" filter="url(#tw)"/>` + [0, 1, 2, 3, 4, 5, 6].map(i => needleBough(r, dx - 18 + i * dw * 0.17, dy + dw * 0.12 + Math.abs(i - 3) * 9, 34, i < 3 ? -0.8 : i > 3 ? 0.8 : -1.57, C.bough[i % 2], C.bough[2], 0.95)).join('');
+  const mask = `<mask id="dm"><rect x="-20" y="-20" width="${cw + 60}" height="${ch + 40}" fill="#fff"/><path d="${door}" fill="#000"/></mask>`;
+  return { w: cw, h: ch, ax: 0, ay: 0, svg: `${mask}<g mask="url(#dm)">${wall}</g>${s}${frame}` };
+}
+/* the land through the doorway: ground and a few trees, by place and snow */
+function viewArt(snow, cw, ch) {
+  const C = campCols(), V = C.V, r = CA.rng('view', snow, biome(), cw); const g = intGeom(cw, ch); const { dx, dy, dw, dh } = g; const gy = dy + dh * 0.55; let s = '';
+  s += `<path d="M${F1(dx - 40)} ${F1(gy + 4)} Q${F1(dx + dw / 2)} ${F1(gy - 10)} ${F1(dx + dw + 40)} ${F1(gy + 2)} L${F1(dx + dw + 40)} ${F1(dy + dh + 10)} L${F1(dx - 40)} ${F1(dy + dh + 10)}Z" fill="${snow ? '#dfe4e4' : PAINT.palOf(S.seasonKey).ground}" filter="url(#tw)"/>`;
+  for (let i = 0; i < 5; i++) { const x = dx - 10 + i * dw * 0.27 + r() * 8, h = 40 + r() * 30; s += spirePaint(r, x, gy + 6, h, 10 + r() * 6, [V.conifer[1], V.conifer[3]], { tiers: 5, snow }); }
+  s += `<path d="${P3.blob(r, dx + dw * 0.5, dy + dh - 8, dw * 0.45, 8)}" fill="${snow ? '#f2f4f2' : PAINT.palOf(S.seasonKey).moss2}" opacity=".7" filter="url(#tw)"/>`;
+  return { w: cw, h: ch, ax: 0, ay: 0, svg: s };
+}
+/* you, sitting cross-legged facing the room */
+function sitArt(wet) {
+  const r = CA.rng('sit', wet); const jk = wet ? '#7e3a1e' : '#b4542a', jkHi = wet ? '#94482a' : '#cc6c3e', jkDk = mixHex(jk, '#1a120c', 0.4); let s = '';
+  s += `<ellipse cx="0" cy="18" rx="32" ry="10" fill="#0c0a08" opacity=".3" filter="url(#soft)"/>`;
+  s += P3.wash(`M-30 16 Q-30 -2 -12 -2 L12 -2 Q30 -2 30 16 Q0 22 -30 16Z`, '#33302a', 0.98, 0.5); /* crossed legs */
+  s += P3.wash(P3.blob(r, 0, -22, 24, 28, 12, 0.05), jk, 0.98, 0.6) + P3.wash(P3.blob(r, -8, -30, 10, 14), jkHi, 0.55, 0.1) + P3.wash(P3.blob(r, 6, -8, 14, 8), jkDk, 0.4, 0.1);
+  s += `<path d="M0 -46 L0 -4" stroke="${jkDk}" stroke-width="1.2" opacity=".6"/><path d="M-13 -46 Q0 -38 13 -46" stroke="${jkDk}" stroke-width="5" fill="none" stroke-linecap="round"/>`;
+  s += P3.wash(P3.blob(r, 0, -56, 15.5, 16.5, 10, 0.04), '#d8b694', 0.98, 0.4) + P3.wash(P3.blob(r, -5, -54, 7, 10), '#b8906e', 0.35, 0.05);
+  s += P3.wash(`M-16.5 -58 Q-16 -76 0 -76 Q16.5 -76 16.5 -58 Q0 -64 -16.5 -58Z`, '#5a4a36', 0.98, 0.4) + `<path d="M-19 -58 Q0 -66 19 -58" stroke="#3e3226" stroke-width="5" fill="none" stroke-linecap="round"/>`;
+  s += `<circle cx="-5.5" cy="-53" r="1.6" fill="#221c18"/><circle cx="5.5" cy="-53" r="1.6" fill="#221c18"/><path d="M-3 -45 Q0 -44 3 -45" stroke="#7a5640" stroke-width="1.2" fill="none"/>`;
+  return CA.art(-40, -84, 40, 30, s);
+}
+function hungArt(n) { const C = campCols(); let s = `<path d="M-6 0 L${F1(n * 22 + 10)} 0" stroke="${C.cord}" stroke-width="1.5"/>`; for (let i = 0; i < n; i++) { const x = 8 + i * 22; s += `<path d="M${x - 7} 0 L${x + 7} 0 L${x + 4} 30 L${x - 4} 30Z" fill="#8e4a2c" filter="url(#tw)"/><path d="M${x - 2} 4 L${x - 1} 26" stroke="${C.fat}" stroke-width="1" opacity=".5"/>`; } return CA.art(-10, -4, n * 22 + 14, 34, s); }
+function ringBigArt() { const C = campCols(), r = CA.rng('ringbig', biome()); let s = ''; const st = []; for (let i = 0; i < 9; i++) { const a = i / 9 * 6.283; st.push([Math.cos(a) * 34, Math.sin(a) * 16]); } for (const p of st.filter(p => p[1] < 0)) s += CA.stone(r, p[0], p[1], 9, 5.5, C); s += P3.wash(P3.blob(r, 0, 0, 26, 11), C.char, 0.95, 0.5) + CA.pole(-16, 4, 14, -4, 5, C, '#231d18', false) + CA.pole(-14, -5, 16, 3, 4.6, C, '#2e2620', false); for (const p of st.filter(p => p[1] >= 0)) s += CA.stone(r, p[0], p[1], 9, 5.5, C); return CA.art(-46, -26, 46, 26, s); }
+function drawInteriorPainted(cw, ch, ph) {
+  const type = S.shelterType || 'leanto'; const t = W.t; const fire = S.fire, inFire = fire && S.fireInside; const st = E.status(S), snow = !!st.snowy;
+  const cond = S.shelterCond ?? 1, cb = cond >= 0.85 ? 0 : cond >= 0.55 ? 1 : 2; const bag = S.gear.includes('Sleeping bag') ? 1 : 0;
+  const gear = (E.chopper(S) ? 1 : 0) | (E.hasRod(S) ? 2 : 0) | (E.hasBow(S) ? 4 : 0) | (E.potLike(S) ? 8 : 0); const wet = S.wet > 0.5 ? 1 : 0;
+  const B = `int|${biome()}|`, room = B + `${type}|${cb}|${bag}|${gear}|${cw}|${ch}`, view = B + `view|${snow ? 1 : 0}|${cw}|${ch}`;
+  const smoked = Math.min(5, S.stores.filter(x => x.smoked).length);
+  const need = [[room, () => interiorArt(type, cb, bag, gear, cw, ch)], [view, () => viewArt(snow, cw, ch)], [`sit|${wet}`, () => sitArt(!!wet)]];
+  if (smoked) need.push([`hung|${smoked}`, () => hungArt(smoked)]); if (inFire) { need.push(['camp|' + biome() + '|ringbig', ringBigArt]); for (let i = 0; i < 4; i++) need.push(['camp|' + biome() + `|flame|${i}`, () => flameArt(i)]); }
+  let ok = true; for (const [k, m] of need) if (!paintReady(k, m)) ok = false; if (!ok) return false;
+  const g = intGeom(cw, ch); const { floorY, dx, dy, dw, dh } = g; const doorP = new Path2D(doorPath(type, g)); const img = k => PAINT.cache.get(k).cv;
+  /* the world outside, clipped to the doorway */
+  cx.save(); cx.clip(doorP);
+  const sky = { dawn: ['#e8b48a', '#c9b8a8'], morning: ['#c4d2d6', '#dfe2da'], afternoon: ['#b6c6cc', '#d8dcd4'], evening: ['#d49a6a', '#c8a888'], dusk: ['#4e4e6c', '#7a6a72'], night: ['#0e1428', '#1a2034'] }[ph] || ['#b6c6cc', '#d8dcd4'];
+  const sg = cx.createLinearGradient(0, dy - 20, 0, dy + dh); sg.addColorStop(0, sky[0]); sg.addColorStop(1, sky[1]); cx.fillStyle = sg; cx.fillRect(dx - 50, dy - 50, dw + 100, dh + 60);
+  cx.drawImage(img(view), 0, 0, cw, ch);
+  if (S.rain || S.storm) { cx.strokeStyle = 'rgba(220,228,236,.55)'; cx.lineWidth = 1.2; for (let i = 0; i < (S.storm ? 60 : 28); i++) { const x = dx + ((i * 37 + t * 200) % dw), y = dy + ((i * 53 + t * 420) % dh); cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x - 3, y + 12); cx.stroke(); } }
+  if (snow && (S.snowfall || S.storm)) { cx.fillStyle = 'rgba(255,255,255,.8)'; for (let i = 0; i < 30; i++) { cx.beginPath(); cx.arc(dx + ((i * 41 + t * 20) % dw), dy + ((i * 29 + t * 40) % dh), 1.5, 0, 6.28); cx.fill(); } }
+  if (S.fog) { cx.fillStyle = 'rgba(214,218,214,.55)'; cx.fillRect(dx - 50, dy - 50, dw + 100, dh + 60); }
+  cx.fillStyle = `rgba(0,0,0,${ph === 'night' ? 0.5 : ph === 'dusk' ? 0.28 : ph === 'evening' || ph === 'dawn' ? 0.08 : 0})`; cx.fillRect(dx - 50, dy - 50, dw + 100, dh + 60);
+  cx.restore();
+  /* the room */
+  cx.drawImage(img(room), 0, 0, cw, ch);
+  /* daylight falling in through the door, warm at the ends of the day */
+  if (ph !== 'night') { const lg = cx.createRadialGradient(dx + dw / 2, floorY + 20, 10, dx + dw / 2, floorY + 20, cw * 0.7); const a = ph === 'dusk' ? 0.05 : 0.14, col = ph === 'evening' || ph === 'dawn' ? '240,180,120' : '230,232,220'; lg.addColorStop(0, `rgba(${col},${a})`); lg.addColorStop(1, `rgba(${col},0)`); cx.fillStyle = lg; cx.fillRect(0, 0, cw, ch); }
+  if (smoked) { const p = PAINT.cache.get(`hung|${smoked}`); cx.drawImage(p.cv, cw * 0.3 - p.ax, Math.max(130, floorY - 232) - p.ay, p.w, p.h); }
+  if (inFire) { const fx = cw * 0.4, fy = floorY + 66; const rb = PAINT.cache.get('camp|' + biome() + '|ringbig'); cx.drawImage(rb.cv, fx - rb.ax, fy - rb.ay, rb.w, rb.h); const fr = Math.floor(t * 7) % 4, fl = PAINT.cache.get('camp|' + biome() + `|flame|${fr}`), sc = 2.3 * (1 + Math.sin(t * 13) * 0.05); cx.drawImage(fl.cv, fx - fl.ax * sc, fy + 2 - fl.ay * sc, fl.w * sc, fl.h * sc);
+    const gr = cx.createRadialGradient(fx, fy - 10, 10, fx, fy - 10, cw * 0.9); gr.addColorStop(0, 'rgba(240,160,80,.32)'); gr.addColorStop(1, 'rgba(240,160,80,0)'); cx.fillStyle = gr; cx.fillRect(0, 0, cw, ch);
+    const chim = S.crafts.chimney >= 2 || S.crafts.stove >= 1 || (E.SHELTERS[type] && E.SHELTERS[type].safeFire); if (!chim) { cx.fillStyle = 'rgba(110,108,104,.18)'; for (let i = 0; i < 8; i++) { cx.beginPath(); cx.arc((i * 131 + t * 12) % cw, 30 + (i * 23) % 80 + Math.sin(t + i) * 10, 40, 0, 6.28); cx.fill(); } } }
+  else if (fire) { const gr = cx.createRadialGradient(dx + dw / 2, floorY, 10, dx + dw / 2, floorY, cw * 0.5); gr.addColorStop(0, 'rgba(240,160,80,.26)'); gr.addColorStop(1, 'rgba(240,160,80,0)'); cx.fillStyle = gr; cx.fillRect(0, 0, cw, ch); }
+  /* you */
+  const px = cw * 0.76, py = floorY + 100; const busy = mini ? mini.type : null; const sp = PAINT.cache.get(`sit|${wet}`); cx.drawImage(sp.cv, px - sp.ax, py - sp.ay, sp.w, sp.h);
+  const jk = wet ? '#7e3a1e' : '#b4542a'; cx.strokeStyle = jk; cx.lineWidth = 10; cx.lineCap = 'round'; const k = Math.sin(t * (busy ? 8 : 1.5)) * (busy ? 6 : 2);
+  cx.beginPath(); cx.moveTo(px - 20, py - 26); cx.lineTo(px - 26 + k, py - 2); cx.moveTo(px + 20, py - 26); cx.lineTo(px + 26 - k, py - 2); cx.stroke();
+  cx.fillStyle = '#c4a47a'; cx.beginPath(); cx.roundRect(px - 22 + k, py - 6, 44, 6, 3); cx.fill(); cx.fillStyle = '#d0b090'; cx.beginPath(); cx.arc(px - 26 + k, py - 2, 4.5, 0, 6.28); cx.arc(px + 26 - k, py - 2, 4.5, 0, 6.28); cx.fill();
+  if (busy === 'cord' && mini.acts.some(a => /Twist|Fold/.test(a.label))) { cx.strokeStyle = '#c9b58a'; cx.lineWidth = 3; cx.beginPath(); cx.moveTo(px - 22, py - 4); cx.quadraticCurveTo(px, py - 14 + k, px + 22, py - 4); cx.stroke(); }
+  if (cond < 0.5 && (S.rain || S.storm)) { cx.fillStyle = 'rgba(200,222,236,.75)'; for (let i = 0; i < 6; i++) { const x = cw * (0.15 + i * 0.14), y = ((t * (120 + i * 20) + i * 97) % (floorY + 40)); cx.beginPath(); cx.ellipse(x, y, 2, 4, 0, 0, 6.28); cx.fill(); if (y > floorY + 30 && Math.random() < 0.02) sfx.play('drip'); } cx.fillStyle = 'rgba(80,110,130,.25)'; for (let i = 0; i < 6; i++) { cx.beginPath(); cx.ellipse(cw * (0.15 + i * 0.14), floorY + 44, 12, 4, 0, 0, 6.28); cx.fill(); } }
+  /* the light of the hour: cold at night, warm at the ends of the day */
+  if (W.night) { cx.fillStyle = inFire ? 'rgba(8,12,30,.38)' : 'rgba(5,10,28,.55)'; cx.fillRect(0, 0, cw, ch); }
+  else if (ph === 'dusk') { cx.fillStyle = 'rgba(40,34,60,.3)'; cx.fillRect(0, 0, cw, ch); }
+  else if (ph === 'evening' || ph === 'dawn') { cx.fillStyle = 'rgba(120,70,40,.1)'; cx.fillRect(0, 0, cw, ch); }
+  cx.font = '600 11px ' + (W.mono || 'monospace'); cx.textAlign = 'left'; cx.fillStyle = 'rgba(255,255,255,.5)'; cx.fillText(E.shelterName(S).toUpperCase() + (S.fireInside && S.fire ? ' · FIRE INSIDE' : ''), 14, ch - 14);
+  return true;
+}
+// ---------- inside the shelter: a cutaway, the weather in the doorway (the old drawing, for the frame or two before the paintings are ready)
 function drawInterior(dpr, cw, ch, ph) {
   const type = S.shelterType || 'leanto'; const t = W.t; const fire = S.fire; const inFire = fire && S.fireInside;
   cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (drawInteriorPainted(cw, ch, ph)) return;
   const wall = { tarp: '#3f5a6a', leanto: '#4a3b2a', hut: '#3a2e20', rock: '#5f6260', cabin: '#6a5438' }[type];
   cx.fillStyle = wall; cx.fillRect(0, 0, cw, ch);
   const floorY = ch * 0.62;
