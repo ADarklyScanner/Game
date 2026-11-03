@@ -114,6 +114,20 @@ Old saves from all 24 earlier versions load and play on, and save, reload and co
 | 86 | Going without water cost the same each day, so in the dry places it took 10 days to kill you | realism | Thirsty on the first day, dizzy on the second, collapse on the third |
 | 87 | Giardia from untreated water was rolled every day, even on days you drank nothing | wrong rule | Only on days you drank untreated water |
 
+### Thin next to their siblings (Nov 3, built)
+
+| # | Part | Was | Now |
+|---|---|---|---|
+| 88 | Fish trap | Built once, caught forever | Clogs in rain, torn by high water, heaved by ice, washes away; the trapline clears and mends it |
+| 89 | Cooking | Always worked | Can char (lose some of the meal, sometimes burnt fingers) or come out just right; better with practice |
+| 90 | Camp works | Never wore or broke | Storms lay the rack flat, tear up the smoker; snow brings the woodshed down; high water damages the bridge |
+| 91 | Snares | One event in the game | Something alive in a snare (a real choice); snow buries snares until the line is walked |
+| 92 | Snowshoes, mittens | Never wore | Lacing and fingertips wear through; mending fixes them |
+| 93 | Moss, stones, clay | Always the same | Frost halves moss, a stone on the foot, good and gritty clay |
+| 94 | Lamp | Only the spill | Smokes without a flue, gutters when tallow runs low |
+| 95 | Raft | Capsize only | The wind pushes it down the lake |
+| 96 | Snowshoe wear (found by tests/upkeep.js) | Would have crashed walking in deep snow once the lacing wore through | Fixed before release |
+
 ### Test-side problems (not game bugs)
 
 - The test bot never hauled water in the dry places and lived off its starting supply. It now hauls water when it runs low, as the game tells a player to. Its median in the dry desert site went from 13 days (dying of thirst) to 35; the old number came from the bot, not the rules.

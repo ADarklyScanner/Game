@@ -19,6 +19,7 @@ node finish.js
 node conseq.js
 node regress.js
 node lazy.js
+node upkeep.js
 node balance.js
 node fuzz.js 20
 node exhaustive.js 4000
