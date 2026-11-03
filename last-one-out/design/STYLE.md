@@ -74,6 +74,13 @@ The wreck on the far side of each map is the first thing drawn with the painting
 - The drying rack now stands to the right of the shelter and the clothes line in front of the fire, so a cabin no longer covers them.
 - If any camp painting isn't ready yet, the whole camp is drawn the old way for that frame, so the two never mix.
 
+## How animals, people and signs are painted (phase 5)
+
+- **Animals** are side views facing right, flipped to face left. All 36 kinds are painted from a few body plans (birds, hares, upright wallabies and kin, hoofed animals, small and slim mammals, swimmers, porcupine, snake, crab), each with its own colours and marks: antlers, palmate moose antlers, muskox skirt and horns, tusks, springbok stripe, fox brush, beaver tail, quills, spots.
+- Each has three poses (standing and two strides) that swap while it moves, and a dead pose lying on its side with a little blood. Colours are each animal's own, pulled toward grey.
+- **The bear** is painted in three poses. **The player** is a painted body, head, hat and pack (darker when wet); legs, arms and tools still move frame by frame so every job still shows.
+- **Carcasses** whole or dressed, **tracks** in mud or snow, set **snares and deadfalls**, the wreck's **debris** (life ring, case, line and float), **landmarks** (dead pine, boulders, knoll, standing stone, blazed tree) and **boulders** are painted. Blood is a darker, duller red.
+
 ## What stays the same
 
 All game rules, odds and the engine. This is a change to how things are drawn and laid out, not to what happens. The 1,100-plus checks and the bots keep testing the rules unchanged.
@@ -95,7 +102,7 @@ Each phase ends with the full test run, the picture sheet updated, and a commit.
 | 2 | The land (done Nov 3) | Painted ground, water, shore, rivers, rock, paths; light, weather and night tinting |
 | 3 | Trees and plants (done Nov 3) | Every tree kind and age, bushes, moss, cut and used states |
 | 4 | Camp and shelters (done Nov 3) | Fire, every shelter type at every build stage and condition, drying rack, smoker, cache, woodshed, cairns, piles |
-| 5 | Animals, people, tracks | Player, animals, carcasses, blood trails, debris, landmarks |
+| 5 | Animals, people, tracks (done Nov 3) | Player, animals, carcasses, blood trails, debris, landmarks |
 | 6 | Interiors | Inside every shelter type, by weather and time of day |
 | 7 | Mini-games | All 26 as close-ups |
 | 8 | Panels | Pack, map, journal and body, camp, build, menu, records, how to play, setup and end screens |

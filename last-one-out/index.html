@@ -2533,6 +2533,7 @@ function makeProps(rnd) {
 // landmarks: big enough to steer by. Cairns: knee-high stacks of stone
 function drawLandmark(l, snow) {
   const V = vis(); shadow(l.x, l.y + 3, l.kind === 'knoll' ? 40 : 14, 5, 0.8);
+  if (drawPainted(`lm|${biome()}|${l.kind}|${snow ? 1 : 0}`, () => landmarkArt(l.kind, !!snow), l.x, l.y, 1)) return;
   if (l.kind === 'pine') { cx.strokeStyle = '#3a3028'; cx.lineWidth = 5; cx.beginPath(); cx.moveTo(l.x, l.y); cx.lineTo(l.x + 2, l.y - 64); cx.stroke(); cx.lineWidth = 2; for (const [dy, dx] of [[-40, -14], [-48, 12], [-56, -9]]) { cx.beginPath(); cx.moveTo(l.x + 1, l.y + dy); cx.lineTo(l.x + 1 + dx, l.y + dy - 7); cx.stroke(); } cx.strokeStyle = '#d8c8a0'; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(l.x + 1, l.y - 8); cx.lineTo(l.x + 3, l.y - 30); cx.lineTo(l.x, l.y - 50); cx.stroke(); }
   else if (l.kind === 'boulder') { for (const sx of [-1, 1]) { cx.fillStyle = V.rock; cx.beginPath(); cx.ellipse(l.x + sx * 11, l.y - 12, 13, 15, sx * 0.2, 0, 6.28); cx.fill(); cx.fillStyle = V.rockHi; cx.beginPath(); cx.ellipse(l.x + sx * 11 - 3, l.y - 18, 5, 4, 0, 0, 6.28); cx.fill(); } }
   else if (l.kind === 'knoll') { cx.fillStyle = snow ? 'rgba(240,244,246,.95)' : 'rgba(160,148,92,.85)'; cx.beginPath(); cx.ellipse(l.x, l.y, 54, 26, 0, Math.PI, 0); cx.fill(); cx.fillStyle = snow ? '#fff' : 'rgba(190,178,118,.9)'; cx.beginPath(); cx.ellipse(l.x - 8, l.y - 16, 22, 7, 0, 0, 6.28); cx.fill(); cx.fillStyle = V.rock; cx.beginPath(); cx.ellipse(l.x + 6, l.y - 25, 7, 5, 0, 0, 6.28); cx.fill(); cx.strokeStyle = '#4a3a2a'; cx.lineWidth = 1.5; cx.beginPath(); cx.moveTo(l.x - 14, l.y - 22); cx.lineTo(l.x - 15, l.y - 38); cx.moveTo(l.x - 15, l.y - 32); cx.lineTo(l.x - 20, l.y - 36); cx.stroke(); }
@@ -2543,7 +2544,7 @@ function drawLandmark(l, snow) {
 function drawCairn(c) { shadow(c.x, c.y + 2, 9, 3, 0.8); { const v = Math.abs(Math.round(c.x * 7 + c.y * 3)) % 3, sn = W.snowNow ? 1 : 0; if (drawPainted(`cairn|${biome()}|${v}|${sn}`, () => cairnArt(v, !!sn), c.x, c.y, 1)) return; } const V = vis(); for (const [dy, w2] of [[0, 9], [-6, 7], [-11, 5], [-15, 3]]) { cx.fillStyle = V.rock; cx.beginPath(); cx.ellipse(c.x, c.y + dy - 2, w2, 3.2, 0, 0, 6.28); cx.fill(); cx.fillStyle = V.rockHi; cx.beginPath(); cx.ellipse(c.x - 1, c.y + dy - 3, w2 * 0.4, 1.2, 0, 0, 6.28); cx.fill(); } }
 function drawProp(p, snow) {
   const V = vis();
-  if (p.kind === 'boulder') { const r = 11 * p.s; shadow(p.x, p.y + 3, r * 1.1, r * 0.4, 1); cx.fillStyle = V.rock; cx.beginPath(); cx.moveTo(p.x - r, p.y + 2); cx.quadraticCurveTo(p.x - r * 1.05, p.y - r * 1.1, p.x - r * 0.1, p.y - r * 1.2); cx.quadraticCurveTo(p.x + r * 1.1, p.y - r * 1.1, p.x + r, p.y + 2); cx.closePath(); cx.fill(); cx.fillStyle = V.rockHi; cx.beginPath(); cx.ellipse(p.x - r * 0.3, p.y - r * 0.75, r * 0.45, r * 0.3, -0.3, 0, 6.28); cx.fill(); cx.fillStyle = 'rgba(0,0,0,.18)'; cx.beginPath(); cx.ellipse(p.x + r * 0.4, p.y - r * 0.2, r * 0.45, r * 0.5, 0, 0, 6.28); cx.fill(); if (snow) { cx.fillStyle = 'rgba(248,250,252,.9)'; cx.beginPath(); cx.ellipse(p.x - r * 0.1, p.y - r * 1.05, r * 0.7, r * 0.25, 0, 0, 6.28); cx.fill(); } return; }
+  if (p.kind === 'boulder') { const r = 11 * p.s; shadow(p.x, p.y + 3, r * 1.1, r * 0.4, 1); { const v = Math.abs(Math.round(p.x * 3 + p.y)) % 2; if (drawPainted(`bd|${biome()}|${snow ? 1 : 0}|${v}`, () => boulderArt(!!snow, v), p.x, p.y, p.s)) return; } cx.fillStyle = V.rock; cx.beginPath(); cx.moveTo(p.x - r, p.y + 2); cx.quadraticCurveTo(p.x - r * 1.05, p.y - r * 1.1, p.x - r * 0.1, p.y - r * 1.2); cx.quadraticCurveTo(p.x + r * 1.1, p.y - r * 1.1, p.x + r, p.y + 2); cx.closePath(); cx.fill(); cx.fillStyle = V.rockHi; cx.beginPath(); cx.ellipse(p.x - r * 0.3, p.y - r * 0.75, r * 0.45, r * 0.3, -0.3, 0, 6.28); cx.fill(); cx.fillStyle = 'rgba(0,0,0,.18)'; cx.beginPath(); cx.ellipse(p.x + r * 0.4, p.y - r * 0.2, r * 0.45, r * 0.5, 0, 0, 6.28); cx.fill(); if (snow) { cx.fillStyle = 'rgba(248,250,252,.9)'; cx.beginPath(); cx.ellipse(p.x - r * 0.1, p.y - r * 1.05, r * 0.7, r * 0.25, 0, 0, 6.28); cx.fill(); } return; }
   if (p.kind === 'treefern') { const s = p.s, h = 22 * s; shadow(p.x, p.y + 2, 14 * s, 5 * s, 0.8); cx.fillStyle = '#3a2a20'; cx.fillRect(p.x - 2.5 * s, p.y - h, 5 * s, h + 2); cx.fillStyle = '#4a3828'; cx.fillRect(p.x - 2.5 * s, p.y - h, 1.5 * s, h); const sway = Math.sin(W.t * 0.9 + p.x) * 0.06;
     for (let k = 0; k < 9; k++) { const a = (k / 9) * 6.28 + sway; const L = 18 * s; cx.strokeStyle = k % 2 ? '#2f6a34' : '#3f7e3e'; cx.lineWidth = 3.2 * s; cx.lineCap = 'round'; cx.beginPath(); cx.moveTo(p.x, p.y - h); cx.quadraticCurveTo(p.x + Math.cos(a) * L * 0.6, p.y - h + Math.sin(a) * L * 0.35 - 6 * s, p.x + Math.cos(a) * L, p.y - h + Math.sin(a) * L * 0.45 + 2 * s); cx.stroke(); }
     cx.fillStyle = '#5a9a4a'; cx.beginPath(); cx.arc(p.x, p.y - h - 1, 3 * s, 0, 6.28); cx.fill(); if (snow) { cx.fillStyle = 'rgba(248,250,252,.8)'; cx.beginPath(); cx.ellipse(p.x, p.y - h - 2, 10 * s, 3 * s, 0, 0, 6.28); cx.fill(); } }
@@ -4101,7 +4102,7 @@ function draw() {
   // ground-level things: moss, tracks, blood, debris, collect items, carcass of the event
   for (const m of W.mossSpots) if (inView(m.x, m.y, 30)) drawMoss(m, snow);
   for (const tr of W.tracks) if (inView(tr.x, tr.y, 40)) drawTrack(tr, snow);
-  for (const d of W.blood) if ((d.seen || dist(d, W.player) < 90) && inView(d.x, d.y, 10)) { cx.fillStyle = 'rgba(150,20,20,.85)'; cx.beginPath(); cx.ellipse(d.x, d.y, 3, 2, 0.4, 0, 6.28); cx.fill(); cx.beginPath(); cx.arc(d.x + 4, d.y + 2, 1.2, 0, 6.28); cx.fill(); cx.beginPath(); cx.arc(d.x - 3, d.y + 3, 0.9, 0, 6.28); cx.fill(); }
+  for (const d of W.blood) if ((d.seen || dist(d, W.player) < 90) && inView(d.x, d.y, 10)) { cx.fillStyle = 'rgba(112,28,22,.8)'; cx.beginPath(); cx.ellipse(d.x, d.y, 3, 2, 0.4, 0, 6.28); cx.fill(); cx.beginPath(); cx.arc(d.x + 4, d.y + 2, 1.2, 0, 6.28); cx.fill(); cx.beginPath(); cx.arc(d.x - 3, d.y + 3, 0.9, 0, 6.28); cx.fill(); }
   for (const d of W.debris) if (!d.taken && inView(d.x, d.y, 30)) drawDebris(d);
   if (W.carcassEv && inView(W.carcassEv.x, W.carcassEv.y, 40)) { const c = W.carcassEv; shadow(c.x, c.y + 2, 22, 8); cx.fillStyle = '#5a5250'; cx.beginPath(); cx.ellipse(c.x, c.y, 20, 9, 0.3, 0, 6.28); cx.fill(); cx.fillStyle = '#8a4a44'; cx.beginPath(); cx.ellipse(c.x + 5, c.y - 2, 8, 4.5, 0.3, 0, 6.28); cx.fill(); cx.fillStyle = '#e8e0d0'; cx.fillRect(c.x - 14, c.y - 1, 6, 1.5); cx.fillRect(c.x - 12, c.y + 3, 5, 1.5); }
   if (W.leftovers && !W.collect) for (const it of W.leftovers) if (inView(it.x, it.y, 20)) drawItem(it);
@@ -4173,6 +4174,7 @@ function drawMoss(m, snow) {
   else { cx.fillStyle = 'rgba(80,60,40,.4)'; cx.beginPath(); cx.ellipse(m.x, m.y, 9, 5, 0.2, 0, 6.28); cx.fill(); }
 }
 function drawTrack(tr, snow) {
+  { const set = tr.set ? (tr.deadfall ? 2 : 1) : 0; if (drawPainted(`track|${snow ? 1 : 0}|${set}`, () => trackArt(!!snow, set), tr.x, tr.y, 1)) return; }
   cx.fillStyle = snow ? 'rgba(110,125,135,.6)' : 'rgba(60,45,30,.5)';
   for (let i = 0; i < 5; i++) { const x = tr.x + i * 8 - 14, y = tr.y + (i % 2) * 5; cx.beginPath(); cx.ellipse(x, y, 2, 3, 0.3, 0, 6.28); cx.fill(); cx.beginPath(); cx.ellipse(x + 2.6, y, 1.2, 2.6, 0.3, 0, 6.28); cx.fill(); }
   if (tr.set) { const x = tr.x + 18, y = tr.y - 2; cx.strokeStyle = '#6b5a44'; cx.lineWidth = 2.2; cx.lineCap = 'round'; cx.beginPath(); cx.moveTo(x, y + 10); cx.lineTo(x, y - 8); cx.moveTo(x, y - 4); cx.lineTo(x - 4, y - 10); cx.moveTo(x, y - 4); cx.lineTo(x + 4, y - 10); cx.stroke(); cx.strokeStyle = tr.deadfall ? '#8a8d85' : 'rgba(220,220,200,.9)'; cx.lineWidth = tr.deadfall ? 4 : 1.2; if (tr.deadfall) { cx.beginPath(); cx.moveTo(x - 12, y + 8); cx.lineTo(x + 2, y - 2); cx.stroke(); cx.fillStyle = '#8a8d85'; cx.beginPath(); cx.moveTo(x - 14, y + 9); cx.lineTo(x + 3, y - 3); cx.lineTo(x + 6, y + 1); cx.lineTo(x - 11, y + 12); cx.closePath(); cx.fill(); } else { cx.beginPath(); cx.ellipse(x + 7, y + 1, 5, 6, 0, 0, 6.28); cx.stroke(); } }
@@ -4389,7 +4391,8 @@ function drawTree(t, snow) {
 function drawDebris(d) {
   const g = 0.5 + Math.sin(W.t * 4 + d.x) * 0.5; shadow(d.x, d.y + 4, 9, 3.5, 0.7);
   const v = d.look || 0;
-  if (v === 0) { cx.fillStyle = '#e8743b'; cx.beginPath(); cx.arc(d.x, d.y - 2, 7, 0, 6.28); cx.fill(); cx.fillStyle = '#fff'; cx.fillRect(d.x - 7, d.y - 3, 14, 2.5); cx.strokeStyle = '#8a7a5a'; cx.lineWidth = 1.2; cx.beginPath(); cx.moveTo(d.x + 6, d.y + 2); cx.quadraticCurveTo(d.x + 14, d.y + 6, d.x + 10, d.y + 10); cx.stroke(); }
+  if (drawPainted(`deb|${v}`, () => debrisArt(v), d.x, d.y, 1)) {}
+  else if (v === 0) { cx.fillStyle = '#e8743b'; cx.beginPath(); cx.arc(d.x, d.y - 2, 7, 0, 6.28); cx.fill(); cx.fillStyle = '#fff'; cx.fillRect(d.x - 7, d.y - 3, 14, 2.5); cx.strokeStyle = '#8a7a5a'; cx.lineWidth = 1.2; cx.beginPath(); cx.moveTo(d.x + 6, d.y + 2); cx.quadraticCurveTo(d.x + 14, d.y + 6, d.x + 10, d.y + 10); cx.stroke(); }
   else if (v === 1) { cx.fillStyle = '#3a6aa0'; cx.fillRect(d.x - 9, d.y - 6, 18, 11); cx.fillStyle = '#5a8ac0'; cx.fillRect(d.x - 9, d.y - 6, 18, 3); cx.fillStyle = 'rgba(0,0,0,.3)'; for (let i = 0; i < 3; i++) cx.fillRect(d.x - 6 + i * 5, d.y - 1, 3, 4); }
   else { cx.strokeStyle = '#4a8a5a'; cx.lineWidth = 1.5; for (let i = 0; i < 4; i++) { cx.beginPath(); cx.moveTo(d.x - 9 + i * 2, d.y - 4 + (i % 2) * 6); cx.bezierCurveTo(d.x - 2, d.y - 10 + i * 3, d.x + 4, d.y + 8 - i * 3, d.x + 10, d.y + (i % 3) * 3 - 3); cx.stroke(); } cx.fillStyle = '#f0a050'; cx.beginPath(); cx.arc(d.x + 6, d.y - 4, 2.5, 0, 6.28); cx.fill(); }
   cx.fillStyle = `rgba(255,240,180,${0.25 + g * 0.5})`; cx.beginPath(); cx.moveTo(d.x + 11, d.y - 12); cx.lineTo(d.x + 13, d.y - 8); cx.lineTo(d.x + 11, d.y - 4); cx.lineTo(d.x + 9, d.y - 8); cx.closePath(); cx.fill();
@@ -4428,6 +4431,7 @@ function drawCarcass(c, k) { scaled(c.x, c.y, animalK(k.id), () => drawCarcassRa
 function drawCarcassRaw(c, k) {
   const sp = SPECIES[k.id] || { w: 14, c: '#6a5a4a' }; const w = Math.min(34, sp.w + 2);
   shadow(c.x, c.y + 3, w, w * 0.4, 0.8);
+  if (drawPainted(`carc|${k.id}|${k.dressed ? 1 : 0}|${k.big ? 1 : 0}`, () => carcassArt(k.id, !!k.dressed, !!k.big), c.x, c.y, 1)) return;
   if (k.dressed) { cx.fillStyle = '#9a4a44'; cx.beginPath(); cx.ellipse(c.x, c.y, w, w * 0.45, 0.3, 0, 6.28); cx.fill(); cx.fillStyle = '#e8e0d0'; cx.fillRect(c.x - w * 0.5, c.y - 2, w * 0.4, 2); cx.fillRect(c.x - w * 0.2, c.y + 3, w * 0.35, 2); cx.fillStyle = '#c86a60'; cx.beginPath(); cx.ellipse(c.x + w * 0.3, c.y - 2, w * 0.35, w * 0.2, 0.3, 0, 6.28); cx.fill(); if (k.big) { cx.fillStyle = sp.c; cx.beginPath(); cx.ellipse(c.x - w * 0.9, c.y + 4, w * 0.35, w * 0.25, 0, 0, 6.28); cx.fill(); } }
   else { cx.fillStyle = sp.c; cx.beginPath(); cx.ellipse(c.x, c.y, w, w * 0.45, 0.35, 0, 6.28); cx.fill(); cx.beginPath(); cx.arc(c.x + w * 0.95, c.y + w * 0.2, w * 0.3, 0, 6.28); cx.fill(); cx.fillStyle = 'rgba(0,0,0,.35)'; cx.fillRect(c.x + w * 0.9, c.y + w * 0.1, 2, 2); cx.fillStyle = 'rgba(150,20,20,.7)'; cx.beginPath(); cx.ellipse(c.x - w * 0.3, c.y + w * 0.35, 6, 2.5, 0.3, 0, 6.28); cx.fill(); }
 }
@@ -5023,28 +5027,221 @@ function drawCampOld() {
 }
 
 // ---------- creatures
+// ---------- animals, people and signs, painted (phase 5): side views facing right, flipped for left; three poses and a dead one
+const FAM = { bird: ['grouse', 'duck', 'smallbird', 'ptarmigan', 'goose', 'guineafowl'], hop: ['hare', 'pademelon', 'hare_eu', 'wallaby', 'springhare'], hoof: ['deer', 'moose', 'muskox', 'warthog', 'roedeer', 'reddeer', 'elk', 'caribou', 'boar', 'springbok'], small: ['fox', 'squirrel', 'marten', 'weasel', 'wolverine', 'possum', 'mouse', 'otter', 'chipmunk', 'hyrax'] };
+function famOf(k) { for (const [f, l] of Object.entries(FAM)) if (l.includes(k)) return f; return k === 'snake' || k === 'porcupine' || k === 'crab' ? k : k === 'beaver' || k === 'muskrat' ? 'swim' : 'other'; }
+/* the coat: base, a darker back and belly shade, a lighter flank */
+function coat(c) { const b = mixHex(c, '#6e6a60', 0.18); return { b, dk: mixHex(b, '#15120e', 0.42), hi: mixHex(b, '#e8e0cc', 0.28), pale: '#e6dece', eye: '#141210' }; }
+/* a leg: a tapered stroke from hip to hoof, bent a little at the knee */
+function legP(x, y0, len, wd, sw, col, knee = 0.15) { const kx = x + sw * 0.5 + knee * len * 0.3, ky = y0 + len * 0.5, fx = x + sw, fy = y0 + len; return `<path d="M${F1(x)} ${F1(y0)} Q${F1(kx)} ${F1(ky)} ${F1(fx)} ${F1(fy)}" stroke="${col}" stroke-width="${F1(wd)}" stroke-linecap="round" fill="none" filter="url(#tw)"/>`; }
+function eyeP(x, y, r, C) { return `<circle cx="${F1(x)}" cy="${F1(y)}" r="${F1(Math.max(0.55, r))}" fill="${C.eye}"/><circle cx="${F1(x + r * 0.3)}" cy="${F1(y - r * 0.35)}" r="${F1(Math.max(0.2, r * 0.3))}" fill="#e8e4da" opacity=".7"/>`; }
+function animalArt(k, pose, dead) {
+  const sp = SPECIES[k] || { w: 12, c: '#6a5a4a', legs: 1 }; const w = sp.w; const C = coat(sp.c); const r = CA.rng('an', k, pose); const fam = famOf(k);
+  const sw = pose === 0 ? 0 : pose === 1 ? 1 : -1; /* which way the legs swing */
+  let s = '';
+  const wash = (d, col, op = 0.95, e = 0.45) => P3.wash(d, col, op, e);
+  const blob = (x, y, rx, ry, n = 10, j = 0.12) => P3.blob(r, x, y, rx, ry, n, j);
+  if (fam === 'bird') {
+    const goose = k === 'goose', duck = k === 'duck';
+    s += legP(-2, -1, 4.5, 1, sw * 2, '#a8905a') + legP(2, -1, 4.5, 1, -sw * 2, '#a8905a');
+    s += wash(`M${F1(-w * 0.8)} ${F1(-w * 0.4)} L${F1(-w * 1.35)} ${F1(-w * 0.62)} L${F1(-w * 1.28)} ${F1(-w * 0.16)}Z`, C.dk);
+    s += wash(blob(0, -w * 0.45, w, w * 0.55), C.b) + wash(blob(-w * 0.1, -w * 0.32, w * 0.6, w * 0.28), C.dk, 0.55, 0.2) + wash(blob(w * 0.15, -w * 0.72, w * 0.55, w * 0.16), C.hi, 0.45, 0.1);
+    let hx = w * 0.8, hy = -w * 0.78, hr = w * 0.36;
+    if (goose) { s += `<path d="M${F1(w * 0.5)} ${F1(-w * 0.6)} Q${F1(w * 0.8)} ${F1(-w * 1)} ${F1(w * 0.82)} ${F1(-w * 1.3)}" stroke="#2a2826" stroke-width="${F1(w * 0.2)}" stroke-linecap="round" fill="none" filter="url(#tw)"/>`; hx = w * 0.86; hy = -w * 1.35; hr = w * 0.26; }
+    const hc = duck ? '#2f5a3a' : goose ? '#24221f' : k === 'guineafowl' ? '#5a6a96' : C.b;
+    s += wash(blob(hx, hy, hr, hr * 0.92, 8, 0.08), hc);
+    s += `<path d="M${F1(hx + hr * 0.85)} ${F1(hy - hr * 0.1)} L${F1(hx + hr * (duck ? 2 : 1.8))} ${F1(hy + hr * 0.15)} L${F1(hx + hr * 0.85)} ${F1(hy + hr * 0.4)}Z" fill="${duck ? '#c8963a' : '#3a342c'}"/>`;
+    if (goose) s += `<path d="${P3.blob(r, hx - hr * 0.1, hy + hr * 0.3, hr * 0.45, hr * 0.28)}" fill="#ece8e0"/>`;
+    if (duck) s += `<path d="M${F1(hx - hr)} ${F1(hy + hr)} L${F1(hx + hr * 0.2)} ${F1(hy + hr)}" stroke="#ece8e0" stroke-width="1"/>`;
+    if (k === 'grouse') s += `<path d="${P3.blob(r, hx + 1, hy - hr * 0.8, hr * 0.45, hr * 0.22)}" fill="#a85a40"/>` + [0, 1, 2, 3].map(i => `<path d="M${F1(-w * 0.6 + i * w * 0.3)} ${F1(-w * 0.55)} l2 1.2" stroke="${C.dk}" stroke-width=".8"/>`).join('');
+    if (k === 'guineafowl') for (let i = 0; i < 10; i++) s += `<circle cx="${F1(-w * 0.7 + (i % 5) * w * 0.32)}" cy="${F1(-w * 0.6 + Math.floor(i / 5) * w * 0.28)}" r=".8" fill="#dcdce4" opacity=".85"/>`;
+    if (k === 'ptarmigan') s += wash(blob(-w * 0.2, -w * 0.6, w * 0.5, w * 0.18), '#bdb6a6', 0.5, 0.1);
+    if (!dead) s += eyeP(hx + hr * 0.25, hy - hr * 0.2, hr * 0.18, C);
+  } else if (fam === 'hop' && ['pademelon', 'wallaby', 'springhare'].includes(k)) {
+    const up = pose === 1 ? 2 : 0, lean = pose === 1 ? 8 : pose === 2 ? -4 : 0;
+    s += `<path d="M${F1(-w * 0.45)} ${F1(-w * 0.3 - up)} Q${F1(-w * 1.1)} ${F1(-w * 0.15)} ${F1(-w * 1.55)} ${F1(0.5 - up * 0.3)}" stroke="${C.b}" stroke-width="${F1(w * (k === 'springhare' ? 0.1 : 0.17))}" stroke-linecap="round" fill="none" filter="url(#tw)"/>`;
+    if (k === 'springhare') s += `<circle cx="${F1(-w * 1.55)}" cy="${F1(0.5 - up * 0.3)}" r="${F1(w * 0.1)}" fill="#2a2018"/>`;
+    s += `<path d="M${F1(-w * 0.55)} ${F1(-up)} L${F1(w * 0.2)} ${F1(-up)}" stroke="${C.dk}" stroke-width="${F1(w * 0.11)}" stroke-linecap="round" filter="url(#tw)"/>`;
+    s += `<g transform="rotate(${-32 + lean} ${F1(w * 0.05)} ${F1(-w * 0.6 - up)})">` + wash(blob(w * 0.05, -w * 0.6 - up, w * 0.6, w * 0.34), C.b) + wash(blob(-w * 0.05, -w * 0.78 - up, w * 0.4, w * 0.1), C.hi, 0.4, 0.1) + `</g>`;
+    s += wash(blob(-w * 0.28, -w * 0.32 - up, w * 0.42, w * 0.33), mixHex(C.b, C.dk, 0.35));
+    s += `<path d="M${F1(w * 0.36)} ${F1(-w * 0.78 - up)} Q${F1(w * 0.5)} ${F1(-w * 0.62 - up)} ${F1(w * 0.46)} ${F1(-w * 0.48 - up)}" stroke="${C.dk}" stroke-width="${F1(w * 0.06)}" stroke-linecap="round" fill="none"/>`;
+    const hx = w * 0.5, hy = -w * 1.05 - up; s += wash(`M${F1(hx - w * 0.2)} ${F1(hy - w * 0.12)} Q${F1(hx + w * 0.1)} ${F1(hy - w * 0.2)} ${F1(hx + w * 0.34)} ${F1(hy + w * 0.04)} Q${F1(hx + w * 0.1)} ${F1(hy + w * 0.16)} ${F1(hx - w * 0.18)} ${F1(hy + w * 0.12)}Z`, C.b);
+    for (const o of [-0.1, 0.02]) s += wash(`M${F1(hx + o * w - w * 0.06)} ${F1(hy - w * 0.12)} L${F1(hx + o * w - w * 0.04)} ${F1(hy - w * 0.42)} L${F1(hx + o * w + w * 0.06)} ${F1(hy - w * 0.13)}Z`, o < 0 ? C.dk : C.b);
+    s += `<circle cx="${F1(hx + w * 0.33)}" cy="${F1(hy + w * 0.03)}" r=".7" fill="#1a1612"/>`; if (!dead) s += eyeP(hx + w * 0.08, hy - w * 0.04, w * 0.05, C);
+  } else if (fam === 'hop') {
+    const roo = k === 'pademelon' || k === 'wallaby' || k === 'springhare';
+    const crouch = pose === 0 ? 1 : pose === 1 ? 0.85 : 1.1;
+    if (roo) s += `<path d="M${F1(-w * 0.8)} ${F1(-w * 0.3)} Q${F1(-w * 1.3)} ${F1(-w * 0.1)} ${F1(-w * 1.65)} ${F1(1)}" stroke="${C.b}" stroke-width="${F1(k === 'wallaby' ? w * 0.22 : w * 0.16)}" stroke-linecap="round" fill="none" filter="url(#tw)"/>`;
+    s += legP(w * 0.5, -w * 0.3, w * 0.32 + 1, w * 0.12, sw * 2, C.dk);
+    s += wash(blob(-w * 0.45, -w * 0.32 * crouch, w * 0.5, w * 0.42, 9, 0.08), C.dk);
+    s += `<path d="M${F1(-w * 0.75)} 0 L${F1(-w * 0.1 - sw * w * 0.2)} 0" stroke="${C.dk}" stroke-width="${F1(w * 0.14)}" stroke-linecap="round" filter="url(#tw)"/>`;
+    s += wash(blob(0, -w * 0.48 * crouch, w * 0.9, w * 0.5 * crouch), C.b) + wash(blob(-w * 0.1, -w * 0.72 * crouch, w * 0.55, w * 0.16), C.hi, 0.45, 0.1);
+    const hx = w * 0.82, hy = -w * 0.68 * crouch - (pose === 1 ? 1 : 0);
+    s += wash(blob(hx, hy, w * 0.36, w * 0.3, 8, 0.08), C.b);
+    const earL = roo ? w * 0.28 : w * 0.55; for (const o of [-0.12, 0.08]) s += wash(`M${F1(hx + o * w - w * 0.07)} ${F1(hy - w * 0.15)} Q${F1(hx + o * w - w * 0.2)} ${F1(hy - w * 0.15 - earL)} ${F1(hx + o * w - w * 0.02)} ${F1(hy - w * 0.15 - earL * 1.05)} Q${F1(hx + o * w + w * 0.08)} ${F1(hy - w * 0.15 - earL * 0.5)} ${F1(hx + o * w + w * 0.07)} ${F1(hy - w * 0.12)}Z`, o < 0 ? C.dk : C.b);
+    if (k === 'hare' || k === 'hare_eu') s += `<circle cx="${F1(-w * 0.82)}" cy="${F1(-w * 0.5 * crouch)}" r="${F1(w * 0.11)}" fill="${C.pale}" filter="url(#tw)"/>` + `<path d="M${F1(hx - w * 0.05)} ${F1(hy - w * 0.15 - earL)} l1 2" stroke="#1a1714" stroke-width="1.3"/>`;
+    if (!dead) s += eyeP(hx + w * 0.12, hy - w * 0.06, w * 0.06, C);
+    s += `<circle cx="${F1(hx + w * 0.34)}" cy="${F1(hy + w * 0.04)}" r=".7" fill="#3a2a24"/>`;
+  } else if (fam === 'hoof') {
+    const deerish = ['deer', 'roedeer', 'reddeer', 'elk', 'caribou', 'springbok'].includes(k); const pig = k === 'warthog' || k === 'boar'; const ox = k === 'muskox', moose = k === 'moose';
+    const legL = pig || ox ? w * 0.38 : moose ? w * 0.62 : w * 0.55, by = -legL - w * 0.12, lw = Math.max(1.4, w * (pig || ox ? 0.12 : 0.085));
+    /* far legs first, darker */
+    s += legP(w * 0.62, by + 2, legL, lw, sw * w * 0.12, C.dk) + legP(-w * 0.6, by + 2, legL, lw, -sw * w * 0.12, C.dk, -0.15);
+    const tail = deerish ? `<path d="M${F1(-w * 0.95)} ${F1(by - w * 0.12)} q${F1(-w * 0.12)} ${F1(w * 0.08)} ${F1(-w * 0.08)} ${F1(w * 0.22)}" stroke="${C.dk}" stroke-width="${F1(w * 0.08)}" stroke-linecap="round" fill="none"/>` : pig ? `<path d="M${F1(-w * 0.95)} ${F1(by - w * 0.05)} q${F1(-w * 0.2)} ${F1(w * 0.05)} ${F1(-w * 0.15)} ${F1(w * 0.3)}" stroke="${C.dk}" stroke-width="1" fill="none"/>` : '';
+    s += tail;
+    const brx = w * (pig ? 0.95 : 1), bry = w * (ox ? 0.5 : pig ? 0.42 : 0.36);
+    s += wash(blob(0, by, brx, bry, 12, 0.07), C.b);
+    if (moose) s += wash(blob(w * 0.35, by - bry * 0.75, w * 0.42, w * 0.25), C.b);
+    s += wash(blob(-w * 0.05, by + bry * 0.55, brx * 0.85, bry * 0.35), C.dk, 0.5, 0.1) + wash(blob(-w * 0.1, by - bry * 0.55, brx * 0.7, bry * 0.25), C.hi, 0.38, 0.1);
+    if (deerish) s += wash(blob(-w * 0.8, by - w * 0.03, w * 0.1, w * 0.17), k === 'springbok' ? '#efe7d6' : C.pale, 0.9, 0.2);
+    if (k === 'springbok') s += `<path d="M${F1(-w * 0.85)} ${F1(by + bry * 0.25)} L${F1(w * 0.85)} ${F1(by + bry * 0.25)}" stroke="#4a2e1a" stroke-width="${F1(w * 0.07)}" opacity=".85" filter="url(#tw)"/>` + wash(blob(0, by + bry * 0.6, w * 0.85, bry * 0.25), '#efe7d6', 0.9, 0.2);
+    if (ox) { s += wash(`M${F1(-w * 0.95)} ${F1(by)} Q${F1(-w)} ${F1(by + bry * 1.5)} ${F1(-w * 0.6)} ${F1(by + bry * 1.6)} L${F1(w * 0.7)} ${F1(by + bry * 1.6)} Q${F1(w)} ${F1(by + bry * 1.4)} ${F1(w * 0.9)} ${F1(by)}Z`, C.dk, 0.9, 0.3); for (let i = 0; i < 10; i++) s += `<path d="M${F1(-w * 0.85 + i * w * 0.18)} ${F1(by + bry * 0.6)} l.6 ${F1(bry * 0.9)}" stroke="#14110d" stroke-width=".7" opacity=".6"/>`; }
+    if (k === 'boar') s += wash(blob(0, by - bry * 0.85, w * 0.6, w * 0.08), '#2a201a', 0.85, 0.2);
+    /* near legs */
+    s += legP(w * 0.5, by + 2, legL, lw, -sw * w * 0.12, C.b) + legP(-w * 0.72, by + 2, legL, lw, sw * w * 0.12, C.b, -0.15);
+    s += `<path d="M${F1(w * 0.5 - sw * w * 0.12 - 1)} -0.4 l2 0 M${F1(-w * 0.72 + sw * w * 0.12 - 1)} -0.4 l2 0" stroke="#1a1612" stroke-width="1.3"/>`;
+    /* neck and head */
+    const nx = w * (pig ? 0.9 : 0.85), ny = by - bry * 0.3; const hx = w * (pig ? 1.02 : ox ? 1.12 : 1.18), hy = pig || ox ? by + bry * 0.1 : by - w * (moose ? 0.6 : 0.62);
+    if (!pig && !ox) s += wash(`M${F1(nx - w * 0.2)} ${F1(ny + bry * 0.4)} Q${F1(nx)} ${F1(ny - w * 0.1)} ${F1(hx - w * 0.12)} ${F1(hy - w * 0.08)} L${F1(hx + w * 0.04)} ${F1(hy + w * 0.12)} Q${F1(nx + w * 0.15)} ${F1(ny + w * 0.1)} ${F1(nx + w * 0.1)} ${F1(ny + bry * 0.7)}Z`, C.b);
+    const hl = w * (moose ? 0.34 : pig ? 0.36 : ox ? 0.22 : 0.26), hh = w * (moose ? 0.16 : pig ? 0.25 : ox ? 0.24 : 0.13);
+    s += wash(`M${F1(hx - hl * 0.6)} ${F1(hy - hh)} Q${F1(hx + hl * 0.6)} ${F1(hy - hh * 1.1)} ${F1(hx + hl * 1.1)} ${F1(hy + hh * 0.2)} Q${F1(hx + hl)} ${F1(hy + hh * 1.1)} ${F1(hx + hl * 0.5)} ${F1(hy + hh)} Q${F1(hx - hl * 0.6)} ${F1(hy + hh * 1.2)} ${F1(hx - hl * 0.6)} ${F1(hy - hh)}Z`, C.b);
+    s += `<circle cx="${F1(hx + hl * 1.02)}" cy="${F1(hy + hh * 0.1)}" r="${F1(Math.max(0.6, hh * 0.25))}" fill="#1a1612"/>`;
+    if (moose) s += wash(blob(hx + hl * 0.2, hy + hh * 1.4, w * 0.05, w * 0.12), C.dk, 0.9, 0.2);
+    s += wash(`M${F1(hx - hl * 0.4)} ${F1(hy - hh * 0.8)} l${F1(-w * 0.1)} ${F1(-w * 0.16)} l${F1(w * 0.08)} ${F1(w * 0.06)}Z`, C.dk, 0.9, 0.2);
+    if (!dead) s += eyeP(hx + hl * 0.15, hy - hh * 0.35, Math.max(0.6, w * 0.035), C);
+    const ac = k === 'caribou' ? '#d6cab0' : '#7a6650';
+    if (deerish && k !== 'springbok') { const ax = hx - hl * 0.2, ay = hy - hh; const big = k === 'elk' || k === 'reddeer' || k === 'caribou'; const L = w * (big ? 0.62 : k === 'roedeer' ? 0.28 : 0.45); s += `<path d="M${F1(ax)} ${F1(ay)} Q${F1(ax - L * 0.3)} ${F1(ay - L * 0.6)} ${F1(ax - L * 0.7)} ${F1(ay - L)} M${F1(ax - L * 0.12)} ${F1(ay - L * 0.35)} l${F1(L * 0.3)} ${F1(-L * 0.25)} M${F1(ax - L * 0.3)} ${F1(ay - L * 0.62)} l${F1(L * 0.28)} ${F1(-L * 0.3)}${big ? ` M${F1(ax - L * 0.5)} ${F1(ay - L * 0.82)} l${F1(L * 0.22)} ${F1(-L * 0.3)}` : ''}" stroke="${ac}" stroke-width="${F1(big ? 1.6 : 1.2)}" stroke-linecap="round" fill="none" filter="url(#tw)"/>`; }
+    if (k === 'springbok') s += `<path d="M${F1(hx - hl * 0.2)} ${F1(hy - hh)} q${F1(-w * 0.12)} ${F1(-w * 0.2)} ${F1(-w * 0.02)} ${F1(-w * 0.4)}" stroke="#2a2622" stroke-width="1.4" fill="none"/>`;
+    if (moose) { const ax = hx - hl * 0.4, ay = hy - hh; s += wash(`M${F1(ax)} ${F1(ay)} Q${F1(ax - w * 0.1)} ${F1(ay - w * 0.2)} ${F1(ax - w * 0.42)} ${F1(ay - w * 0.3)} L${F1(ax - w * 0.36)} ${F1(ay - w * 0.16)} L${F1(ax - w * 0.44)} ${F1(ay - w * 0.12)} Q${F1(ax - w * 0.2)} ${F1(ay - w * 0.04)} ${F1(ax)} ${F1(ay)}Z`, '#b8a47c', 0.95, 0.4); }
+    if (ox) s += `<path d="M${F1(hx - hl * 0.4)} ${F1(hy - hh * 0.9)} Q${F1(hx - hl * 1.1)} ${F1(hy - hh * 0.6)} ${F1(hx - hl * 0.6)} ${F1(hy + hh * 0.6)}" stroke="#cfc3a4" stroke-width="2.4" stroke-linecap="round" fill="none"/>`;
+    if (pig) s += `<path d="M${F1(hx + hl * 0.8)} ${F1(hy + hh * 0.4)} q${F1(w * 0.08)} ${F1(-w * 0.12)} ${F1(w * 0.02)} ${F1(-w * 0.2)}" stroke="#ece4d4" stroke-width="1.3" stroke-linecap="round" fill="none"/>`;
+  } else if (fam === 'small' || fam === 'swim' || fam === 'porcupine' || fam === 'other') {
+    const slim = ['weasel', 'marten', 'mouse', 'otter', 'chipmunk'].includes(k) || fam === 'swim'; const ry = slim ? w * 0.3 : w * 0.42; const by = slim ? -w * 0.32 : -w * 0.5; const legL = slim ? w * 0.18 : w * 0.32;
+    /* tail first */
+    if (k === 'squirrel') s += wash(`M${F1(-w * 0.7)} ${F1(by)} Q${F1(-w * 1.6)} ${F1(by - w * 0.1)} ${F1(-w * 1.2)} ${F1(by - w * 1.2)} Q${F1(-w * 0.8)} ${F1(by - w * 1.5)} ${F1(-w * 0.95)} ${F1(by - w * 0.9)} Q${F1(-w * 1.05)} ${F1(by - w * 0.3)} ${F1(-w * 0.5)} ${F1(by - w * 0.2)}Z`, C.b);
+    else if (k === 'fox') s += wash(`M${F1(-w * 0.8)} ${F1(by - w * 0.1)} Q${F1(-w * 1.5)} ${F1(by - w * 0.05)} ${F1(-w * 1.75)} ${F1(by + w * 0.45)} Q${F1(-w * 1.3)} ${F1(by + w * 0.4)} ${F1(-w * 0.75)} ${F1(by + w * 0.15)}Z`, C.b) + `<circle cx="${F1(-w * 1.7)}" cy="${F1(by + w * 0.42)}" r="${F1(w * 0.13)}" fill="${C.pale}"/>`;
+    else if (k === 'beaver') s += wash(blob(-w * 1.25, -w * 0.15, w * 0.45, w * 0.18), '#2e2018', 0.95, 0.4) + [0, 1, 2].map(i => `<path d="M${F1(-w * 1.5)} ${F1(-w * 0.22 + i * 1.6)} l${F1(w * 0.5)} 0" stroke="#5a4636" stroke-width=".5"/>`).join('');
+    else if (fam !== 'porcupine') s += `<path d="M${F1(-w * 0.85)} ${F1(by)} Q${F1(-w * 1.4)} ${F1(by - w * 0.2)} ${F1(-w * 1.6)} ${F1(by + w * (slim ? 0.25 : 0.45))}" stroke="${C.b}" stroke-width="${F1(k === 'wolverine' || k === 'possum' || k === 'hyrax' ? w * 0.18 : k === 'otter' ? w * 0.2 : slim ? 1.3 : w * 0.16)}" stroke-linecap="round" fill="none" filter="url(#tw)"/>`;
+    if (!slim && fam !== 'porcupine') s += legP(w * 0.55, by + 1, -by - 1, w * 0.1, sw * w * 0.1, C.dk) + legP(-w * 0.55, by + 1, -by - 1, w * 0.1, -sw * w * 0.1, C.dk);
+    s += wash(blob(0, by, w, ry, 11, 0.08), C.b) + wash(blob(0, by + ry * 0.5, w * 0.8, ry * 0.35), C.dk, 0.45, 0.1) + wash(blob(-w * 0.1, by - ry * 0.5, w * 0.6, ry * 0.25), C.hi, 0.4, 0.1);
+    if (k === 'wolverine') s += wash(blob(-w * 0.1, by - ry * 0.2, w * 0.8, ry * 0.14), '#a88c62', 0.8, 0.1);
+    if (k === 'chipmunk') s += [0, 1].map(i => `<path d="M${F1(-w * 0.7)} ${F1(by - ry * 0.2 + i * 2)} L${F1(w * 0.6)} ${F1(by - ry * 0.3 + i * 2)}" stroke="#2a1e14" stroke-width=".8" opacity=".7"/>`).join('');
+    if (fam === 'porcupine') for (let i = 0; i < 18; i++) { const a = -3.0 + i * 0.16; s += `<path d="M${F1(Math.cos(a) * w * 0.5)} ${F1(by + Math.sin(a) * ry * 0.5)} L${F1(Math.cos(a) * w * 1.08)} ${F1(by + Math.sin(a) * ry * 1.35)}" stroke="${i % 2 ? '#cfc09a' : '#8a7a5a'}" stroke-width=".8"/>`; }
+    if (!slim && fam !== 'porcupine') s += legP(w * 0.4, by + 1, -by - 1, w * 0.11, -sw * w * 0.1, C.b) + legP(-w * 0.7, by + 1, -by - 1, w * 0.11, sw * w * 0.1, C.b);
+    if (slim && fam !== 'swim') s += `<path d="M${F1(w * 0.5)} ${F1(by + ry)} l${F1(sw)} ${F1(-by - ry)} M${F1(-w * 0.6)} ${F1(by + ry)} l${F1(-sw)} ${F1(-by - ry)}" stroke="${C.dk}" stroke-width="1.2" stroke-linecap="round"/>`;
+    const hx = w * 0.95, hy = by - (slim ? w * 0.05 : w * 0.15), hr = w * (fam === 'swim' ? 0.32 : 0.3);
+    s += wash(`M${F1(hx - hr)} ${F1(hy - hr * 0.8)} Q${F1(hx + hr * 0.6)} ${F1(hy - hr)} ${F1(hx + hr * (k === 'fox' ? 1.6 : 1.2))} ${F1(hy + hr * 0.2)} Q${F1(hx + hr * 0.4)} ${F1(hy + hr)} ${F1(hx - hr)} ${F1(hy + hr * 0.7)}Z`, C.b);
+    if (k === 'fox') s += wash(blob(hx + hr * 0.3, hy + hr * 0.45, hr * 0.6, hr * 0.25), C.pale, 0.9, 0.2);
+    if (fam !== 'swim' && k !== 'otter') for (const o of [-0.35, 0.05]) s += `<path d="M${F1(hx + o * hr - hr * 0.25)} ${F1(hy - hr * 0.7)} L${F1(hx + o * hr)} ${F1(hy - hr * (k === 'fox' ? 1.9 : 1.4))} L${F1(hx + o * hr + hr * 0.3)} ${F1(hy - hr * 0.7)}Z" fill="${o < 0 ? C.dk : C.b}" filter="url(#tw)"/>`;
+    s += `<circle cx="${F1(hx + hr * (k === 'fox' ? 1.55 : 1.15))}" cy="${F1(hy + hr * 0.15)}" r="${F1(Math.max(0.5, hr * 0.14))}" fill="#1a1612"/>`;
+    if (!dead) s += eyeP(hx + hr * 0.3, hy - hr * 0.2, Math.max(0.5, hr * 0.15), C);
+  } else if (fam === 'snake') {
+    const ph = pose * 2.1; const pts = []; for (let i = 0; i <= 12; i++) pts.push([-w + i * w * 0.17, -2 + Math.sin(i * 1.2 + ph) * 3]);
+    const d = 'M' + pts.map(p => `${F1(p[0])} ${F1(p[1])}`).join(' L');
+    s += `<path d="${d}" stroke="${C.b}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="url(#tw)"/><path d="${d}" stroke="${C.dk}" stroke-width="1" stroke-dasharray="1.5 2" fill="none" opacity=".8"/>`;
+    const e = pts[12]; s += wash(blob(e[0] + 1.5, e[1], 3.3, 2.3, 8, 0.05), C.b); if (!dead) s += eyeP(e[0] + 2.5, e[1] - 0.8, 0.5, C);
+  } else if (fam === 'crab') {
+    for (let i = 0; i < 4; i++) { const g = sw * 1.5 * (i % 2 ? 1 : -1); s += `<path d="M-4 ${F1(-2 + i * 1.5)} L${F1(-10 + g)} ${F1(-4 + i * 2.5)} M4 ${F1(-2 + i * 1.5)} L${F1(10 - g)} ${F1(-4 + i * 2.5)}" stroke="${C.dk}" stroke-width="1.1" stroke-linecap="round"/>`; }
+    s += wash(blob(-7, -5, 2.6, 2.2), C.b) + wash(blob(7, -5, 2.6, 2.2), C.b) + wash(blob(0, -1, 7, 4.5), C.b) + wash(blob(-1, -2.5, 4, 1.4), C.hi, 0.5, 0.1);
+    if (!dead) s += `<circle cx="-2" cy="-4.5" r=".7" fill="#141210"/><circle cx="2" cy="-4.5" r=".7" fill="#141210"/>`;
+  }
+  const H = w * 3.4, Wd = w * 4.4;
+  if (dead) s = `<g transform="translate(0 ${F1(-w * 0.1)}) scale(1 .55) rotate(-8)">${s}</g><path d="${P3.blob(r, w * 0.75, w * 0.12, w * 0.3, w * 0.1)}" fill="#5a1c16" opacity=".5" filter="url(#tw)"/>`;
+  return CA.art(-Wd / 2, -H + w * 0.6, Wd / 2, w * 0.7, s);
+}
+/* draw a painting facing right, or flipped to face left */
+function drawFacing(key, make, x, y, face) { if (face >= 0) return drawPainted(key, make, x, y, 1); cx.save(); cx.translate(x, 0); cx.scale(-1, 1); const ok = drawPainted(key, make, 0, y, 1); cx.restore(); return ok; }
+function paintedAnimal(a) {
+  const dead = a.dead ? 1 : 0; let ok = true; for (const p of dead ? [0] : [0, 1, 2]) if (!paintReady(`an|${a.sp}|${p}|${dead}`, () => animalArt(a.sp, p, !!dead))) ok = false; if (!ok) return false;
+  const moving = Math.hypot(a.tx - a.x, a.ty - a.y) > 2; const pose = dead ? 0 : moving ? (Math.sin(W.t * (a.fled ? 26 : 10)) > 0 ? 1 : 2) : 0; const sz = a.size || 1;
+  const w = (SPECIES[a.sp] || { w: 12 }).w * sz; shadow(a.x, a.y + (dead ? 2 : 3), w, w * (dead ? 0.4 : 0.35), 0.8);
+  cx.save(); cx.translate(a.x, a.y); cx.scale(sz, sz); drawFacing(`an|${a.sp}|${pose}|${dead}`, null, 0, 0, dead ? 1 : (a.dir || 1)); cx.restore(); return true;
+}
+
+/* ---- the bear */
+function bearArt(pose) {
+  const r = CA.rng('bear', pose); const C = coat('#2a221c'); const sw = pose === 0 ? 0 : pose === 1 ? 1 : -1; let s = '';
+  for (const [x, o] of [[14, -1], [-14, 1]]) s += legP(x, -12, 18, 8.5, o * sw * 3, C.dk, 0.3);
+  s += P3.wash(P3.blob(r, 0, -16, 28, 15, 12, 0.08), C.b, 0.97, 0.5) + P3.wash(P3.blob(r, -4, -27, 15, 8), C.b, 0.95, 0.4) + P3.wash(P3.blob(r, -6, -24, 20, 4), C.hi, 0.35, 0.1) + P3.wash(P3.blob(r, 0, -6, 22, 5), C.dk, 0.5, 0.1);
+  for (const [x, o] of [[20, 1], [-20, -1]]) s += legP(x, -12, 18, 9, o * sw * 3, C.b, 0.3);
+  s += `<path d="M18 7.5 l5 0 M-22 7.5 l5 0" stroke="#100d0b" stroke-width="2.4" stroke-linecap="round"/>`;
+  s += P3.wash(P3.blob(r, 26, -18, 11, 10, 10, 0.06), C.b, 0.97, 0.5) + P3.wash(P3.blob(r, 35, -14, 6, 4), mixHex(C.b, '#8a6a4a', 0.45), 0.95, 0.3);
+  s += `<circle cx="22" cy="-27" r="3.8" fill="${C.b}" filter="url(#tw)"/><circle cx="29" cy="-27" r="3.6" fill="${C.dk}" filter="url(#tw)"/><circle cx="39.5" cy="-15" r="1.6" fill="#0e0c0a"/>` + eyeP(31, -20, 1.1, C);
+  return CA.art(-36, -42, 46, 12, s);
+}
+
+/* ---- the player: the body is painted; legs, arms and tools still move frame by frame */
+function playerArt(wet) {
+  const r = CA.rng('me', wet); const jk = wet ? '#7e3a1e' : '#b4542a', jkHi = wet ? '#94482a' : '#cc6c3e', jkDk = mixHex(jk, '#1a120c', 0.4); let s = '';
+  s += P3.wash(P3.blob(r, -6, -7, 4.6, 6.4, 9, 0.06), '#4e5638', 0.97, 0.5) + P3.wash(P3.blob(r, -6, -13.5, 4.4, 1.7), '#6e6248', 0.95, 0.3); /* pack and the roll on top */
+  s += P3.wash(P3.blob(r, 0, -4, 7.8, 8.8, 11, 0.05), jk, 0.98, 0.55) + P3.wash(P3.blob(r, -2.4, -6.5, 3.6, 4.6), jkHi, 0.6, 0.1) + P3.wash(P3.blob(r, 2, 1.5, 5, 3), jkDk, 0.45, 0.1);
+  s += `<path d="M2.5 -11 L3 3" stroke="${jkDk}" stroke-width=".6" opacity=".7"/><path d="M-4.5 -12.3 Q0 -9.6 4.5 -12.3" stroke="${jkDk}" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M-3 -10 L-6.5 3" stroke="#3a3a28" stroke-width="1" opacity=".75"/>`;
+  s += P3.wash(P3.blob(r, 0.4, -15, 5.2, 5.4, 9, 0.04), '#d8b694', 0.98, 0.4) + P3.wash(P3.blob(r, -2, -14, 2.4, 3.6), '#b8906e', 0.4, 0.05);
+  s += P3.wash(`M-5.6 -15.6 Q-5.4 -21.6 0.4 -21.6 Q5.8 -21.4 5.8 -16 Q0 -17.6 -5.6 -15.6Z`, '#5a4a36', 0.98, 0.4) + `<path d="M-6.6 -16 Q0 -18.6 6.8 -16" stroke="#3e3226" stroke-width="2" stroke-linecap="round" fill="none"/>`;
+  s += `<rect x="2.2" y="-15.4" width="1.2" height="1.3" rx=".4" fill="#221c18"/>`;
+  return CA.art(-14, -26, 14, 12, s);
+}
+
+/* ---- what is left of a kill: whole on its side, or dressed out */
+function carcassArt(id, dressed, big) {
+  const sp = SPECIES[id] || { w: 14, c: '#6a5a4a' }; const w = Math.min(34, sp.w + 2); const C = coat(sp.c); const r = CA.rng('carc', id, dressed, big); let s = '';
+  if (dressed) { s += `<g transform="rotate(17)">` + P3.wash(P3.blob(r, 0, 0, w, w * 0.45, 12, 0.08), '#8a463e', 0.96, 0.5) + P3.wash(P3.blob(r, w * 0.3, -2, w * 0.35, w * 0.18), '#b06a5c', 0.8, 0.2) + [0, 1, 2, 3].map(i => `<path d="M${F1(-w * 0.55 + i * w * 0.22)} ${F1(-w * 0.3)} q1 ${F1(w * 0.3)} 0 ${F1(w * 0.6)}" stroke="#e2d8c6" stroke-width="1.4" fill="none" opacity=".85"/>`).join('') + `</g>`; if (big) s += P3.wash(P3.blob(r, -w * 0.95, w * 0.2, w * 0.35, w * 0.25), C.b, 0.95, 0.4); }
+  else { s += `<g transform="rotate(20)">` + P3.wash(P3.blob(r, 0, 0, w, w * 0.45, 12, 0.08), C.b, 0.96, 0.5) + P3.wash(P3.blob(r, -w * 0.1, -w * 0.18, w * 0.7, w * 0.15), C.hi, 0.4, 0.1) + P3.wash(P3.blob(r, w * 0.95, w * 0.05, w * 0.3, w * 0.24), C.b, 0.96, 0.4) + `<path d="M${F1(w * 0.3)} ${F1(w * 0.35)} l${F1(w * 0.25)} ${F1(w * 0.5)} M${F1(-w * 0.5)} ${F1(w * 0.35)} l${F1(-w * 0.1)} ${F1(w * 0.55)}" stroke="${C.dk}" stroke-width="${F1(Math.max(1.2, w * 0.08))}" stroke-linecap="round"/>` + `</g>` + P3.wash(P3.blob(r, -w * 0.3, w * 0.4, 6, 2.5), '#6a1e18', 0.7, 0.2); }
+  return CA.art(-w * 1.6, -w * 1.1, w * 1.6, w * 1.2, s);
+}
+
+/* ---- signs on the ground: prints, a set snare or deadfall */
+function trackArt(snow, set) {
+  const C = campCols(); let s = ''; const col = snow ? '#6e7c86' : '#3c2e20';
+  for (let i = 0; i < 5; i++) { const x = i * 8 - 14, y = (i % 2) * 5; s += `<ellipse cx="${x}" cy="${y}" rx="2" ry="2.8" fill="${col}" opacity="${snow ? 0.55 : 0.45}" transform="rotate(17 ${x} ${y})" filter="url(#tw)"/>` + [-1.6, 0, 1.6].map(d => `<circle cx="${F1(x + d + 1.5)}" cy="${F1(y - 3.6 + Math.abs(d) * 0.3)}" r=".7" fill="${col}" opacity="${snow ? 0.5 : 0.4}"/>`).join(''); }
+  if (set) { const x = 18, y = -2; s += CA.pole(x, y + 10, x, y - 8, 2, C) + `<path d="M${x} ${y - 4} L${x - 4} ${y - 10} M${x} ${y - 4} L${x + 4} ${y - 10}" stroke="${C.pole}" stroke-width="1.6" stroke-linecap="round"/>`;
+    if (set === 2) s += CA.pole(x - 12, y + 8, x + 2, y - 2, 2.6, C) + `<path d="M${x - 14} ${y + 9} L${x + 3} ${y - 3} L${x + 6} ${y + 1} L${x - 11} ${y + 12}Z" fill="${C.stone}" filter="url(#tw)"/>`;
+    else s += `<ellipse cx="${x + 7}" cy="${y + 1}" rx="5" ry="6" fill="none" stroke="#b8b4a6" stroke-width="1" filter="url(#tw)"/><path d="M${x} ${y - 6} Q${x + 5} ${y - 7} ${x + 7} ${y - 5}" stroke="#b8b4a6" stroke-width=".8" fill="none"/>`; }
+  return CA.art(-20, -16, 30, 12, s);
+}
+/* ---- the wreck's scattered gear: a life ring, a blue case, a tangle of line with a float */
+function debrisArt(v) {
+  const r = CA.rng('deb', v); let s = '';
+  if (v === 0) s += `<circle cx="0" cy="-2" r="6" fill="none" stroke="#c46a3c" stroke-width="3.6" filter="url(#tw)"/><path d="M-6.5 -2.6 L-4.6 -2.6 M4.6 -2.6 L6.5 -2.6 M-.6 -8 L-.6 -6.2 M-.6 2.2 L-.6 4" stroke="#e8e0d0" stroke-width="2.4"/><path d="M6 2 Q14 6 10 10" stroke="#8a7a5a" stroke-width="1.1" fill="none"/>`;
+  else if (v === 1) s += P3.wash(`M-9 -6 L9 -6 L9 5 L-9 5Z`, '#3e5e82', 0.97, 0.5) + `<path d="M-9 -6 L9 -6 L9 -3.4 L-9 -3.4Z" fill="#5a7a9c" opacity=".8"/><path d="M-3 -6 Q0 -9 3 -6" stroke="#2a3a4a" stroke-width="1.2" fill="none"/><path d="M-6 0 L6 0" stroke="#22303c" stroke-width="1" opacity=".5"/>`;
+  else { for (let i = 0; i < 4; i++) s += `<path d="M${-9 + i * 2} ${-4 + (i % 2) * 6} C-2 ${-10 + i * 3} 4 ${8 - i * 3} 10 ${(i % 3) * 3 - 3}" stroke="#4e7a58" stroke-width="1.3" fill="none" opacity=".9"/>`; s += `<circle cx="6" cy="-4" r="2.6" fill="#d0884a" filter="url(#tw)"/>`; }
+  return CA.art(-14, -14, 16, 12, s);
+}
+/* ---- landmarks you steer by */
+function landmarkArt(kind, snow) {
+  const C = campCols(), V = C.V, r = CA.rng('lm', kind, snow, biome()); let s = '';
+  if (kind === 'pine') { s += P3.trunk(0, 0, -64, 5, '#4a3e32', 2) + `<path d="M1 -40 l-14 -7 M1 -48 l12 -7 M1 -56 l-9 -7 M1 -30 l7 -3" stroke="#4a3e32" stroke-width="1.8" stroke-linecap="round" fill="none" filter="url(#tw)"/><path d="M1 -8 L3 -30 L0 -50" stroke="#cdbf9a" stroke-width="1" fill="none" opacity=".8"/>`; if (snow) s += `<path d="M-12 -47 l8 3 M11 -55 l-7 3" stroke="${C.snow}" stroke-width="1.6" stroke-linecap="round"/>`; }
+  else if (kind === 'boulder') { for (const sx of [-1, 1]) s += CA.stone(r, sx * 11, -12, 13, 15, C); if (snow) s += `<path d="${P3.blob(r, -10, -25, 8, 2.4)}" fill="${C.snow}" filter="url(#tw)"/><path d="${P3.blob(r, 12, -25, 8, 2.4)}" fill="${C.snow}" filter="url(#tw)"/>`; }
+  else if (kind === 'knoll') { s += P3.wash(`M-54 0 Q-46 -26 0 -27 Q46 -26 54 0Z`, snow ? '#e8ecec' : C.moss, 0.95, 0.5) + P3.wash(P3.blob(r, -8, -16, 22, 7), snow ? '#f6f8f8' : C.lichen, 0.6, 0.1) + `<path d="M10 -2 Q30 -16 46 -6 L54 0Z" fill="#14120f" opacity=".14" filter="url(#tw)"/>` + CA.stone(r, 6, -25, 7, 5, C) + `<path d="M-14 -22 L-15 -38 M-15 -32 L-20 -36" stroke="#4a3a2a" stroke-width="1.5" stroke-linecap="round" fill="none"/>`; }
+  else if (kind === 'stone') { s += P3.wash(`M-7 0 L-5 -34 L4 -38 L7 0Z`, C.stone, 0.97, 0.55) + `<path d="M-4 -32 L-1 -33 L-1 -10 L-4 -10Z" fill="${C.stoneHi}" opacity=".6" filter="url(#tw)"/><path d="M2 -36 L7 0 L3 0Z" fill="#14120f" opacity=".22"/>` + (snow ? `<path d="${P3.blob(r, -0.5, -37, 4.5, 1.6)}" fill="${C.snow}" filter="url(#tw)"/>` : ''); }
+  else if (kind === 'blaze') { s += spirePaint(r, 0, -4, 66, 20, [V.conifer[1], V.conifer[3]], { tiers: 7, snow }) + P3.trunk(0, 0, -8, 6, '#4a3828') + `<path d="M-2 -7 L2 -7 L2 -2 L-2 -2Z" fill="#e2d4a8" filter="url(#tw)"/>`; }
+  if (snow && kind !== 'knoll') s += `<path d="${P3.blob(r, 0, -1, 11, 2.6)}" fill="${C.snow}" opacity=".8" filter="url(#tw)"/>`;
+  return CA.art(-58, -72, 58, 6, s);
+}
+function boulderArt(snow, v) { const C = campCols(), r = CA.rng('bd', snow, v, biome()); const R = 11; let s = P3.wash(`M${-R} 2 Q${-R * 1.05} ${-R * 1.1} ${-R * 0.1} ${-R * 1.2} Q${R * 1.1} ${-R * 1.1} ${R} 2Z`, C.stone, 0.97, 0.55) + `<path d="${P3.blob(r, -R * 0.3, -R * 0.75, R * 0.45, R * 0.3)}" fill="${C.stoneHi}" opacity=".7" filter="url(#tw)"/><path d="${P3.blob(r, R * 0.4, -R * 0.2, R * 0.45, R * 0.5)}" fill="#14120f" opacity=".2" filter="url(#tw)"/>`; if (v) s += `<path d="${P3.blob(r, -R * 0.2, -R * 0.2, R * 0.35, R * 0.2)}" fill="${C.lichen}" opacity=".55" filter="url(#tw)"/>`; if (snow) s += `<path d="${P3.blob(r, -R * 0.1, -R * 1.05, R * 0.7, R * 0.25)}" fill="${C.snow}" filter="url(#tw)"/>`; return CA.art(-14, -16, 14, 5, s); }
 function rodTip(p) { const a = p.dir; return { x: p.x + Math.cos(a) * 22 * PS, y: p.y + (-8 + Math.sin(a) * 22 - 10) * PS }; }
 function drawPlayer() { const p = W.player; scaled(p.x, p.y, PS, drawPlayerRaw); }
 function drawPlayerRaw() {
   const p = W.player; const bob = p.moving ? Math.sin(p.step) * 1.5 : 0; const t = W.t; const face = Math.cos(p.dir) >= 0 ? 1 : -1;
   shadow(p.x, p.y + 6, 9, 4, 1);
-  const jacket = S.wet > 0.5 ? '#8a3a16' : '#c4531c', jacketHi = S.wet > 0.5 ? '#a04a22' : '#de6a2e';
+  const jacket = S.wet > 0.5 ? '#7e3a1e' : '#b4542a', jacketHi = S.wet > 0.5 ? '#94482a' : '#cc6c3e'; const wk = S.wet > 0.5 ? 1 : 0; const painted = paintReady(`me|${wk}`, () => playerArt(!!wk));
   // legs
-  cx.fillStyle = '#2a2420'; const lg = p.moving ? Math.sin(p.step) * 3.5 : 0; cx.beginPath(); cx.roundRect(p.x - 5, p.y + 1 + lg, 4, 6, 1.5); cx.fill(); cx.beginPath(); cx.roundRect(p.x + 1, p.y + 1 - lg, 4, 6, 1.5); cx.fill();
+  cx.fillStyle = '#2e2a24'; const lg = p.moving ? Math.sin(p.step) * 3.5 : 0; cx.beginPath(); cx.roundRect(p.x - 5, p.y + 1 + lg, 4, 6, 1.5); cx.fill(); cx.beginPath(); cx.roundRect(p.x + 1, p.y + 1 - lg, 4, 6, 1.5); cx.fill();
+  if (painted) drawFacing(`me|${wk}`, null, p.x, p.y + bob, face);
   // pack
-  cx.fillStyle = '#4e5a3a'; cx.beginPath(); cx.roundRect(p.x - 7 - face * 3, p.y - 12 + bob, 8, 11, 3); cx.fill();
+  if (!painted) { cx.fillStyle = '#4e5a3a'; cx.beginPath(); cx.roundRect(p.x - 7 - face * 3, p.y - 12 + bob, 8, 11, 3); cx.fill();
   // body
   cx.fillStyle = jacket; cx.beginPath(); cx.ellipse(p.x, p.y - 4 + bob, 8, 9, 0, 0, 6.28); cx.fill();
-  cx.fillStyle = jacketHi; cx.beginPath(); cx.ellipse(p.x - 2 * face, p.y - 6 + bob, 4, 5, 0, 0, 6.28); cx.fill();
+  cx.fillStyle = jacketHi; cx.beginPath(); cx.ellipse(p.x - 2 * face, p.y - 6 + bob, 4, 5, 0, 0, 6.28); cx.fill(); }
   // arms
   const armA = p.moving ? Math.sin(p.step) * 0.6 : 0;
   cx.strokeStyle = jacket; cx.lineWidth = 3.5; cx.lineCap = 'round';
   const holding = p.aim || p.cast || (mini && ['chop', 'clean', 'fire', 'cord', 'snare'].includes(mini.type));
   if (!holding) { cx.beginPath(); cx.moveTo(p.x - 7, p.y - 6 + bob); cx.lineTo(p.x - 9 + Math.sin(armA) * 3, p.y + bob + Math.cos(armA) * 3); cx.moveTo(p.x + 7, p.y - 6 + bob); cx.lineTo(p.x + 9 - Math.sin(armA) * 3, p.y + bob + Math.cos(armA) * 3); cx.stroke(); }
   // head
-  cx.fillStyle = '#e8c9a0'; cx.beginPath(); cx.arc(p.x, p.y - 15 + bob, 5.5, 0, 6.28); cx.fill();
+  if (!painted) { cx.fillStyle = '#e8c9a0'; cx.beginPath(); cx.arc(p.x, p.y - 15 + bob, 5.5, 0, 6.28); cx.fill();
   cx.fillStyle = '#3a2a1a'; cx.beginPath(); cx.arc(p.x, p.y - 16.5 + bob, 5.6, Math.PI, 2 * Math.PI); cx.fill(); cx.fillStyle = '#4a3a2a'; cx.beginPath(); cx.roundRect(p.x - 6.5, p.y - 17 + bob, 13, 2.2, 1); cx.fill();
-  cx.fillStyle = '#2a2420'; cx.fillRect(p.x + face * 2, p.y - 15 + bob, 1.2, 1.2);
+  cx.fillStyle = '#2a2420'; cx.fillRect(p.x + face * 2, p.y - 15 + bob, 1.2, 1.2); }
   if (E.status(S).temp < 2 && !W.inside) { const k = (t * 0.6) % 1; if (k < 0.5) { cx.fillStyle = `rgba(235,240,245,${0.35 * (1 - k * 2)})`; cx.beginPath(); cx.arc(p.x + face * (8 + k * 12), p.y - 15 + bob - k * 6, 2 + k * 5, 0, 6.28); cx.fill(); } }
   if (S.wet > 0.5) { cx.fillStyle = 'rgba(120,180,220,.8)'; for (let i = 0; i < 3; i++) { const k = (t * 1.2 + i / 3) % 1; cx.beginPath(); cx.arc(p.x - 6 + i * 6, p.y - 2 + k * 10, 1, 0, 6.28); cx.fill(); } }
   // tools in hand
@@ -5056,10 +5253,11 @@ function drawPlayerRaw() {
   else if (mini && mini.type === 'fire' && E.igniter(S) === 'bowdrill') { const k = Math.sin(t * 14) * 7; cx.strokeStyle = jacket; cx.lineWidth = 3.5; cx.beginPath(); cx.moveTo(p.x + face * 6, p.y - 6 + bob); cx.lineTo(hx + face * 4 + k, hy + 8); cx.stroke(); cx.fillStyle = '#8a6a44'; cx.fillRect(hx - 2, hy + 10, 14, 2.5); cx.strokeStyle = '#8a6a44'; cx.lineWidth = 1.5; cx.beginPath(); cx.moveTo(hx + face * 3 + k - 8, hy + 7); cx.lineTo(hx + face * 3 + k + 8, hy + 7); cx.stroke(); cx.fillStyle = '#c9a070'; cx.fillRect(hx + 4, hy + 2, 2, 9); cx.fillStyle = 'rgba(200,210,220,.3)'; cx.beginPath(); cx.arc(hx + 5, hy + 2 - ((t * 2) % 1) * 8, 2 + ((t * 2) % 1) * 3, 0, 6.28); cx.fill(); }
   else if (mini && mini.type === 'fire') { cx.strokeStyle = jacket; cx.lineWidth = 3.5; cx.beginPath(); cx.moveTo(p.x + face * 6, p.y - 6 + bob); cx.lineTo(hx + face * 4, hy + 6); cx.stroke(); cx.fillStyle = '#4a4a4a'; cx.fillRect(hx + 2, hy + 5, 8, 2); cx.fillStyle = '#c0c3bb'; cx.fillRect(hx + 9, hy + 6, 5, 1.2); }
   else if (mini && (mini.type === 'cord' || mini.type === 'snare')) { cx.strokeStyle = jacket; cx.lineWidth = 3.5; cx.beginPath(); cx.moveTo(p.x - 7, p.y - 6 + bob); cx.lineTo(p.x - 4, p.y + 2 + bob); cx.moveTo(p.x + 7, p.y - 6 + bob); cx.lineTo(p.x + 4, p.y + 2 + bob); cx.stroke(); cx.strokeStyle = '#c9b58a'; cx.lineWidth = 1.2; cx.beginPath(); cx.moveTo(p.x - 4, p.y + 3 + bob); cx.quadraticCurveTo(p.x, p.y + 1 + bob + Math.sin(t * 8), p.x + 4, p.y + 3 + bob); cx.stroke(); }
-  if (W.carrying) { cx.fillStyle = '#9a4a44'; cx.beginPath(); cx.ellipse(p.x - face * 3, p.y - 16 + bob, 11, 6, -0.3 * face, 0, 6.28); cx.fill(); cx.fillStyle = '#c86a60'; cx.beginPath(); cx.ellipse(p.x - face * 5, p.y - 17 + bob, 5, 3, -0.3 * face, 0, 6.28); cx.fill(); cx.strokeStyle = jacket; cx.lineWidth = 3.5; cx.beginPath(); cx.moveTo(p.x + face * 6, p.y - 6 + bob); cx.lineTo(p.x + face * 4, p.y - 14 + bob); cx.stroke(); }
+  if (W.carrying) { cx.fillStyle = '#8a463e'; cx.beginPath(); cx.ellipse(p.x - face * 3, p.y - 16 + bob, 11, 6, -0.3 * face, 0, 6.28); cx.fill(); cx.fillStyle = '#a8645a'; cx.beginPath(); cx.ellipse(p.x - face * 5, p.y - 17 + bob, 5, 3, -0.3 * face, 0, 6.28); cx.fill(); cx.strokeStyle = jacket; cx.lineWidth = 3.5; cx.beginPath(); cx.moveTo(p.x + face * 6, p.y - 6 + bob); cx.lineTo(p.x + face * 4, p.y - 14 + bob); cx.stroke(); }
 }
 function drawAnimal(a) { scaled(a.x, a.y, animalK(a.sp), () => drawAnimalRaw(a)); }
 function drawAnimalRaw(a) {
+  if (paintedAnimal(a)) return;
   const sp = SPECIES[a.sp] || { w: 12, c: '#6a5a4a', legs: 1 }; const w = sp.w * (a.size || 1); const d = a.dir || 1; const t = W.t;
   const moving = Math.hypot(a.tx - a.x, a.ty - a.y) > 2; const gait = moving ? Math.sin(t * (a.fled ? 26 : 10)) : 0;
   if (a.dead) { shadow(a.x, a.y + 2, w, w * 0.4, 0.8); cx.fillStyle = sp.c; cx.beginPath(); cx.ellipse(a.x, a.y, w, w * 0.45, 0.4, 0, 6.28); cx.fill(); cx.beginPath(); cx.arc(a.x + w * 0.95, a.y + w * 0.2, w * 0.3, 0, 6.28); cx.fill(); cx.strokeStyle = 'rgba(0,0,0,.5)'; cx.lineWidth = 0.8; cx.beginPath(); cx.moveTo(a.x + w * 0.85, a.y + w * 0.1); cx.lineTo(a.x + w * 1.05, a.y + w * 0.3); cx.moveTo(a.x + w * 1.05, a.y + w * 0.1); cx.lineTo(a.x + w * 0.85, a.y + w * 0.3); cx.stroke(); return; }
@@ -5118,6 +5316,7 @@ function drawActor(b) {
   const t = W.t;
   if (b.kind === 'bear') {
     const d = b.leaving ? Math.sign(b.vx || 1) : (W.camp.x > b.x ? 1 : -1); const g = Math.sin(t * 7) * 3;
+    if ([0, 1, 2].every(q => paintReady(`bear|${q}`, () => bearArt(q)))) { shadow(b.x, b.y + 8, 28, 10, 1.1); const q = g > 1 ? 1 : g < -1 ? 2 : 0; drawFacing(`bear|${q}`, null, b.x, b.y, d); return; }
     shadow(b.x, b.y + 8, 28, 10, 1.1);
     cx.strokeStyle = '#1c1510'; cx.lineWidth = 7; cx.lineCap = 'round'; for (let i = 0; i < 4; i++) { const x = b.x - 18 + i * 12; cx.beginPath(); cx.moveTo(x, b.y - 6); cx.lineTo(x + g * (i % 2 ? 1 : -1), b.y + 8); cx.stroke(); }
     cx.fillStyle = '#1c1510'; cx.beginPath(); cx.ellipse(b.x, b.y - 12, 27, 16, 0, 0, 6.28); cx.fill(); cx.beginPath(); cx.ellipse(b.x - d * 4, b.y - 22, 14, 9, 0, 0, 6.28); cx.fill();

@@ -63,6 +63,14 @@ add(G, 'build-rock-2', 'Rock shelter, two courses and the lintel', P, s => { kit
 add(G, 'camp-rock', 'Rock shelter, fire inside', P, s => { kit(s); shel(s, 'rock'); s.fireInside = true; }, toCliff);
 add(G, 'camp-rock-snow', 'Rock shelter in snow, stones down', P, s => { kit(s); snowDay(s); shel(s, 'rock', 0.4); }, toCliff);
 add(G, 'piles', 'Piles left on the land, and cairns', P, s => kit(s), toPile);
+// animals, people and signs on the land
+const A = 'Animals and signs';
+const zoo = (list, mode) => () => { const W = window.__t.W(); const P = W.player; W.animals = list.map(([sp, dx, dy, mv]) => ({ sp, x: P.x + dx, y: P.y + dy, tx: P.x + dx + (mv ? 40 : 0), ty: P.y + dy, dir: dx < 0 ? 1 : -1, calm: 1, size: 1, dead: mode === 'dead' })); };
+add(A, 'animals-north', 'Moose, caribou, hare, grouse, fox', P, null, zoo([['moose', -80, -60], ['caribou', 70, -80, 1], ['hare', -40, 50], ['grouse', 40, 40], ['fox', 90, 20, 1], ['duck', -110, 10]]));
+add(A, 'animals-south', 'Wallaby, warthog, springbok, possum, snake', P, null, zoo([['wallaby', -80, -50], ['warthog', 60, -70], ['springbok', 80, 20, 1], ['possum', -40, 50], ['snake', 40, 45], ['guineafowl', -110, 0]]));
+add(A, 'animals-dead', 'A kill, before it is dressed', P, null, zoo([['deer', -50, -40], ['hare', 50, 30]], 'dead'));
+add(A, 'bear', 'A bear at the edge of camp', P, null, () => { const W = window.__t.W(); W.actor = { kind: 'bear', x: W.player.x - 70, y: W.player.y - 40, vx: 1 }; });
+add(A, 'signs', 'Tracks, a snare, a deadfall, a carcass, wreck debris, landmarks', P, s => { s.carcass = { id: 'deer', dressed: true, big: true }; }, () => { const W = window.__t.W(), P = W.player; W.carcassPos = { x: P.x + 60, y: P.y - 60 }; W.tracks = [{ x: P.x - 90, y: P.y + 50 }, { x: P.x - 20, y: P.y + 70, set: true }, { x: P.x + 60, y: P.y + 60, set: true, deadfall: true }]; W.debris = [0, 1, 2].map(v => ({ x: P.x - 100 + v * 40, y: P.y - 50, look: v })); W.landmarks = [{ kind: 'pine', x: P.x + 120, y: P.y - 10 }, { kind: 'stone', x: P.x - 140, y: P.y + 10 }]; });
 add('Choices and mini-games', 'event', 'A choice to make', P, s => { s.event = { id: 'wolves', title: 'Wolves', text: 'Wolves howling close, after dark.', options: [{ label: 'Build the fire up and keep to camp', sub: 'Two hours, two days of wood. Nerves settle.' }, { label: 'Carry on', sub: '' }], optIds: [0, 1], phase: 0 }; });
 add('Choices and mini-games', 'mini-fish', 'Fishing: the cast', P, null, () => { window.__t.call('startFish', false); });
 add('Choices and mini-games', 'mini-fire', 'Lighting the fire', P, s => { s.fire = false; }, () => { window.__t.call('startFire'); });
