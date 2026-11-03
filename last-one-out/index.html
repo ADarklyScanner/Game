@@ -1942,6 +1942,8 @@ function nightAndBody(s, burn, done, lines) {
   // water
   const c = se.climate; let waterOk = true; let dmg = 0;
   if (c.water === 'scarce') { const need = s.heat ? 2 : 1; if ((s.water || 0) >= need) s.water -= need; else if ((s.water || 0) > 0) { s.water = 0; lines.push(['Not enough water for a day this hot. Thirsty and slow.', 'warn']); dmg += 2; } else waterOk = false; }
+  /* where water is all around you drink whenever you are up and about, or from a pot kept at camp; a day lying still with none to hand is a day without */
+  else if (!(s.today && (s.today.done.length || s.today.drank)) && !((s.potWater || 0) > 0 || s.boiled > 0)) waterOk = false;
 
   // eating
   const target = { full: tdee, moderate: tdee * 0.7, lean: tdee * 0.4 }[s.ration];
@@ -1981,7 +1983,9 @@ function nightAndBody(s, burn, done, lines) {
   const fedFrac = kcalIn / tdee; { const sys = fedFrac < 0.1 || (s.sys && s.sys.starved) ? sysOf(s) : null; if (sys) sys.starved = fedFrac < 0.1 ? (sys.starved || 0) + 1 : fedFrac >= 0.3 ? Math.max(0, (sys.starved || 0) - 2) : (sys.starved || 0); }
   // weeks of eating almost nothing at all wear the body down faster and faster: the reserves are gone
   if (fedFrac < 0.3) dmg += 2 + Math.min(3, 0.08 * Math.max(0, ((s.sys && s.sys.starved) || 0) - 7)); else if (fedFrac < 0.5) dmg += 0.6;
-  if (!waterOk) { dmg += 8; lines.push(['No water today. Dehydrated.', 'bad']); }
+  /* without water the body goes in about three days: thirsty, then dizzy and confused, then it gives out */
+  if (!waterOk) { const sys = sysOf(s); const d = sys.dry = (sys.dry || 0) + 1; dmg += d === 1 ? 14 : d === 2 ? 36 : 70; s.morale -= d * 6; lines.push([d === 1 ? 'No water today. A dry mouth, a headache, dark urine.' : d === 2 ? 'A second day without water. Dizzy when you stand, and the headache will not let go.' : 'Days without water. You cannot think straight, and your body is shutting down.', 'bad']); }
+  else if (s.sys && s.sys.dry) s.sys.dry = 0;
   if (s.wet > 0.4 && !fire && T < 8) { dmg += 4 * s.wet; s.morale -= 4; lines.push([T < 0 ? 'Wet, no fire, below freezing. A dangerous night.' : 'Wet and cold all night with no fire.', 'bad']); if (T < -5 && chance(s, 0.25 * s.wet * (s.crafts.mittens ? 0.4 : 1))) { addCond(s, { name: 'Frostnipped toes', days: 5, dmg: 1 }); lines.push(['Frostnip on the toes.', 'bad']); } }
   else if (T < -15 && !fire && s.shelterLvl < 2) { dmg += 3; lines.push(['A brutal night without fire.', 'bad']); if (chance(s, 0.15)) { addCond(s, { name: 'Frostnipped fingers', days: 5, dmg: 1 }); lines.push(['Frostnip on the fingers.', 'bad']); } }
   s.wet = fire ? Math.max(0, s.wet - (s.tended ? 0.8 : 0.5)) : Math.max(0, s.wet - 0.15);
@@ -1991,7 +1995,7 @@ function nightAndBody(s, burn, done, lines) {
   const treated = s.boiled > 0 || c.water === 'scarce';
   { const sys = s.day > 3 ? sysOf(s) : s.sys; if (sys) { if (latrineOk(s)) sys.fouling = Math.max(0, Math.round((fouling(s) - 0.03) * 1000) / 1000); else if (s.day > 3) sys.fouling = Math.min(1, Math.round((fouling(s) + 0.015) * 1000) / 1000); } }
   if (fouling(s) > 0.5 && T > 10 && !latrineOk(s) && chance(s, 0.15)) lines.push(['Flies, and a smell on the path down to the water. The camp needs a proper latrine.', 'muted']);
-  if (!treated && chance(s, (potLike(s) || has(s, 'Canteen') ? 0.004 : 0.012) * soap * (1 + 2 * fouling(s)))) sick(s, 'Giardia from untreated water', lines);
+  if (!treated && waterOk && chance(s, (potLike(s) || has(s, 'Canteen') ? 0.004 : 0.012) * soap * (1 + 2 * fouling(s)))) sick(s, 'Giardia from untreated water', lines); /* only on days you drank it */
   if (ate.rawMeat && (!fire || (COOK_RISKS && s.cook === 'raw')) && chance(s, 0.04 * soap)) sick(s, 'Food poisoning from raw meat', lines);
   if (ate.rawFish && chance(s, 0.02 * soap)) sick(s, 'Food poisoning from raw fish', lines);
   if (ate.worms && !s.conditions.some(c => c.name === 'Trichinosis') && !((s.sys && s.sys.latent) || []).length && chance(s, ate.wormsRaw ? 0.15 : 0.03)) {
@@ -3079,7 +3083,7 @@ function reveal(x, y, r) {
 }
 function update(dt) {
   if (W.paused) return;
-  W.t += dt; W.cellT = (W.cellT || 0) + dt; if (W.cellT > 0.5) { W.cellT = 0; ensureCells(); }
+  W.t += dt; W.cellT = (W.cellT || 0) + dt; if (W.cellT > 0.5) { W.cellT = 0; ensureCells(); if (S && S.today && !S.today.drank && !W.desert && atShore()) S.today.drank = true; /* a drink at the water's edge */ }
   W.revealT = (W.revealT || 0) + dt; if (W.revealT > 0.4) { W.revealT = 0; reveal(W.player.x, W.player.y, S.fog ? 150 : W.night ? 90 : 230); }
   const p = W.player; const busy = !!(mini && !mini.free) || W.night || (S.event && S.event.id === 'wound');
   let v = keyVec() || (input.joy ? input.vec : null);
