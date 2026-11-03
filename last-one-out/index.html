@@ -2588,10 +2588,10 @@ function drawLook(t, snow, sway, look) {
   const blobs = (spec, c1, c2) => { for (const [ox, oy, rr, hi] of spec) { cx.fillStyle = hi ? c2 : c1; cx.beginPath(); cx.arc(t.x + ox + sway, t.y + oy, rr, 0, 6.28); cx.fill(); } };
   const snowCap = (spec) => { if (!snow) return; cx.fillStyle = 'rgba(245,248,250,.85)'; for (const [ox, oy, rr] of spec) { cx.beginPath(); cx.ellipse(t.x + ox + sway, t.y + oy - rr * 0.5, rr * 0.8, rr * 0.35, 0, 0, 6.28); cx.fill(); } };
   const trunk = (w, h, col) => { cx.fillStyle = col || V.trunk; cx.fillRect(t.x - w / 2, t.y - h, w, h + 3); cx.fillStyle = 'rgba(0,0,0,.18)'; cx.fillRect(t.x + w / 2 - w * 0.35, t.y - h, w * 0.35, h + 3); };
-  const bare = (n, h, col) => { cx.strokeStyle = col || '#5a4a3a'; cx.lineWidth = 1.4; cx.lineCap = 'round'; for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + (i - (n - 1) / 2) * 0.45; cx.beginPath(); cx.moveTo(t.x, t.y - h * 0.5); cx.lineTo(t.x + Math.cos(a) * r * 0.9 + sway, t.y - h * 0.5 + Math.sin(a) * r * 0.9); cx.stroke(); } };
+  const bare = (n, h, col) => { cx.strokeStyle = col || '#564b3f'; cx.lineWidth = 1.4; cx.lineCap = 'round'; for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + (i - (n - 1) / 2) * 0.45; cx.beginPath(); cx.moveTo(t.x, t.y - h * 0.5); cx.lineTo(t.x + Math.cos(a) * r * 0.9 + sway, t.y - h * 0.5 + Math.sin(a) * r * 0.9); cx.stroke(); } };
   switch (look) {
     case 'cedar': { // broad, drooping sprays, a red stringy trunk showing at the base
-      if (!young) trunk(6, 14, '#7a4a30');
+      if (!young) trunk(6, 14, '#704d3b');
       tiers(V.conifer, young ? [[0, 1.1, 1], [-6, 0.8, 2], [-11, 0.45, 3]] : [[2, 1.25, 0], [-6, 1.05, 1], [-14, 0.85, 2], [-21, 0.62, 3], [-27, 0.38, 4]], 1.05, true); return true; }
     case 'spruce': return false;
     case 'blackspruce': { // thin and stunted, a club of branches at the top
@@ -2601,39 +2601,39 @@ function drawLook(t, snow, sway, look) {
     case 'larch': { // soft feathery tiers; gold in autumn, bare in winter
       const [c1, c2] = leafCol(V); const late = S.day >= (V.fallDay || 30) + 14 || snow;
       trunk(young ? 2 : 4, young ? 8 : 14);
-      if (late) { cx.strokeStyle = '#6a5040'; cx.lineWidth = 1.2; const h = young ? 18 : 34; cx.beginPath(); cx.moveTo(t.x, t.y - 10); cx.lineTo(t.x + sway, t.y - h); cx.stroke(); for (let i = 0; i < 6; i++) { const y = t.y - 12 - i * (h - 14) / 6, w = r * (1 - i / 7) * 0.9; cx.beginPath(); cx.moveTo(t.x, y); cx.lineTo(t.x - w, y + 4); cx.moveTo(t.x, y); cx.lineTo(t.x + w, y + 4); cx.stroke(); } return true; }
+      if (late) { cx.strokeStyle = '#645246'; cx.lineWidth = 1.2; const h = young ? 18 : 34; cx.beginPath(); cx.moveTo(t.x, t.y - 10); cx.lineTo(t.x + sway, t.y - h); cx.stroke(); for (let i = 0; i < 6; i++) { const y = t.y - 12 - i * (h - 14) / 6, w = r * (1 - i / 7) * 0.9; cx.beginPath(); cx.moveTo(t.x, y); cx.lineTo(t.x - w, y + 4); cx.moveTo(t.x, y); cx.lineTo(t.x + w, y + 4); cx.stroke(); } return true; }
       const cols = [c1, c1, c2, c2, c2]; cx.globalAlpha = 0.92; tiers(cols, young ? [[0, 0.95, 0], [-6, 0.65, 2]] : [[0, 0.95, 0], [-8, 0.78, 1], [-15, 0.6, 2], [-21, 0.42, 3], [-26, 0.24, 4]], 0.9); cx.globalAlpha = 1; return true; }
     case 'fir': case 'cypress': { // a tall narrow crown on a clear trunk
       const nar = look === 'cypress' ? 0.62 : 0.8; if (!young) trunk(5, 16);
       tiers(V.conifer, young ? [[0, 0.8, 1], [-7, 0.55, 2], [-12, 0.3, 3]] : [[-8, 0.85, 0], [-15, 0.72, 1], [-22, 0.58, 2], [-29, 0.44, 3], [-35, 0.28, 4]], nar); return true; }
     case 'pine': { // bare trunk, clumped crown on top
       if (young) { tiers(V.conifer, [[0, 0.9, 2], [-6, 0.55, 3]], 0.9); return true; }
-      const h = 24 + r * 0.4; trunk(5, h, '#7a5236'); const cs = [[0, -h - 4, r * 0.62, 0], [-r * 0.45, -h + 2, r * 0.45, 0], [r * 0.45, -h + 1, r * 0.45, 0], [r * 0.1, -h - 10, r * 0.42, 1], [-r * 0.2, -h - 6, r * 0.3, 1]];
+      const h = 24 + r * 0.4; trunk(5, h, '#715440'); const cs = [[0, -h - 4, r * 0.62, 0], [-r * 0.45, -h + 2, r * 0.45, 0], [r * 0.45, -h + 1, r * 0.45, 0], [r * 0.1, -h - 10, r * 0.42, 1], [-r * 0.2, -h - 6, r * 0.3, 1]];
       blobs(cs, V.conifer[1], V.conifer[3]); cx.fillStyle = 'rgba(0,0,0,.12)'; cx.beginPath(); cx.arc(t.x + r * 0.35 + sway, t.y - h + 3, r * 0.35, 0, 6.28); cx.fill(); snowCap(cs.slice(0, 2)); return true; }
     case 'podocarp': { if (!young) trunk(5, 10); const cs = [[0, -18, r * 0.8, 0], [-r * 0.4, -12, r * 0.55, 0], [r * 0.4, -12, r * 0.55, 0], [0, -26, r * 0.5, 1]]; blobs(cs, V.conifer[1], V.conifer[3]); snowCap(cs.slice(0, 1)); return true; }
     case 'alder': case 'myrtle': case 'beech': case 'lenga': {
       const dark = look === 'myrtle' || look === 'beech'; const [c1, c2] = look === 'lenga' ? leafCol(V) : look === 'alder' ? leafCol(V, 45) : [V.leaf, V.leafHi];
       if (snow && (look === 'alder' || look === 'lenga') && S.day > 40) { trunk(4, 12); bare(5, 26); return true; }
       if (young) { cx.strokeStyle = V.trunk; cx.lineWidth = 1.5; cx.beginPath(); cx.moveTo(t.x, t.y + 2); cx.lineTo(t.x + sway, t.y - 14); cx.stroke(); blobs([[0, -16, r * 0.6, 0], [-r * 0.3, -11, r * 0.4, 0], [r * 0.2, -20, r * 0.35, 1]], c1, c2); return true; }
-      trunk(5, 12, look === 'alder' ? '#8a8478' : V.trunk);
+      trunk(5, 12, look === 'alder' ? '#88847b' : V.trunk);
       if (look === 'lenga' || look === 'beech') { // layered, flat sprays of small leaves
         for (const [oy, w, hi] of [[-12, 1.05, 0], [-20, 0.9, 0], [-27, 0.7, 1], [-33, 0.45, 1]]) { cx.fillStyle = hi ? c2 : c1; cx.beginPath(); cx.ellipse(t.x + sway * (1 - w * 0.5), t.y + oy, r * w, r * w * 0.38, 0, 0, 6.28); cx.fill(); cx.fillStyle = 'rgba(0,0,0,.12)'; cx.beginPath(); cx.ellipse(t.x + sway, t.y + oy + r * w * 0.2, r * w * 0.9, r * w * 0.15, 0, 0, 6.28); cx.fill(); }
         snowCap([[0, -30, r * 0.6]]); return true; }
       const cs = dark ? [[0, -18, r * 0.85, 0], [-r * 0.5, -12, r * 0.6, 0], [r * 0.5, -13, r * 0.6, 0], [-r * 0.1, -25, r * 0.5, 1]] : [[0, -16, r * 0.8, 0], [-r * 0.5, -10, r * 0.55, 0], [r * 0.5, -11, r * 0.55, 0], [-r * 0.15, -22, r * 0.5, 1]];
       blobs(cs, c1, c2); cx.fillStyle = 'rgba(0,0,0,.13)'; cx.beginPath(); cx.arc(t.x + r * 0.35 + sway, t.y - 12, r * 0.45, 0, 6.28); cx.fill(); snowCap(cs.slice(0, 1)); return true; }
     case 'willow': { // a clump of thin stems, silvery leaves
-      const [c1, c2] = leafCol(V); const n = young ? 4 : 7; const h = young ? 14 : 22; cx.strokeStyle = '#6a5a44'; cx.lineWidth = 1.2; for (let i = 0; i < n; i++) { const ox = (i - (n - 1) / 2) * 3; cx.beginPath(); cx.moveTo(t.x + ox * 0.5, t.y + 2); cx.lineTo(t.x + ox * 1.6 + sway, t.y - h); cx.stroke(); }
+      const [c1, c2] = leafCol(V); const n = young ? 4 : 7; const h = young ? 14 : 22; cx.strokeStyle = '#665b4b'; cx.lineWidth = 1.2; for (let i = 0; i < n; i++) { const ox = (i - (n - 1) / 2) * 3; cx.beginPath(); cx.moveTo(t.x + ox * 0.5, t.y + 2); cx.lineTo(t.x + ox * 1.6 + sway, t.y - h); cx.stroke(); }
       if (snow && S.day > 30) return true; for (let i = 0; i < n + 3; i++) { const ox = (i - (n + 2) / 2) * 3.4, oy = -h + (i % 3) * 5; cx.fillStyle = i % 3 === 0 ? c2 : c1; cx.beginPath(); cx.ellipse(t.x + ox + sway, t.y + oy, 6, 4.5, 0, 0, 6.28); cx.fill(); } return true; }
     case 'aspen': case 'dwarfbirch': case 'mtnbirch': {
       const [c1, c2] = leafCol(V, look === 'aspen' ? V.fallDay : (V.fallDay || 40) + 4);
       if (look === 'dwarfbirch') { // knee-high and shrubby
-        cx.strokeStyle = '#6a4a3a'; cx.lineWidth = 1.1; for (let i = 0; i < 5; i++) { cx.beginPath(); cx.moveTo(t.x, t.y + 2); cx.lineTo(t.x + (i - 2) * 4 + sway, t.y - 8 - (i % 2) * 3); cx.stroke(); } if (snow) return true; blobs([[-5, -9, 5, 0], [4, -10, 5, 0], [0, -13, 4, 1], [-1, -7, 4, 1]], c1, c2); return true; }
+        cx.strokeStyle = '#634c41'; cx.lineWidth = 1.1; for (let i = 0; i < 5; i++) { cx.beginPath(); cx.moveTo(t.x, t.y + 2); cx.lineTo(t.x + (i - 2) * 4 + sway, t.y - 8 - (i % 2) * 3); cx.stroke(); } if (snow) return true; blobs([[-5, -9, 5, 0], [4, -10, 5, 0], [0, -13, 4, 1], [-1, -7, 4, 1]], c1, c2); return true; }
       if (look === 'mtnbirch') { // twisted stems, low and wide
-        cx.strokeStyle = V.birch; cx.lineWidth = 2.6; cx.lineCap = 'round'; for (const [dx, h] of [[-6, 18], [2, 22], [7, 16]]) { cx.beginPath(); cx.moveTo(t.x, t.y + 2); cx.quadraticCurveTo(t.x + dx * 1.8, t.y - h * 0.4, t.x + dx + sway, t.y - h); cx.stroke(); } cx.strokeStyle = '#3a3a34'; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(t.x - 3, t.y - 6); cx.lineTo(t.x - 1, t.y - 6); cx.stroke();
+        cx.strokeStyle = V.birch; cx.lineWidth = 2.6; cx.lineCap = 'round'; for (const [dx, h] of [[-6, 18], [2, 22], [7, 16]]) { cx.beginPath(); cx.moveTo(t.x, t.y + 2); cx.quadraticCurveTo(t.x + dx * 1.8, t.y - h * 0.4, t.x + dx + sway, t.y - h); cx.stroke(); } cx.strokeStyle = '#3a3a35'; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(t.x - 3, t.y - 6); cx.lineTo(t.x - 1, t.y - 6); cx.stroke();
         if (snow || S.day > 45) { bare(5, 30); return true; } blobs([[-7, -20, r * 0.45, 0], [3, -24, r * 0.5, 0], [8, -17, r * 0.4, 0], [0, -28, r * 0.35, 1]], c1, c2); return true; }
       // aspen: a straight white trunk, a round crown that goes yellow
-      if (young) { cx.strokeStyle = '#e6e2d6'; cx.lineWidth = 1.6; cx.beginPath(); cx.moveTo(t.x, t.y + 2); cx.lineTo(t.x + sway, t.y - 20); cx.stroke(); if (!snow) blobs([[0, -22, r * 0.45, 0], [0, -26, r * 0.3, 1]], c1, c2); return true; }
-      cx.fillStyle = '#e6e2d6'; cx.fillRect(t.x - 2, t.y - 24, 4, 27); cx.fillStyle = '#3a3a34'; for (let i = 0; i < 4; i++) cx.fillRect(t.x - 2, t.y - 20 + i * 5, 2, 1); if (snow) { bare(5, 40, '#8a8478'); return true; }
+      if (young) { cx.strokeStyle = '#e5e2d9'; cx.lineWidth = 1.6; cx.beginPath(); cx.moveTo(t.x, t.y + 2); cx.lineTo(t.x + sway, t.y - 20); cx.stroke(); if (!snow) blobs([[0, -22, r * 0.45, 0], [0, -26, r * 0.3, 1]], c1, c2); return true; }
+      cx.fillStyle = '#e5e2d9'; cx.fillRect(t.x - 2, t.y - 24, 4, 27); cx.fillStyle = '#3a3a35'; for (let i = 0; i < 4; i++) cx.fillRect(t.x - 2, t.y - 20 + i * 5, 2, 1); if (snow) { bare(5, 40, '#88847b'); return true; }
       blobs([[0, -30, r * 0.62, 0], [-r * 0.35, -24, r * 0.45, 0], [r * 0.35, -25, r * 0.45, 0], [0, -36, r * 0.38, 1]], c1, c2); return true; }
     case 'acacia': { // umbrella crown on thorny forked limbs
       if (young) return false;
@@ -2687,14 +2687,16 @@ const PAINT = {
   // the filters that make a flat shape read as paint: a wobbled wash, pigment pooled at the edge, dry-brush grain
   defs: '<filter id="wash" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="3" seed="5"/><feDisplacementMap in="SourceGraphic" scale="9"/><feGaussianBlur stdDeviation="0.6"/></filter>'
     + '<filter id="edge" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="3" seed="5"/><feDisplacementMap in="SourceGraphic" scale="9"/><feGaussianBlur stdDeviation="1.1"/></filter>'
-    + '<filter id="soft" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="3"/></filter>',
+    + '<filter id="soft" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="3"/></filter>'
+    + '<filter id="tw" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.08" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="3"/><feGaussianBlur stdDeviation="0.35"/></filter>'
+    + '<filter id="te" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.08" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="3"/><feGaussianBlur stdDeviation="0.7"/></filter>',
   cache: new Map(),
   // a painting as an image: null for the first frame or two while it is made, then the same canvas every time
-  sprite(key, w, h, inner) {
+  sprite(key, w, h, inner, s = 1) {
     let c = this.cache.get(key); if (c) return c.ready ? c.cv : null;
     c = { ready: false, cv: document.createElement('canvas') }; this.cache.set(key, c);
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><defs>${this.defs}</defs>${inner}</svg>`;
-    const img = new Image(); img.onload = () => { c.cv.width = w; c.cv.height = h; c.cv.getContext('2d').drawImage(img, 0, 0); c.ready = true; }; img.onerror = () => { c.failed = true; };
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w * s}" height="${h * s}" viewBox="0 0 ${w} ${h}"><defs>${this.defs}</defs>${inner}</svg>`;
+    const img = new Image(); img.onload = () => { c.cv.width = w * s; c.cv.height = h * s; c.cv.getContext('2d').drawImage(img, 0, 0); c.ready = true; }; img.onerror = () => { c.failed = true; };
     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); return null;
   },
   palOf(seasonKey) { return this.pal[E.biomeOf(seasonKey).id] || this.pal.shield; },
@@ -4166,8 +4168,8 @@ function draw() {
 // ---------- plants
 function drawMoss(m, snow) {
   if (snow && !m.used) { cx.fillStyle = 'rgba(160,175,165,.5)'; cx.beginPath(); cx.ellipse(m.x, m.y, 16, 9, 0.2, 0, 6.28); cx.fill(); return; }
-  cx.fillStyle = m.used ? 'rgba(90,110,70,.45)' : '#7fa05a'; cx.beginPath(); cx.ellipse(m.x, m.y, 17, 9, 0.2, 0, 6.28); cx.fill(); cx.beginPath(); cx.ellipse(m.x + 13, m.y + 6, 10, 6, 0, 0, 6.28); cx.fill(); cx.beginPath(); cx.ellipse(m.x - 12, m.y + 4, 8, 5, 0, 0, 6.28); cx.fill();
-  if (!m.used) { cx.fillStyle = '#9ec078'; for (let i = 0; i < 9; i++) { cx.beginPath(); cx.arc(m.x - 12 + (i * 7) % 26, m.y - 4 + (i * 5) % 11, 1.3, 0, 6.28); cx.fill(); } cx.fillStyle = '#5f8a4e'; cx.beginPath(); cx.ellipse(m.x + 4, m.y + 2, 4, 2, 0, 0, 6.28); cx.fill(); }
+  cx.fillStyle = m.used ? 'rgba(90,110,70,.45)' : '#839b69'; cx.beginPath(); cx.ellipse(m.x, m.y, 17, 9, 0.2, 0, 6.28); cx.fill(); cx.beginPath(); cx.ellipse(m.x + 13, m.y + 6, 10, 6, 0, 0, 6.28); cx.fill(); cx.beginPath(); cx.ellipse(m.x - 12, m.y + 4, 8, 5, 0, 0, 6.28); cx.fill();
+  if (!m.used) { cx.fillStyle = '#a2bb87'; for (let i = 0; i < 9; i++) { cx.beginPath(); cx.arc(m.x - 12 + (i * 7) % 26, m.y - 4 + (i * 5) % 11, 1.3, 0, 6.28); cx.fill(); } cx.fillStyle = '#668559'; cx.beginPath(); cx.ellipse(m.x + 4, m.y + 2, 4, 2, 0, 0, 6.28); cx.fill(); }
   else { cx.fillStyle = 'rgba(80,60,40,.4)'; cx.beginPath(); cx.ellipse(m.x, m.y, 9, 5, 0.2, 0, 6.28); cx.fill(); }
 }
 function drawTrack(tr, snow) {
@@ -4179,77 +4181,186 @@ function drawBush(b, snow) { scaled(b.x, b.y, BS, () => drawBushRaw(b, snow)); }
 function drawBushRaw(b, snow) {
   const k = b.kind; const used = b.used;
   shadow(b.x, b.y + 6, 13, 5, 0.8);
+  if (k === 'rosehips' || k === 'berries') { const st = snow ? 'snow' : used ? 'used' : k === 'rosehips' ? 'ripe' : bushStage(b); if (drawPainted(`bush|${k}|${st}|${BUSH.berries.dot}`, () => bushArt(k, st, BUSH.berries.dot), b.x, b.y, 1, 0)) return; }
   if (k === 'mushrooms') {
-    const look = b.look ? MUSH_LOOKS.indexOf(b.look) : 0; const cap = ['#8a6a44', '#c9a24a', '#e0803a', '#e8e4d8', '#8a8a86', '#c8362a', '#c9a872'][Math.max(0, look)] || '#8a6a44';
-    cx.fillStyle = '#4e7a3e'; cx.beginPath(); cx.ellipse(b.x, b.y + 3, 14, 6, 0, 0, 6.28); cx.fill();
-    if (!used) for (const [ox, oy, r] of [[-7, 0, 5], [2, -3, 6.5], [9, 2, 4.5], [-1, 5, 3.5]]) { cx.fillStyle = '#e8e0d0'; cx.fillRect(b.x + ox - 1.5, b.y + oy - 1, 3, r * 1.1); cx.fillStyle = cap; cx.beginPath(); cx.ellipse(b.x + ox, b.y + oy - 2, r, r * 0.6, 0, 3.14, 6.28); cx.fill(); cx.fillStyle = 'rgba(255,255,255,.35)'; cx.beginPath(); cx.ellipse(b.x + ox - r * 0.3, b.y + oy - 3.5, r * 0.3, r * 0.15, 0, 0, 6.28); cx.fill(); if (look === 5) { cx.fillStyle = '#fff'; cx.fillRect(b.x + ox - 2, b.y + oy - 4, 1.5, 1.5); cx.fillRect(b.x + ox + 1, b.y + oy - 3, 1.5, 1.5); } }
-    else { cx.fillStyle = '#d8cfbf'; for (const [ox, oy] of [[-7, 0], [2, -3], [9, 2]]) { cx.fillRect(b.x + ox - 1, b.y + oy, 2, 3); } }
+    const look = b.look ? MUSH_LOOKS.indexOf(b.look) : 0; const cap = ['#836c50', '#bfa363', '#cb8654', '#e7e4db', '#8a8a87', '#ab4239', '#c1a982'][Math.max(0, look)] || '#836c50';
+    cx.fillStyle = '#557449'; cx.beginPath(); cx.ellipse(b.x, b.y + 3, 14, 6, 0, 0, 6.28); cx.fill();
+    if (!used) for (const [ox, oy, r] of [[-7, 0, 5], [2, -3, 6.5], [9, 2, 4.5], [-1, 5, 3.5]]) { cx.fillStyle = '#e6e0d5'; cx.fillRect(b.x + ox - 1.5, b.y + oy - 1, 3, r * 1.1); cx.fillStyle = cap; cx.beginPath(); cx.ellipse(b.x + ox, b.y + oy - 2, r, r * 0.6, 0, 3.14, 6.28); cx.fill(); cx.fillStyle = 'rgba(255,255,255,.35)'; cx.beginPath(); cx.ellipse(b.x + ox - r * 0.3, b.y + oy - 3.5, r * 0.3, r * 0.15, 0, 0, 6.28); cx.fill(); if (look === 5) { cx.fillStyle = '#fff'; cx.fillRect(b.x + ox - 2, b.y + oy - 4, 1.5, 1.5); cx.fillRect(b.x + ox + 1, b.y + oy - 3, 1.5, 1.5); } }
+    else { cx.fillStyle = '#d6cfc4'; for (const [ox, oy] of [[-7, 0], [2, -3], [9, 2]]) { cx.fillRect(b.x + ox - 1, b.y + oy, 2, 3); } }
     return;
   }
   if (k === 'greens') {
-    cx.fillStyle = used ? '#5a7a44' : '#5e8f48'; for (let i = 0; i < 7; i++) { const a = i / 7 * 6.28 + 0.3; cx.save(); cx.translate(b.x, b.y); cx.rotate(a); cx.beginPath(); cx.ellipse(used ? 5 : 8, 0, used ? 5 : 8, 3.2, 0, 0, 6.28); cx.fill(); cx.restore(); }
-    cx.fillStyle = used ? '#6a8a52' : '#79a85a'; for (let i = 0; i < 5; i++) { const a = i / 5 * 6.28; cx.save(); cx.translate(b.x, b.y); cx.rotate(a); cx.beginPath(); cx.ellipse(4, 0, 4.5, 2.2, 0, 0, 6.28); cx.fill(); cx.restore(); }
-    if (!used) { cx.strokeStyle = 'rgba(40,70,30,.35)'; cx.lineWidth = 0.7; for (let i = 0; i < 7; i++) { const a = i / 7 * 6.28 + 0.3; cx.beginPath(); cx.moveTo(b.x, b.y); cx.lineTo(b.x + Math.cos(a) * 13, b.y + Math.sin(a) * 13); cx.stroke(); } cx.fillStyle = '#f2e9f5'; cx.beginPath(); cx.arc(b.x + 1, b.y - 1, 1.3, 0, 6.28); cx.fill(); }
+    cx.fillStyle = used ? '#5f764f' : '#658956'; for (let i = 0; i < 7; i++) { const a = i / 7 * 6.28 + 0.3; cx.save(); cx.translate(b.x, b.y); cx.rotate(a); cx.beginPath(); cx.ellipse(used ? 5 : 8, 0, used ? 5 : 8, 3.2, 0, 0, 6.28); cx.fill(); cx.restore(); }
+    cx.fillStyle = used ? '#6f865d' : '#80a269'; for (let i = 0; i < 5; i++) { const a = i / 5 * 6.28; cx.save(); cx.translate(b.x, b.y); cx.rotate(a); cx.beginPath(); cx.ellipse(4, 0, 4.5, 2.2, 0, 0, 6.28); cx.fill(); cx.restore(); }
+    if (!used) { cx.strokeStyle = 'rgba(40,70,30,.35)'; cx.lineWidth = 0.7; for (let i = 0; i < 7; i++) { const a = i / 7 * 6.28 + 0.3; cx.beginPath(); cx.moveTo(b.x, b.y); cx.lineTo(b.x + Math.cos(a) * 13, b.y + Math.sin(a) * 13); cx.stroke(); } cx.fillStyle = '#f1eaf3'; cx.beginPath(); cx.arc(b.x + 1, b.y - 1, 1.3, 0, 6.28); cx.fill(); }
     return;
   }
   if (k === 'roots') {
-    cx.fillStyle = '#4a7a4a'; cx.beginPath(); cx.ellipse(b.x, b.y + 3, 12, 5, 0, 0, 6.28); cx.fill();
-    cx.strokeStyle = '#5f8a3a'; cx.lineWidth = 1.6; cx.lineCap = 'round'; for (const [ox, h] of [[-8, 18], [-3, 24], [3, 21], [8, 16]]) { const sway = Math.sin(W.t * 1.5 + ox) * 1.2; cx.beginPath(); cx.moveTo(b.x + ox, b.y + 2); cx.quadraticCurveTo(b.x + ox + sway, b.y - h / 2, b.x + ox + sway * 2, b.y - h); cx.stroke(); if (!used) { cx.fillStyle = '#7a5a30'; cx.beginPath(); cx.ellipse(b.x + ox + sway * 2, b.y - h - 2, 2, 5, 0, 0, 6.28); cx.fill(); } }
-    cx.fillStyle = used ? '#6a8a4a' : '#7aa050'; for (let i = 0; i < 4; i++) { cx.beginPath(); cx.ellipse(b.x - 9 + i * 6, b.y + 1, 4, 2, i * 0.5, 0, 6.28); cx.fill(); }
+    cx.fillStyle = '#527452'; cx.beginPath(); cx.ellipse(b.x, b.y + 3, 12, 5, 0, 0, 6.28); cx.fill();
+    cx.strokeStyle = '#65844a'; cx.lineWidth = 1.6; cx.lineCap = 'round'; for (const [ox, h] of [[-8, 18], [-3, 24], [3, 21], [8, 16]]) { const sway = Math.sin(W.t * 1.5 + ox) * 1.2; cx.beginPath(); cx.moveTo(b.x + ox, b.y + 2); cx.quadraticCurveTo(b.x + ox + sway, b.y - h / 2, b.x + ox + sway * 2, b.y - h); cx.stroke(); if (!used) { cx.fillStyle = '#725b3d'; cx.beginPath(); cx.ellipse(b.x + ox + sway * 2, b.y - h - 2, 2, 5, 0, 0, 6.28); cx.fill(); } }
+    cx.fillStyle = used ? '#6e8557' : '#7f9a61'; for (let i = 0; i < 4; i++) { cx.beginPath(); cx.ellipse(b.x - 9 + i * 6, b.y + 1, 4, 2, i * 0.5, 0, 6.28); cx.fill(); }
     return;
   }
-  if (k === 'nettle') { cx.strokeStyle = '#2f5a28'; cx.lineWidth = 1.6; cx.lineCap = 'round'; for (const [ox, h] of [[-9, 20], [-3, 26], [4, 23], [10, 18]]) { cx.beginPath(); cx.moveTo(b.x + ox, b.y + 3); cx.lineTo(b.x + ox + 1, b.y - h); cx.stroke(); cx.fillStyle = used ? '#4a6a3a' : '#3f7a34'; for (let j = 0; j < 3; j++) { const yy = b.y - h * (0.35 + j * 0.3); cx.beginPath(); cx.moveTo(b.x + ox, yy); cx.lineTo(b.x + ox - 6, yy + 2); cx.lineTo(b.x + ox - 7, yy - 2); cx.lineTo(b.x + ox - 2, yy - 4); cx.closePath(); cx.fill(); cx.beginPath(); cx.moveTo(b.x + ox, yy); cx.lineTo(b.x + ox + 6, yy + 2); cx.lineTo(b.x + ox + 7, yy - 2); cx.lineTo(b.x + ox + 2, yy - 4); cx.closePath(); cx.fill(); } } return; }
-  if (k === 'cattail') { cx.fillStyle = '#4a7a4a'; cx.beginPath(); cx.ellipse(b.x, b.y + 3, 12, 5, 0, 0, 6.28); cx.fill(); cx.strokeStyle = '#6a9a4a'; cx.lineWidth = 1.6; for (const [ox, h] of [[-8, 26], [-3, 32], [3, 29], [8, 24]]) { const sway = Math.sin(W.t * 1.5 + ox) * 1.2; cx.beginPath(); cx.moveTo(b.x + ox, b.y + 2); cx.quadraticCurveTo(b.x + ox + sway, b.y - h / 2, b.x + ox + sway * 2, b.y - h); cx.stroke(); if (!used) { cx.fillStyle = '#6a4a2a'; cx.beginPath(); cx.ellipse(b.x + ox + sway * 2, b.y - h - 2, 2.2, 6, 0, 0, 6.28); cx.fill(); } } return; }
-  if (k === 'rosehips') { for (const [ox, oy, r] of [[0, 0, 11], [-9, 4, 8], [9, 3, 8], [2, -7, 7]]) { cx.fillStyle = snow ? '#8a9a98' : '#4a6a3a'; cx.beginPath(); cx.arc(b.x + ox, b.y + oy, r, 0, 6.28); cx.fill(); } cx.strokeStyle = '#5a3f28'; cx.lineWidth = 1; for (let i = 0; i < 5; i++) { cx.beginPath(); cx.moveTo(b.x - 10 + i * 5, b.y + 8); cx.lineTo(b.x - 12 + i * 6, b.y - 6 - (i % 2) * 4); cx.stroke(); } if (!used) { cx.fillStyle = '#d8402a'; for (const [ox, oy] of [[-6, -3], [4, -7], [8, 3], [-9, 6], [1, 4], [-2, -9]]) { cx.beginPath(); cx.ellipse(b.x + ox, b.y + oy, 2.2, 2.8, 0, 0, 6.28); cx.fill(); cx.fillStyle = '#3a2a1a'; cx.fillRect(b.x + ox - 0.5, b.y + oy - 3.5, 1, 1.5); cx.fillStyle = '#d8402a'; } } return; }
-  if (k === 'seeds') { cx.strokeStyle = used ? '#8a8a5a' : '#a8a860'; cx.lineWidth = 1.3; for (let i = 0; i < 7; i++) { const ox = -12 + i * 4, h = 16 + (i % 3) * 6; const sway = Math.sin(W.t * 2 + i) * 1.5; cx.beginPath(); cx.moveTo(b.x + ox, b.y + 4); cx.quadraticCurveTo(b.x + ox + sway, b.y - h / 2, b.x + ox + sway * 2, b.y - h); cx.stroke(); if (!used) { cx.fillStyle = '#e0d090'; cx.beginPath(); cx.ellipse(b.x + ox + sway * 2, b.y - h - 2, 2, 4, 0.2, 0, 6.28); cx.fill(); } } return; }
+  if (k === 'nettle') { cx.strokeStyle = '#365531'; cx.lineWidth = 1.6; cx.lineCap = 'round'; for (const [ox, h] of [[-9, 20], [-3, 26], [4, 23], [10, 18]]) { cx.beginPath(); cx.moveTo(b.x + ox, b.y + 3); cx.lineTo(b.x + ox + 1, b.y - h); cx.stroke(); cx.fillStyle = used ? '#4f6643' : '#487340'; for (let j = 0; j < 3; j++) { const yy = b.y - h * (0.35 + j * 0.3); cx.beginPath(); cx.moveTo(b.x + ox, yy); cx.lineTo(b.x + ox - 6, yy + 2); cx.lineTo(b.x + ox - 7, yy - 2); cx.lineTo(b.x + ox - 2, yy - 4); cx.closePath(); cx.fill(); cx.beginPath(); cx.moveTo(b.x + ox, yy); cx.lineTo(b.x + ox + 6, yy + 2); cx.lineTo(b.x + ox + 7, yy - 2); cx.lineTo(b.x + ox + 2, yy - 4); cx.closePath(); cx.fill(); } } return; }
+  if (k === 'cattail') { cx.fillStyle = '#527452'; cx.beginPath(); cx.ellipse(b.x, b.y + 3, 12, 5, 0, 0, 6.28); cx.fill(); cx.strokeStyle = '#71945a'; cx.lineWidth = 1.6; for (const [ox, h] of [[-8, 26], [-3, 32], [3, 29], [8, 24]]) { const sway = Math.sin(W.t * 1.5 + ox) * 1.2; cx.beginPath(); cx.moveTo(b.x + ox, b.y + 2); cx.quadraticCurveTo(b.x + ox + sway, b.y - h / 2, b.x + ox + sway * 2, b.y - h); cx.stroke(); if (!used) { cx.fillStyle = '#634c35'; cx.beginPath(); cx.ellipse(b.x + ox + sway * 2, b.y - h - 2, 2.2, 6, 0, 0, 6.28); cx.fill(); } } return; }
+  if (k === 'rosehips') { for (const [ox, oy, r] of [[0, 0, 11], [-9, 4, 8], [9, 3, 8], [2, -7, 7]]) { cx.fillStyle = snow ? '#8d9997' : '#4f6643'; cx.beginPath(); cx.arc(b.x + ox, b.y + oy, r, 0, 6.28); cx.fill(); } cx.strokeStyle = '#544130'; cx.lineWidth = 1; for (let i = 0; i < 5; i++) { cx.beginPath(); cx.moveTo(b.x - 10 + i * 5, b.y + 8); cx.lineTo(b.x - 12 + i * 6, b.y - 6 - (i % 2) * 4); cx.stroke(); } if (!used) { cx.fillStyle = '#ba4c3c'; for (const [ox, oy] of [[-6, -3], [4, -7], [8, 3], [-9, 6], [1, 4], [-2, -9]]) { cx.beginPath(); cx.ellipse(b.x + ox, b.y + oy, 2.2, 2.8, 0, 0, 6.28); cx.fill(); cx.fillStyle = '#362b1f'; cx.fillRect(b.x + ox - 0.5, b.y + oy - 3.5, 1, 1.5); cx.fillStyle = '#ba4c3c'; } } return; }
+  if (k === 'seeds') { cx.strokeStyle = used ? '#898966' : '#a6a672'; cx.lineWidth = 1.3; for (let i = 0; i < 7; i++) { const ox = -12 + i * 4, h = 16 + (i % 3) * 6; const sway = Math.sin(W.t * 2 + i) * 1.5; cx.beginPath(); cx.moveTo(b.x + ox, b.y + 4); cx.quadraticCurveTo(b.x + ox + sway, b.y - h / 2, b.x + ox + sway * 2, b.y - h); cx.stroke(); if (!used) { cx.fillStyle = '#dbcfa1'; cx.beginPath(); cx.ellipse(b.x + ox + sway * 2, b.y - h - 2, 2, 4, 0.2, 0, 6.28); cx.fill(); } } return; }
   // berries
-  const base = snow ? '#8a9a98' : used ? '#3d5f38' : '#3f6a3a', hi = snow ? '#b9c3c6' : used ? '#4f7548' : '#558a4c';
+  const base = snow ? '#8d9997' : used ? '#425b3f' : '#466542', hi = snow ? '#bbc2c4' : used ? '#557050' : '#5d8457';
   for (const [ox, oy, r] of [[0, 0, 12], [-10, 4, 9], [10, 3, 9], [2, -8, 8], [-4, 6, 7]]) { cx.fillStyle = base; cx.beginPath(); cx.arc(b.x + ox, b.y + oy, r, 0, 6.28); cx.fill(); }
   for (const [ox, oy, r] of [[-2, -3, 8], [-9, 1, 5], [8, 0, 5]]) { cx.fillStyle = hi; cx.beginPath(); cx.arc(b.x + ox, b.y + oy, r * 0.75, 0, 6.28); cx.fill(); }
-  const stage = bushStage(b); if (!used && !snow && stage !== 'ripe') { cx.fillStyle = stage === 'green' ? '#8fbf5a' : 'rgba(90,60,50,.75)'; for (const [ox, oy] of (stage === 'green' ? [[-6, -2], [5, -6], [8, 5], [-9, 7], [0, 5], [3, -1]] : [[-6, 4], [7, 6]])) { cx.beginPath(); cx.arc(b.x + ox, b.y + oy, 1.3, 0, 6.28); cx.fill(); } }
+  const stage = bushStage(b); if (!used && !snow && stage !== 'ripe') { cx.fillStyle = stage === 'green' ? '#95b86f' : 'rgba(90,60,50,.75)'; for (const [ox, oy] of (stage === 'green' ? [[-6, -2], [5, -6], [8, 5], [-9, 7], [0, 5], [3, -1]] : [[-6, 4], [7, 6]])) { cx.beginPath(); cx.arc(b.x + ox, b.y + oy, 1.3, 0, 6.28); cx.fill(); } }
   if (!used && !snow && stage === 'ripe') { const dot = BUSH.berries.dot; for (const [ox, oy] of [[-6, -2], [5, -6], [8, 5], [-9, 7], [0, 5], [3, -1]]) { for (let j = 0; j < 3; j++) { cx.fillStyle = dot; cx.beginPath(); cx.arc(b.x + ox + (j % 2) * 2.4, b.y + oy + Math.floor(j / 2) * 2.2 + (j % 2) * 1, 1.5, 0, 6.28); cx.fill(); } cx.fillStyle = 'rgba(255,255,255,.5)'; cx.beginPath(); cx.arc(b.x + ox - 0.5, b.y + oy - 0.5, 0.5, 0, 6.28); cx.fill(); } }
   if (snow) { cx.fillStyle = 'rgba(250,252,255,.85)'; cx.beginPath(); cx.ellipse(b.x, b.y - 8, 9, 3.5, 0, 0, 6.28); cx.fill(); }
 }
+// ---------- painted trees (design/STYLE.md, phase 3)
+// Every look in every place has a small watercolour painting, made once per look, age, season and variant, and drawn each
+// frame with a slight lean for the wind. Until a painting is ready (a frame or two) the old drawing stands in.
+const TREE_REF = 20; // paintings are made for a tree of radius 20 and scaled to each tree
+function treeLook(t) { const k = t.kind || 'conifer'; if (k === 'snag') return 'snag'; if (k === 'eucalypt') return 'eucalypt'; if (k === 'scrub') return 'acacia'; if (t.look && t.look !== 'spruce') return t.look; return k === 'conifer' ? 'spruce' : k === 'birch' ? 'birch' : 'broad'; }
+const EVERGREEN = ['spruce', 'fir', 'cypress', 'cedar', 'blackspruce', 'pine', 'podocarp', 'myrtle', 'beech', 'eucalypt', 'acacia'];
+function treeState(look, snow) {
+  if (look === 'snag') return snow ? 'snow' : 'dead'; const V = vis(); const fd = V.fallDay || 40;
+  if (EVERGREEN.includes(look)) return snow ? 'snow' : 'green';
+  if (look === 'larch') return (snow || S.day >= fd + 14) ? (snow ? 'baresnow' : 'bare') : S.day >= fd ? 'fall' : 'green';
+  if ((snow && S.day > fd) || S.day >= fd + 18) return snow ? 'baresnow' : 'bare';
+  return S.day >= fd ? 'fall' : 'green';
+}
+const P3 = { // small brush helpers that return SVG
+  blob(r, cx0, cy0, rx, ry, n = 11, j = 0.22) { const p = []; for (let i = 0; i < n; i++) { const a = i / n * 6.283, k = 1 + (r() * 2 - 1) * j; p.push([cx0 + Math.cos(a) * rx * k, cy0 + Math.sin(a) * ry * k]); } let d = `M${((p[0][0] + p[1][0]) / 2).toFixed(1)} ${((p[0][1] + p[1][1]) / 2).toFixed(1)}`; for (let i = 1; i <= n; i++) { const a = p[i % n], b = p[(i + 1) % n]; d += ` Q${a[0].toFixed(1)} ${a[1].toFixed(1)} ${((a[0] + b[0]) / 2).toFixed(1)} ${((a[1] + b[1]) / 2).toFixed(1)}`; } return d + 'Z'; },
+  wash(d, col, op = 0.92, edge = 0.5) { return `<path d="${d}" fill="${col}" opacity="${op}" filter="url(#tw)"/><path d="${d}" fill="none" stroke="${col}" stroke-width="1.6" opacity="${edge}" filter="url(#te)"/>`; },
+  trunk(x, base, top, w, col, lean = 0) { return `<path d="M${x - w / 2} ${base} Q${x - w * 0.3 + lean * 0.5} ${(base + top) / 2} ${x - w * 0.22 + lean} ${top} L${x + w * 0.22 + lean} ${top} Q${x + w * 0.3 + lean * 0.5} ${(base + top) / 2} ${x + w / 2} ${base} Z" fill="${col}"/><path d="M${x + w * 0.1} ${base} L${x + w * 0.1 + lean} ${top} L${x + w * 0.22 + lean} ${top} L${x + w / 2} ${base} Z" fill="#000" opacity=".2"/>`; },
+  branches(r, x, y0, h, col, n, spread, snow) { let s = ''; for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + (i - (n - 1) / 2) * spread / n + (r() - 0.5) * 0.2; const L = h * (0.45 + r() * 0.35); const sy = y0 - h * (0.15 + r() * 0.3); const ex = x + Math.cos(a) * L, ey = sy + Math.sin(a) * L; s += `<path d="M${x} ${sy} Q${(x + ex) / 2 + (r() - 0.5) * 4} ${(sy + ey) / 2} ${ex.toFixed(1)} ${ey.toFixed(1)}" stroke="${col}" stroke-width="${(1.6 - i * 0.05).toFixed(2)}" fill="none" stroke-linecap="round"/>`; for (let k = 0; k < 2; k++) { const f = 0.4 + r() * 0.4, bx = x + (ex - x) * f, by = sy + (ey - sy) * f, a2 = a + (r() < 0.5 ? -0.6 : 0.6), L2 = L * 0.35; s += `<path d="M${bx.toFixed(1)} ${by.toFixed(1)} L${(bx + Math.cos(a2) * L2).toFixed(1)} ${(by + Math.sin(a2) * L2).toFixed(1)}" stroke="${col}" stroke-width=".8" stroke-linecap="round"/>`; } if (snow) s += `<path d="M${x} ${sy} Q${(x + ex) / 2} ${(sy + ey) / 2 - 1.5} ${ex.toFixed(1)} ${(ey - 1).toFixed(1)}" stroke="#eef0ec" stroke-width="1.2" fill="none" opacity=".85" stroke-linecap="round"/>`; } return s; },
+  snowFlecks(r, pts) { return pts.map(([x, y, w]) => `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="${w.toFixed(1)}" ry="${(w * 0.38).toFixed(1)}" fill="#eef0ec" opacity=".88"/>`).join(''); },
+};
+// a pointed conifer: jagged tiers, a dark wash with a lighter side where the light comes from, snow on the tier tips in winter
+function spirePaint(r, cx0, base, H, W2, cols, opt = {}) {
+  const tiers = opt.tiers || 7; const L = [], R = []; const top = base - H;
+  for (let i = 1; i <= tiers; i++) { const t = i / tiers; const y = top + t * H * 0.9; const w = W2 * Math.pow(t, opt.taper || 1) * (opt.droop ? 1.05 : 1); const dy = opt.droop ? 3.5 : 0;
+    L.push([cx0 - w - r() * 2, y + dy + (r() - 0.5) * 2], [cx0 - w * 0.42, y - H * 0.035]); R.push([cx0 + w + r() * 2, y + dy + (r() - 0.5) * 2], [cx0 + w * 0.42, y - H * 0.035]); }
+  const pts = [[cx0, top], ...L, [cx0, base - H * 0.06], ...R.reverse()]; const d = 'M' + pts.map(p => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' L') + 'Z';
+  const hl = 'M' + [[cx0, top + 2], ...L.slice(2).map(p => [p[0] * 0.55 + cx0 * 0.45 - 1, p[1]]), [cx0 - 1, base - H * 0.1]].map(p => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' L') + 'Z';
+  let s = P3.wash(d, cols[0], opt.alpha || 0.95, 0.55) + P3.wash(hl, cols[1], 0.4, 0.15);
+  for (let i = 0; i < Math.round(H / 7); i++) { const y = top + H * (0.2 + 0.7 * r()); const x = cx0 + W2 * 0.15 + r() * W2 * 0.4 * ((y - top) / H); s += `<path d="M${x.toFixed(1)} ${y.toFixed(1)} l${(3 + r() * 3).toFixed(1)} ${(-1.5 - r()).toFixed(1)}" stroke="#0e140e" stroke-width=".8" opacity=".45"/>`; }
+  if (opt.snow) s += P3.snowFlecks(r, L.filter((_, i) => i % 2 === 0).map(p => [p[0] + 3, p[1] - 1.5, 3 + r() * 2]).concat(R.filter((_, i) => i % 2 === 0).map(p => [p[0] - 3, p[1] - 1.5, 3 + r() * 2])).concat([[cx0, top + 4, 2.5]]));
+  return s;
+}
+// a leafy crown: overlapping washes, lighter toward the light and darker underneath
+function crownPaint(r, cx0, cy0, rx, ry, c1, c2, n = 7, opt = {}) {
+  let s = ''; s += P3.wash(P3.blob(r, cx0 + rx * 0.15, cy0 + ry * 0.25, rx * 0.95, ry * 0.75), c1, 0.9, 0.5);
+  for (let i = 0; i < n; i++) { const a = r() * 6.283, d = r() * 0.55; const bx = cx0 + Math.cos(a) * rx * d, by = cy0 + Math.sin(a) * ry * d * (opt.flat ? 0.5 : 1); const br = rx * (0.32 + r() * 0.25); s += P3.wash(P3.blob(r, bx, by, br, br * (opt.flat ? 0.45 : 0.85)), r() < 0.5 ? c1 : c2, 0.5 + r() * 0.3, 0.25); }
+  s += P3.wash(P3.blob(r, cx0 - rx * 0.3, cy0 - ry * 0.35, rx * 0.4, ry * 0.32), c2, 0.45, 0.15);
+  s += `<path d="${P3.blob(r, cx0 + rx * 0.35, cy0 + ry * 0.45, rx * 0.5, ry * 0.25)}" fill="#0c120c" opacity=".2" filter="url(#tw)"/>`;
+  if (opt.snow) s += P3.snowFlecks(r, [[cx0 - rx * 0.2, cy0 - ry * 0.7, rx * 0.35], [cx0 + rx * 0.35, cy0 - ry * 0.45, rx * 0.25], [cx0 - rx * 0.55, cy0 - ry * 0.2, rx * 0.2]]);
+  return s;
+}
+// one painting: { w, h, ax, ay, svg } for a look, age, state and variant
+function treeArt(look, young, state, variant) {
+  const V = vis(); const r = rngFrom(hash32(variant + 1, look.length * 31 + (young ? 7 : 3), 4211)); const k = young ? 0.55 : 1; const R0 = TREE_REF;
+  const snow = state === 'snow' || state === 'baresnow'; const bare = state === 'bare' || state === 'baresnow';
+  const leaf = state === 'fall' ? [V.fall || V.leaf, V.fallHi || V.leafHi] : [V.leaf, V.leafHi]; const con = [V.conifer[0], V.conifer[3]], con2 = [V.conifer[1], V.conifer[4]];
+  const W0 = Math.round(R0 * 4.4), H0 = Math.round(R0 * 4); const cx0 = W0 / 2, base = H0 - 8; let s = '';
+  const H = (f) => R0 * f * k; const Wd = (f) => R0 * f * (young ? 0.6 : 1);
+  switch (look) {
+    case 'spruce': s += P3.trunk(cx0, base, base - H(0.6), young ? 2 : 4, V.trunk); s += spirePaint(r, cx0, base - 2, H(2.6), Wd(1.05), variant % 2 ? con : con2, { tiers: young ? 4 : 7, snow }); break;
+    case 'fir': s += P3.trunk(cx0, base, base - H(0.9), young ? 2 : 4.5, V.trunk); s += spirePaint(r, cx0, base - H(0.5), H(2.4), Wd(0.82), con, { tiers: young ? 4 : 7, snow }); break;
+    case 'cypress': s += P3.trunk(cx0, base, base - H(0.8), young ? 2 : 4, V.trunk); s += spirePaint(r, cx0, base - H(0.35), H(2.5), Wd(0.6), con2, { tiers: young ? 4 : 8, taper: 0.7, snow }); break;
+    case 'cedar': s += P3.trunk(cx0, base, base - H(0.8), young ? 2.5 : 6, '#6e4a34'); s += spirePaint(r, cx0, base - H(0.25), H(2.5), Wd(1.25), con, { tiers: young ? 4 : 6, droop: true, snow }); break;
+    case 'blackspruce': { s += P3.trunk(cx0, base, base - H(2.1), young ? 1.5 : 2.2, V.trunk); const n = young ? 4 : 8; for (let i = 0; i < n; i++) { const y = base - H(0.2) - i * H(1.7) / n; const w = Wd(0.32) * (1 - i / (n + 2)) + 1; s += P3.wash(P3.blob(r, cx0 + (r() - 0.5) * 1.5, y, w, 2.6, 8, 0.3), V.conifer[1 + (i % 2)], 0.9, 0.4); } s += P3.wash(P3.blob(r, cx0, base - H(2.15), Wd(0.2) + 1.5, H(0.3)), V.conifer[2], 0.95, 0.5); if (snow) s += P3.snowFlecks(r, [[cx0, base - H(2.35), 2.5], [cx0 - 2, base - H(1.2), 2]]); break; }
+    case 'larch': if (bare) { s += P3.trunk(cx0, base, base - H(2.4), young ? 1.8 : 3.5, '#6a5040'); s += P3.branches(r, cx0, base - H(0.2), H(2.2), '#6a5444', young ? 5 : 9, 2.4, snow); }
+      else { s += P3.trunk(cx0, base, base - H(0.6), young ? 2 : 3.5, V.trunk); s += spirePaint(r, cx0, base - 2, H(2.5), Wd(1), leaf, { tiers: young ? 4 : 7, alpha: 0.78 }); } break;
+    case 'pine': if (young) { s += spirePaint(r, cx0, base, H(1.6), Wd(0.8), con, { tiers: 3, snow }); break; }
+      { const lean = (r() - 0.5) * 5; s += P3.trunk(cx0, base, base - H(1.85), 4.5, '#7a5238', lean); /* a pine's crown: a few ragged clumps up the top of the trunk, not one ball */
+        for (let i = 0; i < 4; i++) { const fy = base - H(1.25) - i * H(0.28) - r() * H(0.12); const fx = cx0 + lean * ((base - fy) / H(1.85)) + (i % 2 ? 1 : -1) * Wd(0.35 + r() * 0.3); s += P3.wash(P3.blob(r, fx, fy, Wd(0.48 - i * 0.05), H(0.2), 9, 0.32), i % 2 ? V.conifer[1] : V.conifer[2], 0.92, 0.45); s += `<path d="M${(cx0 + lean * ((base - fy) / H(1.85))).toFixed(1)} ${(fy + 2).toFixed(1)} L${fx.toFixed(1)} ${fy.toFixed(1)}" stroke="#6a4630" stroke-width="1.3"/>`; }
+        s += P3.wash(P3.blob(r, cx0 + lean, base - H(2.2), Wd(0.4), H(0.22)), V.conifer[3], 0.7, 0.3); if (snow) s += P3.snowFlecks(r, [[cx0 + lean, base - H(2.3), 4], [cx0 + lean - Wd(0.4), base - H(1.6), 3]]); } break;
+    case 'podocarp': s += P3.trunk(cx0, base, base - H(0.7), young ? 2 : 4.5, V.trunk); s += crownPaint(r, cx0, base - H(1.35), Wd(0.95), H(0.85), V.conifer[1], V.conifer[3], 7, { snow }); break;
+    case 'eucalypt': s += P3.trunk(cx0, base, base - H(2.2), young ? 2 : 5, '#c8bcaa', (r() - 0.5) * 4); s += `<path d="M${cx0 - 1} ${base - H(0.6)} l1 ${-H(0.5)}" stroke="#8a7a68" stroke-width="1" opacity=".6"/>`; if (!young) s += P3.branches(r, cx0, base - H(1.6), H(0.9), '#a89a86', 3, 1.6, false);
+      for (let i = 0; i < (young ? 2 : 4); i++) { const bx = cx0 + (r() - 0.5) * Wd(1.6), by = base - H(2.1) - r() * H(0.6); s += P3.wash(P3.blob(r, bx, by, Wd(0.42), H(0.32), 9, 0.3), r() < 0.5 ? V.leaf : V.leafHi, 0.8, 0.35); } if (snow) s += P3.snowFlecks(r, [[cx0, base - H(2.6), 4]]); break;
+    case 'acacia': s += P3.trunk(cx0, base, base - H(1.1), young ? 1.8 : 4, V.trunk, (r() - 0.5) * 3); if (!young) s += `<path d="M${cx0} ${base - H(0.9)} Q${cx0 - Wd(0.4)} ${base - H(1.2)} ${cx0 - Wd(0.8)} ${base - H(1.4)} M${cx0} ${base - H(0.8)} Q${cx0 + Wd(0.4)} ${base - H(1.2)} ${cx0 + Wd(0.85)} ${base - H(1.35)}" stroke="${V.trunk}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
+      s += crownPaint(r, cx0, base - H(1.5), Wd(1.25), H(0.28), V.leaf, V.leafHi, 6, { flat: true, snow }); break;
+    case 'snag': { const h = H(2.1); s += `<path d="M${cx0 - 3.5} ${base} L${cx0 - 1.6} ${base - h} L${cx0 + 0.6} ${base - h - 3} L${cx0 + 1.4} ${base - h + 2} L${cx0 + 3.5} ${base} Z" fill="#7a7266"/><path d="M${cx0 + 0.8} ${base} L${cx0 + 0.6} ${base - h} L${cx0 + 1.4} ${base - h + 2} L${cx0 + 3.5} ${base} Z" fill="#000" opacity=".22"/>`;
+      for (let i = 0; i < 3; i++) { const y = base - h * (0.35 + i * 0.2); const dir = i % 2 ? 1 : -1; s += `<path d="M${cx0} ${y} l${dir * (5 + r() * 6)} ${-4 - r() * 4}" stroke="#6e665a" stroke-width="${2 - i * 0.4}" stroke-linecap="round"/>`; }
+      s += `<path d="M${cx0 - 1.5} ${base - h * 0.3} l0 ${-h * 0.25}" stroke="#a49a8a" stroke-width=".8" opacity=".7"/>`; if (snow) s += P3.snowFlecks(r, [[cx0, base - h - 1, 2.2]]); break; }
+    default: { // the broadleaf trees: alder, beech, myrtle, lenga, willow, aspen, birch, mountain birch, dwarf birch, and the generic
+      const birchy = ['birch', 'aspen', 'mtnbirch', 'dwarfbirch'].includes(look); const bark = birchy ? (V.birch || '#d8d2c4') : look === 'alder' ? '#8a8478' : V.trunk;
+      const hT = look === 'dwarfbirch' ? H(0.2) : look === 'mtnbirch' ? H(0.8) : look === 'aspen' ? H(1.4) : H(1.0); const lean = look === 'mtnbirch' ? (r() - 0.5) * 8 : 0;
+      if (look !== 'dwarfbirch') { s += P3.trunk(cx0, base, base - hT, young ? 2 : birchy ? 3.6 : 5, bark, lean); if (birchy) for (let i = 0; i < 4; i++) s += `<path d="M${cx0 - 1.5 + lean * (i / 5)} ${base - hT * (0.2 + i * 0.18)} h${2 + r() * 1.5}" stroke="#2a2620" stroke-width="1"/>`; }
+      if (bare) { s += P3.branches(r, cx0 + lean, base - hT * 0.7, (look === 'dwarfbirch' ? H(0.7) : H(1.6)), birchy ? '#7a6e62' : '#5e5040', young ? 4 : 8, look === 'willow' ? 3.2 : 2.4, snow); break; }
+      const c1 = look === 'myrtle' || look === 'beech' ? V.leaf : leaf[0], c2 = look === 'myrtle' || look === 'beech' ? V.leafHi : leaf[1];
+      if (look === 'willow') { for (let i = 0; i < (young ? 4 : 9); i++) { const bx = cx0 + (r() - 0.5) * Wd(1.8), by = base - hT - H(0.3) + r() * H(0.5); s += P3.wash(P3.blob(r, bx, by, Wd(0.2), H(0.55), 9, 0.25), r() < 0.5 ? c1 : c2, 0.75, 0.3); } break; }
+      if (look === 'lenga' || look === 'beech') { for (let i = 0; i < (young ? 2 : 4); i++) s += crownPaint(r, cx0 + (r() - 0.5) * Wd(0.4), base - hT - H(0.25) - i * H(0.3), Wd(1.05 - i * 0.18), H(0.22), c1, c2, 4, { flat: true, snow }); break; }
+      if (look === 'dwarfbirch') { s += crownPaint(r, cx0, base - H(0.45), Wd(1), H(0.42), c1, c2, 6, { snow }); break; }
+      const rx = look === 'aspen' ? Wd(0.6) : look === 'birch' ? Wd(0.78) : Wd(0.95), ry = look === 'aspen' ? H(0.95) : H(0.72);
+      s += crownPaint(r, cx0 + lean, base - hT - ry * 0.75, rx, ry, c1, c2, birchy ? 9 : 7, { snow });
+    }
+  }
+  return { w: W0, h: H0, ax: cx0, ay: base, svg: s };
+}
+// the berry and rose-hip bushes, painted the same way
+function bushArt(kind, state, dot) {
+  const r = rngFrom(hash32(kind.length, state.length * 13, 919)); const W0 = 44, H0 = 34, cx0 = 22, cy0 = 20; let s = '';
+  const base = state === 'snow' ? ['#7e8a86', '#a4aeac'] : state === 'used' ? ['#4c5e42', '#62765a'] : ['#40593a', '#5a7650'];
+  s += P3.wash(P3.blob(r, cx0, cy0 + 2, 15, 9), base[0], 0.92, 0.5);
+  for (let i = 0; i < 6; i++) s += P3.wash(P3.blob(r, cx0 + (r() - 0.5) * 18, cy0 + (r() - 0.5) * 8, 5 + r() * 4, 4 + r() * 3), r() < 0.5 ? base[0] : base[1], 0.6, 0.25);
+  const berry = kind === 'rosehips' ? '#a8402e' : (dot || '#3a4a7a');
+  const show = state === 'ripe' ? berry : state === 'green' ? '#90ad62' : state === 'over' ? '#6a4a3a' : null;
+  if (show) for (let i = 0; i < (kind === 'rosehips' ? 7 : 14); i++) { const x = cx0 + (r() - 0.5) * 22, y = cy0 + (r() - 0.5) * 12; const rad = kind === 'rosehips' ? 2 : 1.4; s += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${rad}" fill="${show}"/><circle cx="${(x - 0.4).toFixed(1)}" cy="${(y - 0.5).toFixed(1)}" r="${rad * 0.35}" fill="#fff" opacity=".35"/>`; }
+  if (state === 'snow') s += P3.snowFlecks(r, [[cx0, cy0 - 7, 8], [cx0 - 7, cy0 - 3, 4]]);
+  return { w: W0, h: H0, ax: cx0, ay: cy0, svg: s };
+}
+// draw a painting at a spot, scaled, leaning by 'sway' at its top; false while it is still being made
+function drawPainted(key, make, x, y, scale, sway, hFor) {
+  let c = PAINT.cache.get(key); if (!c) { const a = make(); PAINT.sprite(key, a.w, a.h, a.svg, 2); c = PAINT.cache.get(key); c.ax = a.ax; c.ay = a.ay; c.w = a.w; c.h = a.h; }
+  if (!c.ready) return false;
+  /* the wind shifts the painting a little; a full lean (a skew) costs too much on slower phones */
+  cx.drawImage(c.cv, x - c.ax * scale + (sway || 0) * 0.5, y - c.ay * scale, c.w * scale, c.h * scale); return true;
+}
+function paintedTree(t, snow, sway) {
+  const look = treeLook(t), young = t.age === 'sapling', state = treeState(look, snow), variant = (t.k || 0) % 3;
+  return drawPainted(`tree|${biome()}|${look}|${young ? 1 : 0}|${state}|${variant}`, () => treeArt(look, young, state, variant), t.x, t.y, t.r / TREE_REF, sway);
+}
+
 function drawTree(t, snow) {
   const P = pal(); const kind = t.kind || 'conifer'; const sway = (S.storm ? Math.sin(W.t * 2.2 + t.k) * 2.5 : S.wind ? Math.sin(W.t * 1.8 + t.k) * 1.6 : Math.sin(W.t * 0.9 + t.k) * 0.6) + (t.shake > 0 ? Math.sin(W.t * 60) * 2 : 0);
-  if (t.gone) { if (t.kind === 'log') { cx.fillStyle = 'rgba(60,45,30,.25)'; cx.beginPath(); cx.ellipse(t.x, t.y + 2, 22, 5, t.lie, 0, 6.28); cx.fill(); } else { cx.fillStyle = '#6a4e32'; cx.beginPath(); cx.ellipse(t.x, t.y, 3.5, 2.2, 0, 0, 6.28); cx.fill(); } return; }
+  if (t.gone) { if (t.kind === 'log') { cx.fillStyle = 'rgba(60,45,30,.25)'; cx.beginPath(); cx.ellipse(t.x, t.y + 2, 22, 5, t.lie, 0, 6.28); cx.fill(); } else { cx.fillStyle = '#644f3b'; cx.beginPath(); cx.ellipse(t.x, t.y, 3.5, 2.2, 0, 0, 6.28); cx.fill(); } return; }
   const cut = t.cut || t.used.logs || t.used.firewood;
   if (cut) {
     shadow(t.x, t.y + 2, 10, 5, 0.7);
-    cx.fillStyle = '#6a4e32'; cx.beginPath(); cx.ellipse(t.x, t.y + 1, 9, 6, 0, 0, 6.28); cx.fill(); cx.fillStyle = '#c9a070'; cx.beginPath(); cx.ellipse(t.x, t.y - 2, 8, 5, 0, 0, 6.28); cx.fill();
-    cx.strokeStyle = '#a0784c'; cx.lineWidth = 0.8; for (let r = 2; r < 7; r += 2) { cx.beginPath(); cx.ellipse(t.x, t.y - 2, r, r * 0.6, 0, 0, 6.28); cx.stroke(); }
+    cx.fillStyle = '#644f3b'; cx.beginPath(); cx.ellipse(t.x, t.y + 1, 9, 6, 0, 0, 6.28); cx.fill(); cx.fillStyle = '#bfa27f'; cx.beginPath(); cx.ellipse(t.x, t.y - 2, 8, 5, 0, 0, 6.28); cx.fill();
+    cx.strokeStyle = '#977a5a'; cx.lineWidth = 0.8; for (let r = 2; r < 7; r += 2) { cx.beginPath(); cx.ellipse(t.x, t.y - 2, r, r * 0.6, 0, 0, 6.28); cx.stroke(); }
     // what came off it
-    if (t.used.firewood) { cx.fillStyle = '#7a5c3c'; for (let i = 0; i < 4; i++) cx.fillRect(t.x + 12 + (i % 2) * 7, t.y - 2 + Math.floor(i / 2) * 6 - 4, 6, 5); cx.fillStyle = '#b08a5c'; for (let i = 0; i < 4; i++) cx.fillRect(t.x + 12 + (i % 2) * 7, t.y - 2 + Math.floor(i / 2) * 6 - 4, 6, 1.5); }
-    if (t.used.logs) { cx.fillStyle = '#5a4a36'; cx.fillRect(t.x - 30, t.y + 4, 26, 6); cx.fillStyle = '#8a6a44'; cx.fillRect(t.x - 30, t.y + 4, 26, 2); }
-    if (t.flipped) { cx.fillStyle = '#4a3a2a'; cx.fillRect(t.x + 10, t.y + 8, 22, 6); }
+    if (t.used.firewood) { cx.fillStyle = '#735e46'; for (let i = 0; i < 4; i++) cx.fillRect(t.x + 12 + (i % 2) * 7, t.y - 2 + Math.floor(i / 2) * 6 - 4, 6, 5); cx.fillStyle = '#a78c6b'; for (let i = 0; i < 4; i++) cx.fillRect(t.x + 12 + (i % 2) * 7, t.y - 2 + Math.floor(i / 2) * 6 - 4, 6, 1.5); }
+    if (t.used.logs) { cx.fillStyle = '#564b3c'; cx.fillRect(t.x - 30, t.y + 4, 26, 6); cx.fillStyle = '#836c50'; cx.fillRect(t.x - 30, t.y + 4, 26, 2); }
+    if (t.flipped) { cx.fillStyle = '#463b2f'; cx.fillRect(t.x + 10, t.y + 8, 22, 6); }
     return;
   }
   const r = t.r;
   if (kind === 'log') { // a fallen tree, bark half off, moss on the top side
     const a = t.lie, L = r * 1.9; const ex = Math.cos(a) * L, ey = Math.sin(a) * L * 0.5;
     shadow(t.x, t.y + 4, L, 6, 0.8);
-    cx.save(); cx.translate(t.x, t.y); cx.rotate(a * 0.5); cx.fillStyle = '#5a4634'; cx.beginPath(); cx.roundRect(-L, -5, L * 2, 10, 4); cx.fill(); cx.fillStyle = '#7a6248'; cx.beginPath(); cx.roundRect(-L, -5, L * 2, 3.5, 3); cx.fill(); cx.fillStyle = t.flipped ? '#3e3024' : (snow ? 'rgba(245,248,250,.85)' : '#5e7a42'); cx.beginPath(); cx.ellipse(-L * 0.3, -4, L * 0.35, 2.2, 0, 0, 6.28); cx.ellipse(L * 0.4, -4, L * 0.25, 1.8, 0, 0, 6.28); cx.fill(); cx.fillStyle = '#c9a070'; cx.beginPath(); cx.ellipse(L, 0, 3, 5, 0, 0, 6.28); cx.fill(); cx.strokeStyle = '#8a6a44'; cx.lineWidth = 2; cx.beginPath(); cx.moveTo(-L * 0.6, -4); cx.lineTo(-L * 0.5, -12); cx.stroke(); cx.restore();
-    if (!t.used.insects && !t.flipped && !snow) { cx.fillStyle = '#c8b070'; for (let i = 0; i < 2; i++) { cx.beginPath(); cx.arc(t.x - 6 + i * 11, t.y + 3, 1.8, 0, 6.28); cx.fill(); } }
+    cx.save(); cx.translate(t.x, t.y); cx.rotate(a * 0.5); cx.fillStyle = '#56473a'; cx.beginPath(); cx.roundRect(-L, -5, L * 2, 10, 4); cx.fill(); cx.fillStyle = '#746350'; cx.beginPath(); cx.roundRect(-L, -5, L * 2, 3.5, 3); cx.fill(); cx.fillStyle = t.flipped ? '#3b3128' : (snow ? 'rgba(245,248,250,.85)' : '#62764e'); cx.beginPath(); cx.ellipse(-L * 0.3, -4, L * 0.35, 2.2, 0, 0, 6.28); cx.ellipse(L * 0.4, -4, L * 0.25, 1.8, 0, 0, 6.28); cx.fill(); cx.fillStyle = '#bfa27f'; cx.beginPath(); cx.ellipse(L, 0, 3, 5, 0, 0, 6.28); cx.fill(); cx.strokeStyle = '#836c50'; cx.lineWidth = 2; cx.beginPath(); cx.moveTo(-L * 0.6, -4); cx.lineTo(-L * 0.5, -12); cx.stroke(); cx.restore();
+    if (!t.used.insects && !t.flipped && !snow) { cx.fillStyle = '#c1b082'; for (let i = 0; i < 2; i++) { cx.beginPath(); cx.arc(t.x - 6 + i * 11, t.y + 3, 1.8, 0, 6.28); cx.fill(); } }
     return;
   }
   shadow(t.x, t.y + 3, r * 0.9, r * 0.38, 1);
-  if (t.look && kind !== 'snag' && drawLook(t, snow, sway, t.look)) { if (t.cones && !t.used.pinenuts && !snow && kind === 'conifer') { cx.fillStyle = '#7a5a3a'; for (let i = 0; i < 3; i++) { cx.beginPath(); cx.ellipse(t.x - 6 + i * 5 + sway, t.y - 16 - (i % 2) * 6, 2, 3.2, 0, 0, 6.28); cx.fill(); } } return; }
-  if (t.flipped) { cx.fillStyle = '#4a3a2a'; cx.fillRect(t.x + 14, t.y + 5, 22, 6); cx.fillStyle = '#6a5a44'; cx.fillRect(t.x + 14, t.y + 5, 22, 2); }
-  if (kind === 'snag') { cx.strokeStyle = '#5a4a3a'; cx.lineCap = 'round'; cx.lineWidth = 4; cx.beginPath(); cx.moveTo(t.x, t.y + 2); cx.lineTo(t.x + sway * 0.3, t.y - r * 1.6); cx.stroke(); cx.lineWidth = 2; cx.beginPath(); cx.moveTo(t.x, t.y - r * 0.8); cx.lineTo(t.x - r * 0.5, t.y - r * 1.2); cx.moveTo(t.x, t.y - r * 1.1); cx.lineTo(t.x + r * 0.45, t.y - r * 1.5); cx.stroke(); return; }
+  if (paintedTree(t, snow, sway)) { if (t.flipped) { cx.fillStyle = '#473d33'; cx.fillRect(t.x + 14, t.y + 5, 22, 6); } if (t.cones && !t.used.pinenuts && !snow && kind === 'conifer') { cx.fillStyle = '#685647'; for (let i = 0; i < 3; i++) { cx.beginPath(); cx.ellipse(t.x - 6 + i * 5 + sway * 0.6, t.y - t.r * 0.9 - (i % 2) * 5, 1.8, 2.8, 0, 0, 6.28); cx.fill(); } } return; }
+  if (t.look && kind !== 'snag' && drawLook(t, snow, sway, t.look)) { if (t.cones && !t.used.pinenuts && !snow && kind === 'conifer') { cx.fillStyle = '#735c45'; for (let i = 0; i < 3; i++) { cx.beginPath(); cx.ellipse(t.x - 6 + i * 5 + sway, t.y - 16 - (i % 2) * 6, 2, 3.2, 0, 0, 6.28); cx.fill(); } } return; }
+  if (t.flipped) { cx.fillStyle = '#463b2f'; cx.fillRect(t.x + 14, t.y + 5, 22, 6); cx.fillStyle = '#665b4b'; cx.fillRect(t.x + 14, t.y + 5, 22, 2); }
+  if (kind === 'snag') { cx.strokeStyle = '#564b3f'; cx.lineCap = 'round'; cx.lineWidth = 4; cx.beginPath(); cx.moveTo(t.x, t.y + 2); cx.lineTo(t.x + sway * 0.3, t.y - r * 1.6); cx.stroke(); cx.lineWidth = 2; cx.beginPath(); cx.moveTo(t.x, t.y - r * 0.8); cx.lineTo(t.x - r * 0.5, t.y - r * 1.2); cx.moveTo(t.x, t.y - r * 1.1); cx.lineTo(t.x + r * 0.45, t.y - r * 1.5); cx.stroke(); return; }
   if (kind === 'conifer') {
     const young = t.age === 'sapling';
     cx.fillStyle = P.trunk; cx.fillRect(t.x - (young ? 1 : 2.5), t.y - (young ? 4 : 8), young ? 2 : 5, young ? 7 : 12);
     const tiers = young ? [[0, 1.1, 1], [-6, 0.75, 2], [-11, 0.4, 3]] : [[0, 1.05, 0], [-7, 0.82, 1], [-14, 0.6, 2], [-20, 0.4, 3], [-25, 0.22, 4]];
     for (const [k, s2, ci] of tiers) { const w = r * s2, y = t.y - 10 + k + sway * 0 ; const x = t.x + sway * (1 - s2); cx.fillStyle = P.conifer[ci]; cx.beginPath(); cx.moveTo(x, y - w * 1.1); cx.lineTo(x + w, y + w * 0.35); cx.quadraticCurveTo(x, y + w * 0.5, x - w, y + w * 0.35); cx.closePath(); cx.fill(); cx.fillStyle = 'rgba(255,255,255,.07)'; cx.beginPath(); cx.moveTo(x, y - w * 1.1); cx.lineTo(x - w, y + w * 0.35); cx.lineTo(x - w * 0.3, y + w * 0.3); cx.closePath(); cx.fill(); if (snow) { cx.fillStyle = 'rgba(245,248,250,.85)'; cx.beginPath(); cx.moveTo(x, y - w * 1.05); cx.lineTo(x + w * 0.55, y - w * 0.35); cx.lineTo(x - w * 0.55, y - w * 0.35); cx.closePath(); cx.fill(); } }
-    if (t.cones && !t.used.pinenuts && !snow) { cx.fillStyle = '#7a5a3a'; for (let i = 0; i < 4; i++) { cx.beginPath(); cx.ellipse(t.x - 8 + i * 5 + sway, t.y - 14 - (i % 2) * 6, 2, 3.2, 0, 0, 6.28); cx.fill(); } }
+    if (t.cones && !t.used.pinenuts && !snow) { cx.fillStyle = '#735c45'; for (let i = 0; i < 4; i++) { cx.beginPath(); cx.ellipse(t.x - 8 + i * 5 + sway, t.y - 14 - (i % 2) * 6, 2, 3.2, 0, 0, 6.28); cx.fill(); } }
     return;
   }
   if (kind === 'birch') {
     const young = t.age === 'sapling';
-    if (young) { cx.strokeStyle = P.birch; cx.lineWidth = 1.6; cx.beginPath(); cx.moveTo(t.x, t.y + 2); cx.quadraticCurveTo(t.x + sway, t.y - 10, t.x + sway * 1.6, t.y - 22); cx.stroke(); cx.strokeStyle = '#4a4a44'; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(t.x - 1, t.y - 9); cx.lineTo(t.x + 1, t.y - 9); cx.stroke(); }
-    else { cx.fillStyle = P.birch; cx.fillRect(t.x - 2 + sway * 0.2, t.y - 16, 4, 20); cx.fillStyle = '#4a4a44'; for (let i = 0; i < 3; i++) cx.fillRect(t.x - 2 + sway * 0.2, t.y - 13 + i * 5, 2 + (i % 2), 1); }
-    const late = S.day > 40 && !snow; const col = snow ? null : late ? P.fall : P.leaf, hi = late ? '#e0b85a' : P.leafHi;
-    if (snow) { cx.strokeStyle = '#6a5a4a'; cx.lineWidth = 1.5; for (let i = 0; i < 5; i++) { const a = -1.2 - i * 0.4; cx.beginPath(); cx.moveTo(t.x, t.y - 14); cx.lineTo(t.x + Math.cos(a) * r * 0.9 + sway, t.y - 14 + Math.sin(a) * r * 0.9); cx.stroke(); } return; }
+    if (young) { cx.strokeStyle = P.birch; cx.lineWidth = 1.6; cx.beginPath(); cx.moveTo(t.x, t.y + 2); cx.quadraticCurveTo(t.x + sway, t.y - 10, t.x + sway * 1.6, t.y - 22); cx.stroke(); cx.strokeStyle = '#4a4a45'; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(t.x - 1, t.y - 9); cx.lineTo(t.x + 1, t.y - 9); cx.stroke(); }
+    else { cx.fillStyle = P.birch; cx.fillRect(t.x - 2 + sway * 0.2, t.y - 16, 4, 20); cx.fillStyle = '#4a4a45'; for (let i = 0; i < 3; i++) cx.fillRect(t.x - 2 + sway * 0.2, t.y - 13 + i * 5, 2 + (i % 2), 1); }
+    const late = S.day > 40 && !snow; const col = snow ? null : late ? P.fall : P.leaf, hi = late ? '#d5b875' : P.leafHi;
+    if (snow) { cx.strokeStyle = '#665b4f'; cx.lineWidth = 1.5; for (let i = 0; i < 5; i++) { const a = -1.2 - i * 0.4; cx.beginPath(); cx.moveTo(t.x, t.y - 14); cx.lineTo(t.x + Math.cos(a) * r * 0.9 + sway, t.y - 14 + Math.sin(a) * r * 0.9); cx.stroke(); } return; }
     if (young) { for (const [ox, oy, rr, c] of [[sway * 1.6, -24, r * 0.55, col], [sway * 1.2 - r * 0.3, -17, r * 0.4, col], [sway * 1.6 + r * 0.2, -28, r * 0.3, hi]]) { cx.fillStyle = c; cx.beginPath(); cx.arc(t.x + ox, t.y + oy, rr, 0, 6.28); cx.fill(); } return; }
     for (const [ox, oy, rr, c] of [[0, -20, r * 0.7, col], [-r * 0.45, -14, r * 0.5, col], [r * 0.45, -15, r * 0.5, col], [0, -26, r * 0.45, hi], [-r * 0.2, -19, r * 0.35, hi]]) { cx.fillStyle = c; cx.beginPath(); cx.arc(t.x + ox + sway, t.y + oy, rr, 0, 6.28); cx.fill(); }
     return;

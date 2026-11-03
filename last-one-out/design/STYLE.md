@@ -55,6 +55,15 @@ The wreck on the far side of each map is the first thing drawn with the painting
 - **Muting:** every colour of every place is pulled about a quarter of the way toward its own grey once, at load. Trees and decor sit in the palette at no cost per frame. The player's jacket and the fire stay bright enough to find.
 - **Light:** dawn, evening, dusk and night tints are taken from the palette (dusk is a muted purple, night a deep blue-black).
 
+## How the trees are painted (phase 3)
+
+- **Each look has its own painting.** That covers 19 looks plus dead snags: spruce, fir, cypress, cedar, black spruce, larch, pine, podocarp, eucalypt, acacia, alder, beech, myrtle, lenga, willow, aspen, birch, mountain birch and dwarf birch. Each is made once per age (sapling or mature), state (green, autumn, bare, snow) and one of three variants, in the place's muted colours, at twice the size for sharp phones.
+- **Conifers** are jagged tiers in a dark wash with a lighter side and a few dark needle marks, and snow on the tier tips in winter. Pines are a few ragged clumps on a clear trunk; cedars droop; black spruce are thin spindles with a club top.
+- **Broadleaf trees** are overlapping washes, lighter toward the light and darker underneath. Larch, birch and the other deciduous trees turn in autumn and go bare in winter, with snow along the branches. Lenga and beech grow in flat layers; willows droop.
+- **Berry and rose-hip bushes** are painted with their berries green, ripe or gone over, picked, or under snow.
+- **Wind** slides a painting a pixel or two instead of bending it. A bend costs too much on slower phones.
+- The old drawings stand in for the frame or two before a painting is ready. They, the small plants, moss, logs and stumps are drawn in muted colours.
+
 ## What stays the same
 
 All game rules, odds and the engine. This is a change to how things are drawn and laid out, not to what happens. The 1,100-plus checks and the bots keep testing the rules unchanged.
@@ -74,7 +83,7 @@ Each phase ends with the full test run, the picture sheet updated, and a commit.
 | 0 | Foundation (done Nov 3) | Typefaces bundled, place palettes, paper and grain textures, the painting helpers, the first picture sheet |
 | 1 | Top bar and tool roll (done Nov 3) | New numbers bar; jobs grouped by tool on the canvas roll; index-card job lists; messages in the new type |
 | 2 | The land (done Nov 3) | Painted ground, water, shore, rivers, rock, paths; light, weather and night tinting |
-| 3 | Trees and plants | Every tree kind and age, bushes, moss, cut and used states |
+| 3 | Trees and plants (done Nov 3) | Every tree kind and age, bushes, moss, cut and used states |
 | 4 | Camp and shelters | Fire, every shelter type at every build stage and condition, drying rack, smoker, cache, woodshed, cairns, piles |
 | 5 | Animals, people, tracks | Player, animals, carcasses, blood trails, debris, landmarks |
 | 6 | Interiors | Inside every shelter type, by weather and time of day |
