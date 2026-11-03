@@ -33,6 +33,36 @@ add('A day at one camp', 'inside', 'Inside the cabin', P, s => { s.shelterType =
 add('A day at one camp', 'snow', 'Deep winter, snow on the ground', P, s => { const sd = E.DATA.seasons.find(x => x.key === P).climate.snow; s.day = sd + 20; });
 add('A day at one camp', 'river', 'At the river and the ford', P, null, () => { const W = window.__t.W(); if (W.river) { W.player.x = W.river.ford; W.player.y = W.river.y1 + 40; } });
 add('A day at one camp', 'rain', 'Rain, with a full pack', P, s => { s.rain = true; s.pack = { firewood: 4, poles: 3 }; });
+// the camp as it grows: every shelter, half built and finished, sound, worn and broken, with the works around the fire
+const G = 'The camp, built up';
+const kit = (s, o = {}) => { Object.assign(s.mats, { poles: 5, logs: 9, boughs: 12, moss: 10, bark: 2, cordage: 8 }); s.firewood = 18; s.fire = true; Object.assign(s, o); };
+const works = s => { s.crafts = Object.assign(s.crafts || {}, { woodshed: 1, smoker: 2, rack: 1, cache: 2 }); s.sys.rackRoof = true; s.stores.push({ id: 'hare', por: 6, left: 9, smoked: false, where: 'rack', moist: 0.4 }, { id: 'hare', por: 2, left: 9, smoked: true, where: 'smoker' }); s.firewood = 27; };
+const shel = (s, type, cond = 1) => { s.shelterType = type; s.shelterLvl = E.SHELTERS[type].lvl; s.shelterCond = cond; };
+const site = (s, goal, work) => { s.shelterGoal = goal; s.shelterWork = work; s.shelterPaid = true; };
+const toCliff = () => { const W = window.__t.W(); W.player.x = W.cliff.x - 10; W.player.y = W.cliff.y + 110; };
+const toPile = () => { const S = window.__t.S(), W = window.__t.W(); const x = W.player.x + 40, y = W.player.y + 24; S.piles = [{ x, y, m: { logs: 3, poles: 2 } }, { x: x - 80, y: y + 6, m: { firewood: 3, boughs: 4, stone: 3 } }]; S.sys.cairns = [{ x: x + 10, y: y - 52 }, { x: x - 70, y: y - 50 }]; };
+const snowDay = s => { const sd = E.DATA.seasons.find(x => x.key === P).climate.snow; s.day = sd + 20; };
+add(G, 'camp-open', 'Sleeping out by the fire, materials piled', P, s => kit(s));
+add(G, 'camp-tarp', 'Tarp camp', P, s => { kit(s); s.gear.push('Tarp'); shel(s, 'tarp'); });
+add(G, 'camp-tarp-torn', 'Tarp camp, torn', P, s => { kit(s); s.gear.push('Tarp'); shel(s, 'tarp', 0.4); });
+add(G, 'camp-leanto', 'Lean-to', P, s => { kit(s); shel(s, 'leanto'); s.crafts.woodshed = 1; });
+add(G, 'camp-leanto-worn', 'Lean-to, worn, fish on the stone', P, s => { kit(s); shel(s, 'leanto', 0.7); s.raw = [{ id: 'trout' }, { id: 'trout' }, { id: 'hare' }]; });
+add(G, 'camp-hut', 'Debris hut', P, s => { kit(s); shel(s, 'hut'); });
+add(G, 'camp-hut-broken', 'Debris hut, broken open', P, s => { kit(s); shel(s, 'hut', 0.4); });
+add(G, 'build-hut', 'Debris hut, half built', P, s => { kit(s); site(s, 'hut', 1); });
+add(G, 'build-cabin-1', 'Cabin, first courses (beside the lean-to)', P, s => { kit(s); shel(s, 'leanto'); site(s, 'cabin', 1); });
+add(G, 'build-cabin-2', 'Cabin, walls half up', P, s => { kit(s); site(s, 'cabin', 2); });
+add(G, 'build-cabin-3', 'Cabin, rafters on', P, s => { kit(s); site(s, 'cabin', 3); });
+add(G, 'camp-cabin', 'Cabin with chimney, rack, smoker, cache, woodshed', P, s => { kit(s); shel(s, 'cabin'); s.crafts.chimney = 2; works(s); });
+add(G, 'camp-cabin-worn', 'Cabin, roof going', P, s => { kit(s); shel(s, 'cabin', 0.45); works(s); s.wet = 0.6; });
+add(G, 'camp-cabin-snow', 'Cabin in snow, fire inside, dusk', P, s => { kit(s); snowDay(s); shel(s, 'cabin'); s.crafts.chimney = 2; works(s); s.fire = true; s.fireInside = true; s.hours = E.dayHours(s) - 0.6; s.phase = 2; });
+add(G, 'camp-night', 'The fire at night, pot on', P, s => { kit(s); shel(s, 'hut'); s.hours = E.dayHours(s); s.phase = 3; s.boiled = 2; });
+add(G, 'camp-raid', 'After a raid in the night', P, s => { kit(s); shel(s, 'leanto', 0.7); }, () => { window.__t.W().raided = window.__t.S().day; });
+add(G, 'build-rock-1', 'Rock shelter, first course', P, s => { kit(s); site(s, 'rock', 1); }, toCliff);
+add(G, 'build-rock-2', 'Rock shelter, two courses and the lintel', P, s => { kit(s); site(s, 'rock', 2); }, toCliff);
+add(G, 'camp-rock', 'Rock shelter, fire inside', P, s => { kit(s); shel(s, 'rock'); s.fireInside = true; }, toCliff);
+add(G, 'camp-rock-snow', 'Rock shelter in snow, stones down', P, s => { kit(s); snowDay(s); shel(s, 'rock', 0.4); }, toCliff);
+add(G, 'piles', 'Piles left on the land, and cairns', P, s => kit(s), toPile);
 add('Choices and mini-games', 'event', 'A choice to make', P, s => { s.event = { id: 'wolves', title: 'Wolves', text: 'Wolves howling close, after dark.', options: [{ label: 'Build the fire up and keep to camp', sub: 'Two hours, two days of wood. Nerves settle.' }, { label: 'Carry on', sub: '' }], optIds: [0, 1], phase: 0 }; });
 add('Choices and mini-games', 'mini-fish', 'Fishing: the cast', P, null, () => { window.__t.call('startFish', false); });
 add('Choices and mini-games', 'mini-fire', 'Lighting the fire', P, s => { s.fire = false; }, () => { window.__t.call('startFire'); });
@@ -44,7 +74,8 @@ add('Other sizes', 'small', 'Small phone, 320 wide', P, null, null, [320, 640]);
 add('Other sizes', 'desktop', 'Desktop, 1280 wide', P, null, null, [1280, 800]);
 (async () => {
   const b = await chromium.launch(); const errs = [];
-  for (const sh of shots) {
+  const only = process.env.ONLY ? new RegExp(process.env.ONLY) : null; /* ONLY=camp- node sheet.js /tmp/x : just those pictures */
+  for (const sh of shots.filter(x => !only || only.test(x.name))) {
     const ctx = await b.newContext({ viewport: { width: sh.vp[0], height: sh.vp[1] } }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(sh.name + ': ' + e.message));
     await p.goto('file://' + TMP); await p.evaluate(([k, v]) => localStorage.setItem(k, v), [KEY, save(state(sh.place, sh.setup))]); await p.reload(); await p.waitForTimeout(900);
     if (sh.after) { try { await p.evaluate(sh.after); } catch (e) { errs.push(sh.name + ': ' + e.message); } await p.waitForTimeout(600); }

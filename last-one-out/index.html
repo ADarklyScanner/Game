@@ -2540,7 +2540,7 @@ function drawLandmark(l, snow) {
   else if (l.kind === 'blaze') { cx.fillStyle = '#24402a'; cx.beginPath(); cx.moveTo(l.x, l.y - 70); cx.lineTo(l.x - 20, l.y - 6); cx.lineTo(l.x + 20, l.y - 6); cx.closePath(); cx.fill(); cx.fillStyle = '#4a3828'; cx.fillRect(l.x - 3, l.y - 8, 6, 8); cx.fillStyle = '#e8d8a8'; cx.fillRect(l.x - 2, l.y - 6, 4, 4); }
   if (snow && l.kind !== 'knoll') { cx.fillStyle = 'rgba(248,250,252,.75)'; cx.beginPath(); cx.ellipse(l.x, l.y - 1, 10, 2.5, 0, 0, 6.28); cx.fill(); }
 }
-function drawCairn(c) { shadow(c.x, c.y + 2, 9, 3, 0.8); const V = vis(); for (const [dy, w2] of [[0, 9], [-6, 7], [-11, 5], [-15, 3]]) { cx.fillStyle = V.rock; cx.beginPath(); cx.ellipse(c.x, c.y + dy - 2, w2, 3.2, 0, 0, 6.28); cx.fill(); cx.fillStyle = V.rockHi; cx.beginPath(); cx.ellipse(c.x - 1, c.y + dy - 3, w2 * 0.4, 1.2, 0, 0, 6.28); cx.fill(); } }
+function drawCairn(c) { shadow(c.x, c.y + 2, 9, 3, 0.8); { const v = Math.abs(Math.round(c.x * 7 + c.y * 3)) % 3, sn = W.snowNow ? 1 : 0; if (drawPainted(`cairn|${biome()}|${v}|${sn}`, () => cairnArt(v, !!sn), c.x, c.y, 1)) return; } const V = vis(); for (const [dy, w2] of [[0, 9], [-6, 7], [-11, 5], [-15, 3]]) { cx.fillStyle = V.rock; cx.beginPath(); cx.ellipse(c.x, c.y + dy - 2, w2, 3.2, 0, 0, 6.28); cx.fill(); cx.fillStyle = V.rockHi; cx.beginPath(); cx.ellipse(c.x - 1, c.y + dy - 3, w2 * 0.4, 1.2, 0, 0, 6.28); cx.fill(); } }
 function drawProp(p, snow) {
   const V = vis();
   if (p.kind === 'boulder') { const r = 11 * p.s; shadow(p.x, p.y + 3, r * 1.1, r * 0.4, 1); cx.fillStyle = V.rock; cx.beginPath(); cx.moveTo(p.x - r, p.y + 2); cx.quadraticCurveTo(p.x - r * 1.05, p.y - r * 1.1, p.x - r * 0.1, p.y - r * 1.2); cx.quadraticCurveTo(p.x + r * 1.1, p.y - r * 1.1, p.x + r, p.y + 2); cx.closePath(); cx.fill(); cx.fillStyle = V.rockHi; cx.beginPath(); cx.ellipse(p.x - r * 0.3, p.y - r * 0.75, r * 0.45, r * 0.3, -0.3, 0, 6.28); cx.fill(); cx.fillStyle = 'rgba(0,0,0,.18)'; cx.beginPath(); cx.ellipse(p.x + r * 0.4, p.y - r * 0.2, r * 0.45, r * 0.5, 0, 0, 6.28); cx.fill(); if (snow) { cx.fillStyle = 'rgba(248,250,252,.9)'; cx.beginPath(); cx.ellipse(p.x - r * 0.1, p.y - r * 1.05, r * 0.7, r * 0.25, 0, 0, 6.28); cx.fill(); } return; }
@@ -4105,7 +4105,7 @@ function draw() {
   for (const d of W.debris) if (!d.taken && inView(d.x, d.y, 30)) drawDebris(d);
   if (W.carcassEv && inView(W.carcassEv.x, W.carcassEv.y, 40)) { const c = W.carcassEv; shadow(c.x, c.y + 2, 22, 8); cx.fillStyle = '#5a5250'; cx.beginPath(); cx.ellipse(c.x, c.y, 20, 9, 0.3, 0, 6.28); cx.fill(); cx.fillStyle = '#8a4a44'; cx.beginPath(); cx.ellipse(c.x + 5, c.y - 2, 8, 4.5, 0.3, 0, 6.28); cx.fill(); cx.fillStyle = '#e8e0d0'; cx.fillRect(c.x - 14, c.y - 1, 6, 1.5); cx.fillRect(c.x - 12, c.y + 3, 5, 1.5); }
   if (W.leftovers && !W.collect) for (const it of W.leftovers) if (inView(it.x, it.y, 20)) drawItem(it);
-  drawCamp();
+  W.snowNow = snow; drawCamp();
   // sprites sorted by y
   const sprites = [];
   if (W.ufo && inView(W.ufo.x, W.ufo.y, 200)) sprites.push({ y: W.ufo.y, f: () => drawWreck(W.ufo) });
@@ -4397,6 +4397,8 @@ function drawDebris(d) {
 // a stack of what you could not carry: logs, poles, split wood, stones, a heap of boughs
 function drawPile(q) {
   const m = q.m; shadow(q.x, q.y + 3, 18, 6, 0.7); let y = q.y;
+  { const lg = m.logs ? Math.min(3, Math.ceil(m.logs)) : 0, pl = m.poles ? Math.min(4, Math.ceil(m.poles)) : 0, fw = m.firewood ? Math.min(6, Math.ceil(m.firewood * 1.5)) : 0, bm = m.boughs ? 1 : m.moss ? 2 : 0, sc = m.stone ? 1 : m.clay ? 2 : 0, sn = W.snowNow ? 1 : 0;
+    if (drawPainted(`pile|${biome()}|${lg}|${pl}|${fw}|${bm}|${sc}|${sn}`, () => pileArt(lg, pl, fw, bm, sc, !!sn), q.x, q.y, 1)) return; }
   if (m.logs) for (let i = 0; i < Math.min(3, Math.ceil(m.logs)); i++) { cx.fillStyle = '#5a4634'; cx.beginPath(); cx.roundRect(q.x - 16 + i * 3, y - 5 - i * 5, 30, 6, 3); cx.fill(); cx.fillStyle = '#c9a070'; cx.beginPath(); cx.ellipse(q.x + 14 + i * 3, y - 2 - i * 5, 2.5, 3, 0, 0, 6.28); cx.fill(); }
   if (m.poles) { cx.strokeStyle = '#8a6a44'; cx.lineWidth = 2; for (let i = 0; i < Math.min(4, Math.ceil(m.poles)); i++) { cx.beginPath(); cx.moveTo(q.x - 18, y + 4 - i * 2); cx.lineTo(q.x + 16, y + 1 - i * 2); cx.stroke(); } }
   if (m.firewood) { cx.fillStyle = '#7a5c3c'; for (let i = 0; i < Math.min(6, Math.ceil(m.firewood * 1.5)); i++) cx.fillRect(q.x - 8 + (i % 3) * 6, y - 8 - Math.floor(i / 3) * 5, 5, 4); }
@@ -4585,8 +4587,357 @@ function lookAtWreck() {
   if (first) { records.wrecks = records.wrecks || {}; if (!records.wrecks[S.seasonKey]) { records.wrecks[S.seasonKey] = S.day; saveRecords(); } sfx.play('good'); }
   banner(lines, first ? 9000 : 3000); updateHud(); save(); lastActs = ''; refreshActs();
 }
-function drawCamp() { if (!hasCamp()) return; const c = W.camp; scaled(c.x, c.y, CS, drawCampRaw); }
+// ---------- the camp, painted: each piece is a cached painting keyed by what it shows; the old drawing covers the first frame or two
+const F1 = n => (+n).toFixed(1);
+function mixHex(a, b, t) { const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); const A = p(a), B = p(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join(''); }
+function campCols() {
+  const V = vis(), PP = PAINT.palOf(S.seasonKey);
+  return { V, bark: '#4b3e2f', pole: '#76624a', poleHi: '#9d8865', cut: '#a88e68', cutRing: '#8f7656', char: '#2a2420', ash: '#8e8a82', earth: '#4e4234',
+    tarp: '#55696f', tarpHi: '#71858a', tarpDk: '#3c4c52', bag: '#55624a', bagHi: '#75805f', wool: '#6b5d4b', woolHi: '#857560', hide: '#7a6248',
+    snow: '#eceee8', snowSh: '#c3ccd2', moss: PP.moss, moss2: PP.moss2, lichen: PP.lichen, litter: PP.rust, dark: '#1f1c18',
+    stone: mixHex(V.rock, '#3a3a36', 0.3), stoneHi: mixHex(V.rockHi, '#5a5a54', 0.15), bough: [V.conifer[1], V.conifer[2], V.conifer[3]], meat: '#8e4a3e', fat: '#d6cab2', fish: '#9fb2b6', fishDk: '#4f6066', cord: '#b9a77e' };
+}
+const CA = {
+  poly(pts) { return 'M' + pts.map(p => `${F1(p[0])} ${F1(p[1])}`).join(' L') + 'Z'; },
+  /* a pole with its lit edge on the side toward the light (up and left) */
+  pole(x1, y1, x2, y2, w, C, col, hi) { const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1; let nx = -dy / L, ny = dx / L; if (nx + ny > 0) { nx = -nx; ny = -ny; } const o = w * 0.22;
+    return `<path d="M${F1(x1)} ${F1(y1)} L${F1(x2)} ${F1(y2)}" stroke="${col || C.pole}" stroke-width="${F1(w)}" stroke-linecap="round" filter="url(#tw)"/>` + (hi === false ? '' : `<path d="M${F1(x1 + nx * o)} ${F1(y1 + ny * o)} L${F1(x2 + nx * o)} ${F1(y2 + ny * o)}" stroke="${C.poleHi}" stroke-width="${F1(w * 0.3)}" stroke-linecap="round" opacity=".6"/>`); },
+  stone(r, x, y, rx, ry, C, col) { return P3.wash(P3.blob(r, x, y, rx, ry, 9, 0.16), col || C.stone, 0.96, 0.55) + `<path d="${P3.blob(r, x + rx * 0.12, y + ry * 0.38, rx * 0.82, ry * 0.48, 8, 0.2)}" fill="#1b1915" opacity=".3" filter="url(#tw)"/>` + `<path d="${P3.blob(r, x - rx * 0.28, y - ry * 0.38, rx * 0.42, ry * 0.28, 7, 0.25)}" fill="${C.stoneHi}" opacity=".75" filter="url(#tw)"/>`; },
+  /* a fir bough: a spray of needles along a twig */
+  bough(r, x, y, L, a, C, k = 0, op = 0.92) { const mx = x + Math.cos(a) * L * 0.5, my = y + Math.sin(a) * L * 0.5;
+    return `<g transform="rotate(${F1(a * 57.2958)} ${F1(mx)} ${F1(my)})">` + P3.wash(P3.blob(r, mx, my, L * 0.52, L * 0.17 + 0.8, 10, 0.32), C.bough[k % 2], op, 0.45) + P3.wash(P3.blob(r, mx - L * 0.06, my - L * 0.05, L * 0.34, L * 0.05 + 0.4, 7, 0.3), C.bough[2], 0.45, 0.1) + `<path d="M${F1(mx - L * 0.5)} ${F1(my)} L${F1(mx + L * 0.45)} ${F1(my)}" stroke="${C.bark}" stroke-width=".7" opacity=".5"/></g>`; },
+  logEnd(x, y, rr, C) { return `<ellipse cx="${F1(x)}" cy="${F1(y)}" rx="${F1(rr * 0.82)}" ry="${F1(rr)}" fill="${C.cut}" filter="url(#tw)"/><ellipse cx="${F1(x)}" cy="${F1(y)}" rx="${F1(rr * 0.42)}" ry="${F1(rr * 0.52)}" fill="none" stroke="${C.cutRing}" stroke-width=".6" opacity=".7"/><ellipse cx="${F1(x)}" cy="${F1(y)}" rx="${F1(rr * 0.82)}" ry="${F1(rr)}" fill="none" stroke="${C.bark}" stroke-width="1" opacity=".85"/>`; },
+  /* a log lying across the picture: bark, a lit top, a shaded underside, end grain where it was cut */
+  log(x1, x2, y, rr, C, ends = 'r') {
+    let s = `<path d="M${F1(x1)} ${F1(y - rr)} L${F1(x2)} ${F1(y - rr * 0.92)} L${F1(x2)} ${F1(y + rr)} L${F1(x1)} ${F1(y + rr * 0.95)} Z" fill="${C.bark}" filter="url(#tw)"/>`
+      + `<path d="M${F1(x1 + 1)} ${F1(y - rr * 0.5)} L${F1(x2 - 1)} ${F1(y - rr * 0.48)}" stroke="${C.pole}" stroke-width="${F1(rr * 0.55)}" opacity=".85" filter="url(#tw)"/>`
+      + `<path d="M${F1(x1)} ${F1(y + rr * 0.62)} L${F1(x2)} ${F1(y + rr * 0.62)}" stroke="#16120e" stroke-width="${F1(rr * 0.42)}" opacity=".35"/>`;
+    if (ends.includes('r')) s += CA.logEnd(x2, y, rr, C); if (ends.includes('l')) s += CA.logEnd(x1, y, rr, C); return s; },
+  shade(d, op = 0.25) { return `<path d="${d}" fill="#14120f" opacity="${op}" filter="url(#tw)"/>`; },
+  snow(d, C, op = 0.93) { return `<path d="${d}" fill="${C.snow}" opacity="${op}" filter="url(#tw)"/>`; },
+  /* where you sleep: a sleeping bag, or a bough bed and the wool blanket */
+  bed(r, x, y, w, C, bag) {
+    if (bag) return P3.wash(P3.blob(r, x, y, w / 2, 4.2, 10, 0.08), C.bag, 0.95, 0.6) + P3.wash(P3.blob(r, x - w * 0.05, y - 1.6, w * 0.42, 1.6, 8, 0.1), C.bagHi, 0.7, 0.2) + `<ellipse cx="${F1(x - w / 2 + 4)}" cy="${F1(y - 0.5)}" rx="3.2" ry="3.4" fill="${C.dark}" opacity=".7"/>` + [0.15, 0.4, 0.65].map(t => `<path d="M${F1(x - w / 2 + w * t + 6)} ${F1(y - 3.6)} q1 3.6 0 7.2" stroke="#2c3226" stroke-width=".6" fill="none" opacity=".5"/>`).join('');
+    return CA.bough(r, x - w * 0.5, y + 1, w * 0.6, 0.05, C, 0) + CA.bough(r, x - w * 0.05, y + 2, w * 0.55, -0.05, C, 1) + P3.wash(P3.blob(r, x + 2, y - 0.5, w * 0.36, 3.2, 9, 0.12), C.wool, 0.92, 0.5) + `<path d="M${F1(x - w * 0.3)} ${F1(y - 1.5)} L${F1(x + w * 0.38)} ${F1(y - 2)}" stroke="${C.woolHi}" stroke-width="1" opacity=".6"/>`; },
+  /* pack the art: its box in camp space, with (0,0) at the anchor */
+  art(x0, y0, x1, y1, svg) { return { w: x1 - x0, h: y1 - y0, ax: -x0, ay: -y0, svg: `<g transform="translate(${-x0} ${-y0})">${svg}</g>` }; },
+  rng(...k) { let h = 977; for (const v of k) h = hash32(h, typeof v === 'number' ? v : String(v).split('').reduce((a, c) => a * 31 + c.charCodeAt(0) | 0, 7), 5113); return rngFrom(h); },
+};
+
+/* ---- shelters. cb: 0 sound, 1 worn, 2 damaged */
+function tarpArt(cb, snow, bag) {
+  const C = campCols(), r = CA.rng('tarp', cb, snow, bag); let s = '';
+  s += CA.shade(CA.poly([[-28, 11], [0, -16], [28, 11]]), 0.1);
+  s += `<path d="${CA.poly([[-26, 11], [0, -14], [26, 11]])}" fill="${C.dark}" opacity=".88" filter="url(#tw)"/>`; /* the open front, dark inside */
+  s += CA.bed(r, 2, 6, 22, C, bag);
+  s += CA.pole(0, 12, 0, -16, 2, C);
+  const L = cb === 2 ? [[0, -16], [-28, 11], [-29, -11], [0, -38]] : [[0, -16], [-28, 11], [-28, -11], [0, -38]];
+  const R = cb === 2 ? [[0, -16], [28, 11], [29, 1], [21, -6], [26, -15], [0, -38]] : [[0, -16], [28, 11], [28, -11], [0, -38]];
+  s += P3.wash(CA.poly(L), C.tarpHi, 0.95, 0.6) + P3.wash(CA.poly(R), C.tarp, 0.95, 0.6);
+  s += `<path d="M-14 -2 L-14 -24 M14 -2 L14 -24" stroke="${C.tarpDk}" stroke-width=".7" opacity=".5"/>`; /* seams */
+  s += `<path d="M0 -16 L0 -38" stroke="#2f3a3e" stroke-width="1.2" opacity=".8"/>`;
+  if (cb >= 1) s += `<path d="M-22 4 L-8 -14 M-18 -6 L-4 -26 M8 -4 L20 -20" stroke="${C.tarpDk}" stroke-width=".8" opacity=".55"/>` + `<path d="${P3.blob(r, -10, -8, 9, 6)}" fill="#5a4a36" opacity=".18" filter="url(#tw)"/>`;
+  if (cb === 2) s += P3.wash(CA.poly([[29, 1], [21, -6], [24, 8]]), C.tarpDk, 0.9, 0.4) + `<path d="M28 -11 Q34 -6 38 -12" stroke="#3a352c" stroke-width=".6" fill="none"/>` + `<ellipse cx="-12" cy="-20" rx="2.2" ry="1.4" fill="${C.dark}" opacity=".8"/>`;
+  /* guy lines and pegs */
+  for (const [a, b, c2, d] of [[-28, 11, -38, 17], [28, 11, 38, 17], [-28, -11, -40, -13], ...(cb === 2 ? [] : [[28, -11, 40, -13]])]) s += `<path d="M${a} ${b} L${c2} ${d}" stroke="#3a352c" stroke-width=".6" opacity=".8"/><path d="M${c2} ${d - 1.5} L${c2} ${d + 1.5}" stroke="${C.pole}" stroke-width="1.6"/>`;
+  if (snow) s += CA.snow(CA.poly([[0, -17], [-12, -4], [-15, -14], [-11, -26], [0, -37]]), C) + CA.snow(CA.poly([[0, -17], [11, -5], [14, -16], [9, -27], [0, -37]]), C, 0.8) + `<path d="${P3.blob(r, -30, 12, 8, 2.5)}" fill="${C.snow}" opacity=".9" filter="url(#tw)"/><path d="${P3.blob(r, 30, 12, 8, 2.5)}" fill="${C.snow}" opacity=".9" filter="url(#tw)"/>`;
+  return CA.art(-44, -44, 44, 22, s);
+}
+function bedArt(bag, snow) { const C = campCols(), r = CA.rng('bed', bag); let s = CA.bed(r, 0, 0, 44, C, bag); if (snow) s += `<path d="${P3.blob(r, 8, -3, 10, 1.8)}" fill="${C.snow}" opacity=".7" filter="url(#tw)"/>`; return CA.art(-28, -10, 28, 10, s); }
+function leantoArt(cb, snow, bag) {
+  const C = campCols(), r = CA.rng('leanto', cb, snow, bag); let s = '';
+  /* the open front: shade under the roof, the floor and the bed */
+  s += P3.wash(CA.poly([[-31, -22], [31, -22], [33, 12], [-33, 12]]), C.earth, 0.75, 0.3);
+  s += `<path d="M-31 -22 L31 -22 L31 -2 Q0 4 -31 -2Z" fill="#17150f" opacity=".55" filter="url(#tw)"/>`;
+  s += CA.bed(r, 0, 5, 34, C, bag);
+  /* side walls of boughs stood against the end poles */
+  for (const side of [-1, 1]) { const n = cb === 2 && side > 0 ? 1 : 4; for (let i = 0; i < n; i++) s += CA.bough(r, side * 33 - 5, 10 - i * 8, 11, -1.3 + r() * 0.4 + (side > 0 ? 0.3 : 0), C, i); }
+  for (const x of [-32, 32]) s += CA.pole(x, 13, x, -22, 3, C) + `<path d="M${x} -22 L${x - 3} -27 M${x} -22 L${x + 3} -27" stroke="${C.pole}" stroke-width="1.6" stroke-linecap="round"/>`;
+  /* the roof, thatched in rows from the back down to the ridge so each row laps the one behind */
+  const roof = CA.poly([[-36, -22], [36, -22], [33, -42], [-33, -42]]);
+  s += P3.wash(roof, C.bough[0], 0.95, 0.55);
+  for (let i = 0; i < 6; i++) s += CA.pole(-32 + i * 12.8, -22, -30 + i * 12, -42, 1.6, C, null, false);
+  const keep = cb === 0 ? 1 : cb === 1 ? 0.8 : 0.55;
+  for (let row = 0; row < 4; row++) for (let i = 0; i < 8; i++) { if (r() > keep) continue; s += CA.bough(r, -36 + i * 9 + (row % 2) * 4, -40 + row * 5 + r() * 1.5, 13, 0.3 + (r() - 0.5) * 0.4, C, i + row); }
+  if (cb) for (let i = 0; i < (cb === 1 ? 2 : 4); i++) { const x = -26 + r() * 52, y = -38 + r() * 12; s += `<path d="${P3.blob(r, x, y, 4 + r() * 3, 2.2)}" fill="${C.dark}" opacity=".8" filter="url(#tw)"/><path d="M${F1(x - 4)} ${F1(y - 2)} L${F1(x + 3)} ${F1(y + 2.5)}" stroke="${C.pole}" stroke-width="1.4"/>`; }
+  s += `<path d="M-36 -24 L36 -24 L36 -21 L-36 -21Z" fill="#14120f" opacity=".3" filter="url(#tw)"/>`;
+  s += CA.pole(-38, -22, 38, -22, 3.4, C);
+  if (cb === 2) s += CA.pole(10, -22, 28, 12, 2.4, C);
+  if (snow) s += CA.snow(`M-35 -26 Q-18 -30 0 -27 Q18 -31 35 -26 L32 -42 Q0 -45 -32 -42Z`, C, 0.92) + `<path d="${P3.blob(r, -34, 12, 7, 2.5)}" fill="${C.snow}" opacity=".9" filter="url(#tw)"/><path d="${P3.blob(r, 34, 12, 7, 2.5)}" fill="${C.snow}" opacity=".9" filter="url(#tw)"/>`;
+  return CA.art(-44, -48, 44, 18, s);
+}
+function hutArt(cb, snow) {
+  const C = campCols(), r = CA.rng('hut', cb, snow); let s = '';
+  const mound = `M-41 18 Q-34 -6 -6 -28 Q0 -32 6 -28 Q34 -6 41 18 Q0 22 -41 18Z`;
+  /* ribs poking out at the edges */
+  for (let i = 0; i < 6; i++) { const t = i / 5; const y = -24 + t * 38; const x = 8 + t * 32; s += `<path d="M${F1(-x + 2)} ${F1(y + 2)} l${F1(-3 - r() * 3)} ${F1(-2 - r() * 2)} M${F1(x - 2)} ${F1(y + 2)} l${F1(3 + r() * 3)} ${F1(-2 - r() * 2)}" stroke="${C.pole}" stroke-width="1.3" stroke-linecap="round" opacity=".85"/>`; }
+  s += P3.wash(mound, C.litter, 0.96, 0.6);
+  s += `<path d="M-41 18 Q-34 -6 -6 -28 Q-18 -2 -14 18Z" fill="#c9b48a" opacity=".16" filter="url(#tw)"/>` + `<path d="M41 18 Q34 -6 6 -28 Q16 0 14 18Z" fill="#14120f" opacity=".22" filter="url(#tw)"/>`;
+  for (let i = 0; i < 26; i++) { const t = r(); const y = -24 + t * 40; const hw = 4 + t * 34; s += `<path d="${P3.blob(r, (r() * 2 - 1) * hw, y, 3 + r() * 3, 1.5 + r())}" fill="${[C.litter, '#6a5034', C.moss2, '#8a6a40'][i % 4]}" opacity=".55" filter="url(#tw)"/>`; }
+  for (let i = 0; i < 6; i++) s += `<path d="${P3.blob(r, -26 + r() * 52, -8 + r() * 22, 4 + r() * 4, 2 + r())}" fill="${r() < 0.5 ? C.moss : C.moss2}" opacity=".7" filter="url(#tw)"/>`;
+  const nb = cb === 0 ? 8 : cb === 1 ? 5 : 3; for (let i = 0; i < nb; i++) { const sd = i % 2 ? 1 : -1; const y = -20 + Math.floor(i / 2) * 9; s += CA.bough(r, sd * (2 + Math.floor(i / 2) * 5), y, 14 + i, sd * (0.55 + r() * 0.3), C, i); }
+  if (cb >= 1) { for (let i = 0; i < (cb === 1 ? 2 : 3); i++) { const x = (i % 2 ? 1 : -1) * (10 + r() * 14), y = -10 + r() * 16; s += `<path d="${P3.blob(r, x, y, 5 + r() * 2, 3)}" fill="#2a2119" opacity=".85" filter="url(#tw)"/><path d="M${F1(x - 4)} ${F1(y + 2)} L${F1(x + 4)} ${F1(y - 2)} M${F1(x - 4)} ${F1(y - 1)} L${F1(x + 3)} ${F1(y + 3)}" stroke="${C.pole}" stroke-width="1" opacity=".8"/>`; } }
+  if (cb === 2) s += `<path d="${P3.blob(r, 14, -14, 8, 6)}" fill="${C.dark}" opacity=".9" filter="url(#tw)"/><path d="M8 -18 L20 -10 M10 -10 L19 -18" stroke="${C.pole}" stroke-width="1.3"/>` + `<path d="${P3.blob(r, 38, 20, 9, 3)}" fill="${C.litter}" opacity=".85" filter="url(#tw)"/>`;
+  /* the doorway and its plug of boughs, the ridge pole's end on its fork */
+  s += `<path d="M-9 19 Q-8 3 0 -1 Q8 3 9 19Z" fill="${C.dark}" opacity=".92" filter="url(#tw)"/>`;
+  s += CA.bough(r, 12, 18, 12, -0.25, C, 1);
+  s += CA.pole(-3, 2, 1, -33, 1.8, C) + CA.pole(3, 2, -1, -33, 1.8, C);
+  if (snow) s += CA.snow(`M-34 2 Q-26 -12 -6 -29 Q0 -33 6 -29 Q26 -12 34 2 Q24 6 16 0 Q8 6 0 2 Q-10 7 -18 1 Q-26 6 -34 2Z`, C) + `<path d="M6 -27 Q22 -12 30 0 Q22 2 16 -2Z" fill="${C.snowSh}" opacity=".5" filter="url(#tw)"/><path d="${P3.blob(r, -30, 19, 10, 3)}" fill="${C.snow}" opacity=".9" filter="url(#tw)"/><path d="${P3.blob(r, 30, 19, 10, 3)}" fill="${C.snow}" opacity=".9" filter="url(#tw)"/>`;
+  return CA.art(-48, -40, 50, 26, s);
+}
+function rockArt(cb, snow) {
+  const C = campCols(), r = CA.rng('rock', cb, snow, biome()); let s = '';
+  /* the roof: poles from the wall top back to the lip of the overhang, sod and moss over them */
+  s += P3.wash(CA.poly([[-46, -6], [46, -6], [42, -29], [-42, -29]]), '#3a3226', 0.9, 0.4);
+  for (let i = 0; i < 12; i++) { const x = -42 + i * 7.6; if (cb === 2 && (i === 7 || i === 8)) continue; s += CA.pole(x, -6, x * 0.92, -29, 2.4, C); }
+  const nm = cb === 0 ? 9 : cb === 1 ? 6 : 4; for (let i = 0; i < nm; i++) s += `<path d="${P3.blob(r, -38 + r() * 76, -24 + r() * 14, 6 + r() * 6, 2.5 + r() * 2)}" fill="${r() < 0.6 ? C.moss : C.moss2}" opacity=".8" filter="url(#tw)"/>`;
+  if (cb === 2) s += CA.pole(10, -8, 22, -30, 2.4, C) + `<path d="${P3.blob(r, 15, -18, 5, 7)}" fill="${C.dark}" opacity=".6" filter="url(#tw)"/>`;
+  /* the dry-stone wall in courses, chinked with moss, a door under a log lintel */
+  for (let row = 0; row < 3; row++) { let x = -45 + (row % 2) * 4; while (x < 44) { const w = 8 + r() * 6; const cx0 = x + w / 2, cy0 = 16 - row * 8; x += w + 0.6; if (cx0 > -7 && cx0 < 9) continue; const miss = cb && r() < (cb === 1 ? 0.08 : 0.2); if (miss && row > 0) { s += `<path d="${P3.blob(r, cx0, cy0, w * 0.4, 3)}" fill="${C.dark}" opacity=".75" filter="url(#tw)"/>`; continue; } s += CA.stone(r, cx0, cy0, w / 2, 3.9, C, row % 2 && r() < 0.4 ? C.lichen : null); } }
+  if (cb !== 2) for (let i = 0; i < 8; i++) s += `<path d="${P3.blob(r, -40 + r() * 80, 20 - Math.floor(r() * 3) * 8 - 4, 3, 0.9)}" fill="${C.moss}" opacity=".7" filter="url(#tw)"/>`;
+  if (cb === 2) for (let i = 0; i < 3; i++) s += CA.stone(r, 22 + i * 9, 24 + (i % 2) * 2, 4.5, 3, C);
+  s += `<path d="M-6 21 L-6 -1 L8 -1 L8 21Z" fill="${C.dark}" opacity=".93" filter="url(#tw)"/>`;
+  s += `<path d="M-6 -1 L1 -1 Q2 9 -1 21 L-6 21Z" fill="${C.hide}" opacity=".85" filter="url(#tw)"/>`; /* a hide hung over half the door */
+  s += CA.log(-11, 13, -3, 2.6, C, 'r');
+  if (snow) s += CA.snow(`M-46 -8 Q-30 -12 -20 -9 Q-4 -13 10 -9 Q28 -13 46 -8 L42 -28 Q20 -31 0 -29 Q-24 -31 -42 -28Z`, C, 0.9) + `<path d="${P3.blob(r, -30, 25, 12, 3)}" fill="${C.snow}" opacity=".9" filter="url(#tw)"/><path d="${P3.blob(r, 32, 25, 10, 3)}" fill="${C.snow}" opacity=".9" filter="url(#tw)"/>`;
+  return CA.art(-52, -36, 52, 30, s);
+}
+function cabinArt(cb, snow, chim) {
+  const C = campCols(), r = CA.rng('cabin', cb, snow, chim); let s = '';
+  /* walls: five courses of logs, saddle-notched, the ends standing out at the corners */
+  for (let i = 0; i < 5; i++) { const y = 19.5 - i * 9; s += CA.log(-42, 42, y, 4.4, C, ''); if (i % 2) s += `<path d="M-42 ${F1(y - 4)} L42 ${F1(y - 3.8)} L42 ${F1(y + 4)} L-42 ${F1(y + 4)}Z" fill="#8a7556" opacity=".18"/>`; s += `<path d="M-42 ${F1(y + 4.4)} L42 ${F1(y + 4.4)}" stroke="${C.moss2}" stroke-width="1.4" opacity="${cb === 2 && i === 2 ? 0.15 : 0.75}" filter="url(#tw)"/>`; }
+  for (let i = 0; i < 5; i++) { const y = 15 - i * 9; s += CA.logEnd(-45, y, 4, C) + CA.logEnd(45, y, 4, C); }
+  /* the gable end over the door, shorter logs up into the peak */
+  for (let i = 0; i < 3; i++) { const y = -24 - i * 6.5; const hw = 38 - i * 12; s += CA.log(-hw, hw, y, 3.2, C, ''); }
+  /* a greased-hide window and a plank door in a log frame */
+  s += `<path d="M-30 -9 L-17 -9 L-17 1 L-30 1Z" fill="${C.dark}" opacity=".9"/><path d="M-29 -8 L-18 -8 L-18 0 L-29 0Z" fill="#b8a578" opacity=".55" filter="url(#tw)"/>`;
+  s += `<path d="M-8 24 L-8 2 L8 2 L8 24Z" fill="${C.dark}"/>`;
+  if (cb === 2) s += `<path d="M-7 24 L-7 3 L2 4 L2 24Z" fill="#5d4a36" filter="url(#tw)"/>`;
+  else { s += `<path d="M-7 24 L-7 3 L7 3 L7 24Z" fill="#5d4a36" filter="url(#tw)"/>`; for (const x of [-3.5, 0, 3.5]) s += `<path d="M${x} 3.5 L${x} 23.5" stroke="#3a2e22" stroke-width=".6" opacity=".8"/>`; s += `<path d="M-7 8 L7 8 M-7 19 L7 19" stroke="#3a2e22" stroke-width="1.2" opacity=".7"/><circle cx="4.6" cy="13.5" r=".9" fill="#b49a6a"/>`; }
+  s += CA.pole(-9, 24, -9, 1, 2.2, C) + CA.pole(9, 24, 9, 1, 2.2, C) + CA.pole(-10, 1, 10, 1, 2.4, C);
+  /* the roof: two planes of poles under sod and boughs, a barge pole along each front edge */
+  const Lp = [[-50, -18], [0, -45], [0, -63], [-50, -36]], Rp = [[50, -18], [0, -45], [0, -63], [50, -36]];
+  s += `<path d="M-50 -16 L0 -43 L50 -16 L50 -12 L0 -39 L-50 -12Z" fill="#14120f" opacity=".35" filter="url(#tw)"/>`; /* the eaves' shadow on the gable */
+  s += P3.wash(CA.poly(Lp), mixHex(C.moss, '#3a3a26', 0.25), 0.97, 0.6) + P3.wash(CA.poly(Rp), mixHex(C.moss2, '#24241a', 0.35), 0.97, 0.6);
+  for (let i = 0; i < 16; i++) { const sd = i % 2 ? 1 : -1; const t = r(); const u = r(); const x = sd * (4 + t * 42); const y = -45 + t * 27 - u * 18; s += CA.bough(r, x - 5, y, 10, sd * 0.5 - 0.1, C, i, 0.75); }
+  for (let i = 0; i < 10; i++) { const sd = i % 2 ? 1 : -1; const t = r(), u = r(); s += `<path d="${P3.blob(r, sd * (6 + t * 38), -46 + t * 27 - u * 16, 4 + r() * 3, 2)}" fill="${C.litter}" opacity=".35" filter="url(#tw)"/>`; }
+  const holes = cb === 0 ? 0 : cb === 1 ? 2 : 4; for (let i = 0; i < holes; i++) { const sd = i % 2 ? 1 : -1; const t = 0.2 + r() * 0.6, u = r(); const x = sd * (6 + t * 38), y = -45 + t * 27 - u * 14; s += `<path d="${P3.blob(r, x, y, cb === 2 && i === 0 ? 8 : 4, cb === 2 && i === 0 ? 5 : 2.6)}" fill="#2a2119" opacity=".9" filter="url(#tw)"/><path d="M${F1(x - 4)} ${F1(y + 2)} L${F1(x + 4)} ${F1(y - 3)}" stroke="${C.pole}" stroke-width="1.2"/>`; }
+  s += `<path d="M0 -45 L0 -63" stroke="#2c2a20" stroke-width="1.4" opacity=".7"/>`;
+  s += CA.pole(-51, -17, 0, -46, 2.6, C) + CA.pole(51, -17, 0, -46, 2.6, C);
+  if (snow) s += CA.snow(`M-50 -20 L0 -47 L0 -63 L-50 -36Z`, C) + `<path d="M50 -20 L0 -47 L0 -63 L50 -36Z" fill="${C.snow}" opacity=".9" filter="url(#tw)"/><path d="M50 -20 L0 -47 L0 -63 L50 -36Z" fill="${C.snowSh}" opacity=".45" filter="url(#tw)"/>` + `<path d="${P3.blob(r, -36, 25, 14, 3)}" fill="${C.snow}" opacity=".9" filter="url(#tw)"/><path d="${P3.blob(r, 36, 25, 14, 3)}" fill="${C.snow}" opacity=".9" filter="url(#tw)"/>`;
+  if (chim) { for (let i = 0; i < 7; i++) { const y = -32 - i * 5.5; s += CA.stone(r, 28 + (i % 2) * 1.2, y, 6, 3, C); } s += `<path d="M21 -71 L35 -71 L35 -68 L21 -68Z" fill="#4a4844" filter="url(#tw)"/>`; if (snow) s += `<path d="${P3.blob(r, 28, -72, 7, 1.8)}" fill="${C.snow}" filter="url(#tw)"/>`; }
+  return CA.art(-56, -76, 56, 30, s);
+}
+/* a shelter half built: q is a quarter (1, 2 or 3) of the way */
+function siteArt(goal, q, snow) {
+  const C = campCols(), r = CA.rng('site', goal, q, snow, biome()); let s = '';
+  if (goal === 'hut') {
+    s += CA.pole(-3, 18, 3, -32, 2, C) + CA.pole(3, 18, -3, -32, 2, C);
+    for (let i = 0; i < 6; i++) { const t = i / 5; for (const sd of [-1, 1]) s += CA.pole(sd * 1, -29 + t * 6, sd * (40 - t * 18), 18 - t * 12, 1.6, C, null, false); }
+    s += CA.pole(0, -30, 2, -40, 2.4, C);
+    if (q >= 2) s += P3.wash(`M-41 18 Q-34 6 -20 -2 Q-12 8 -10 18Z`, C.litter, 0.9, 0.5) + P3.wash(`M41 18 Q34 6 20 -2 Q12 8 10 18Z`, C.litter, 0.9, 0.5) + CA.bough(r, -30, 4, 14, -0.6, C, 0) + CA.bough(r, 18, 2, 14, 0.6, C, 1);
+    for (let i = 0; i < 4; i++) s += CA.bough(r, 44 + (i % 2) * 4, 12 - i * 3, 13, 0.2 - i * 0.2, C, i);
+  } else if (goal === 'rock') {
+    const rows = q === 1 ? 1 : q === 2 ? 2 : 3;
+    for (let row = 0; row < rows; row++) { let x = -45 + (row % 2) * 4; while (x < 44) { const w = 8 + r() * 6; const cx0 = x + w / 2, cy0 = 16 - row * 8; x += w + 0.6; if (cx0 > -7 && cx0 < 9) continue; if (row === rows - 1 && q < 3 && r() < 0.3) continue; s += CA.stone(r, cx0, cy0, w / 2, 3.9, C); } }
+    if (q >= 2) s += CA.log(-11, 13, 16 - rows * 8 + 5, 2.6, C, 'r');
+    if (q >= 3) for (let i = 0; i < 6; i++) { const x = -40 + i * 15; s += CA.pole(x, -6, x * 0.92, -29, 2.4, C); }
+    for (let i = 0; i < 5; i++) s += CA.stone(r, 50 + (i % 3) * 7, 22 - Math.floor(i / 3) * 5, 4, 2.8, C);
+  } else if (goal === 'cabin') {
+    const n = q === 1 ? 2 : q === 2 ? 4 : 5;
+    for (let i = 0; i < n; i++) { const y = 19.5 - i * 9; const door = i < 3 || n === 5; if (i >= 1 && door) { s += CA.log(-42, -9, y, 4.4, C, 'r') + CA.log(9, 42, y, 4.4, C, 'l'); } else s += CA.log(-42, 42, y, 4.4, C, ''); s += CA.logEnd(-45, y - 4.5, 4, C) + CA.logEnd(45, y - 4.5, 4, C); }
+    if (q >= 3) { for (let i = 0; i < 3; i++) { const y = -24 - i * 6.5; const hw = 38 - i * 12; s += CA.log(-hw, hw, y, 3.2, C, ''); } for (const t of [0.33, 0.66, 1]) for (const sd of [-1, 1]) s += CA.pole(sd * 50, -18 - 18 * t, 0, -45 - 18 * t, 1.8, C, null, false); s += CA.pole(-51, -17, 0, -46, 2.6, C) + CA.pole(51, -17, 0, -46, 2.6, C) + CA.pole(0, -46, 0, -63, 2.4, C); }
+    for (let i = 0; i < (q === 3 ? 2 : 5); i++) s += CA.log(52, 80, 20 - i * 5.5, 2.6, C, 'l');
+  }
+  if (snow) s += `<path d="${P3.blob(r, 0, 22, 40, 3)}" fill="${C.snow}" opacity=".55" filter="url(#tw)"/>`;
+  return CA.art(-56, -76, 90, 30, s);
+}
+
+/* ---- the fire */
+function ringArt(first, snow) {
+  const C = campCols(), r = CA.rng('ring', first, snow, biome()); let s = '';
+  const st = []; for (let i = 0; i < 9; i++) { const a = i / 9 * 6.283 + 0.2; st.push([Math.cos(a) * 17, Math.sin(a) * 11, 4.4 + r() * 1.2]); }
+  for (const p of st.filter(p => p[1] < 0)) s += CA.stone(r, p[0], p[1], p[2], 3.1, C);
+  s += P3.wash(P3.blob(r, 0, 0.5, 12, 7.4, 12, 0.1), first ? C.char : C.earth, 0.95, 0.5);
+  if (first) { s += `<path d="${P3.blob(r, -3, 1, 6, 3)}" fill="${C.ash}" opacity=".55" filter="url(#tw)"/>`; s += CA.pole(-8, 3, 7, -3, 2.6, C, '#231d18', false) + CA.pole(-7, -3, 8, 2.5, 2.4, C, '#2e2620', false) + `<path d="M5 -2 l2 -.6 M-6 2 l1.6 .3" stroke="#7a3a1c" stroke-width=".8" opacity=".6"/>`; }
+  else s += `<path d="M-6 1 l3 -1 M1 -2 l4 1" stroke="#2a2018" stroke-width="1" opacity=".5"/>`;
+  for (const p of st.filter(p => p[1] >= 0)) s += CA.stone(r, p[0], p[1], p[2], 3.1, C);
+  if (snow) for (const p of st) s += `<path d="${P3.blob(r, p[0] - 0.6, p[1] - 1.8, p[2] * 0.6, 1.1)}" fill="${C.snow}" opacity=".9" filter="url(#tw)"/>`;
+  return CA.art(-24, -16, 24, 16, s);
+}
+/* one of four flame paintings; the fire cycles through them */
+function flameArt(i) {
+  const r = CA.rng('flame', i); const j = () => (r() - 0.5) * 3;
+  const shape = (k) => { const h1 = 13 + r() * 5, h2 = 23 + r() * 6, h3 = 12 + r() * 5; return `M${F1(-9 * k)} 2 Q${F1(-11 * k)} ${F1(-7 * k)} ${F1((-5 + j()) * k)} ${F1(-h1 * k)} Q${F1(-3 * k)} ${F1(-8 * k)} ${F1(-1.5 * k)} ${F1(-9 * k)} Q${F1(-3 * k)} ${F1(-16 * k)} ${F1(j() * k)} ${F1(-h2 * k)} Q${F1(4 * k)} ${F1(-15 * k)} ${F1(2.5 * k)} ${F1(-9 * k)} Q${F1(4 * k)} ${F1(-8 * k)} ${F1((6 + j()) * k)} ${F1(-h3 * k)} Q${F1(11 * k)} ${F1(-6 * k)} ${F1(9 * k)} 2 Q0 ${F1(5 * k)} ${F1(-9 * k)} 2Z`; };
+  const s = `<ellipse cx="0" cy="-8" rx="13" ry="15" fill="#d87a34" opacity=".22" filter="url(#soft)"/>` + `<path d="${shape(1)}" fill="#c0501f" opacity=".88" filter="url(#tw)"/>` + `<path d="${shape(0.72)}" fill="#dc8833" opacity=".9" filter="url(#tw)"/>` + `<path d="${shape(0.42)}" fill="#efc36c" opacity=".92" filter="url(#tw)"/>`;
+  return CA.art(-18, -38, 18, 8, s);
+}
+function potArt() {
+  const C = campCols(); let s = CA.pole(-12, 4, 0, -30, 1.6, C, '#4a3b2a', false) + CA.pole(12, 4, 0, -30, 1.6, C, '#4a3b2a', false) + CA.pole(0, -30, 2, 8, 1.6, C, '#3e3224', false);
+  s += `<path d="M0 -30 L0 -21" stroke="#2a2622" stroke-width=".8"/><path d="M-6 -20 Q0 -23 6 -20 L5.5 -12 Q0 -10 -5.5 -12Z" fill="#2c2a28" filter="url(#tw)"/><path d="M-6 -20 Q0 -22 6 -20" stroke="#6a6862" stroke-width="1" fill="none" opacity=".8"/><path d="M-4 -18 L-4 -13" stroke="#55534e" stroke-width=".8" opacity=".6"/>`;
+  return CA.art(-16, -34, 16, 10, s);
+}
+
+/* ---- stores and the works around the fire */
+function matArt(kind, n) {
+  const C = campCols(), r = CA.rng('mat', kind, n, biome()); let s = '';
+  if (kind === 'poles') { for (let i = 0; i < n; i++) s += CA.pole(i * 3, 16, 7 + i * 0.6, -20 + i * 1.2, 2.4, C, i % 2 ? '#8a7352' : C.pole); s += `<path d="M-1 -5 Q8 -3 ${F1(2 + n * 3)} -4" stroke="${C.cord}" stroke-width="1" fill="none"/>`; }
+  if (kind === 'logs') { const pos = [[26, 4], [34, 4], [42, 4], [30, -2.5], [38, -2.5], [34, -9]]; for (let i = 0; i < n; i++) { const [x, y] = pos[i]; s += `<path d="M${x - 9} ${y - 5.5} L${x} ${y - 3.5} L${x} ${y + 3.5} L${x - 9} ${y + 1.5}Z" fill="${C.bark}" filter="url(#tw)"/>` + CA.logEnd(x, y, 3.6, C); } }
+  if (kind === 'boughs') for (let i = 0; i < n; i++) s += CA.bough(r, 40 + (i % 3) * 7, 4 + Math.floor(i / 3) * 5, 14, 0.3 + i * 0.3, C, i);
+  if (kind === 'moss') { const w = 7 + n; s += P3.wash(P3.blob(r, 30, 14, w, 4), C.moss, 0.95, 0.5) + `<path d="${P3.blob(r, 28, 12.5, w * 0.5, 1.6)}" fill="${C.lichen}" opacity=".55" filter="url(#tw)"/>`; }
+  if (kind === 'bark') for (let i = 0; i < n; i++) s += `<path d="M${50 + i * 4} 15 Q${55 + i * 4} 9 ${60 + i * 4} 15 L${60 + i * 4} 16.5 Q${55 + i * 4} 11 ${50 + i * 4} 16.5Z" fill="#8a6c48" filter="url(#tw)"/><path d="M${51 + i * 4} 14.6 Q${55 + i * 4} 10.6 ${59 + i * 4} 14.6" stroke="#c9ad80" stroke-width=".6" fill="none"/>`;
+  if (kind === 'cord') s += `<ellipse cx="62" cy="2" rx="5" ry="3.5" fill="none" stroke="${C.cord}" stroke-width="2" filter="url(#tw)"/><ellipse cx="62" cy="2" rx="3" ry="2" fill="none" stroke="#8f7f5a" stroke-width="1.4"/><path d="M66 3 q3 2 6 1" stroke="${C.cord}" stroke-width="1" fill="none"/>`;
+  return CA.art(-10, -30, 76, 24, s);
+}
+/* split firewood: wedge ends showing, bark on the round side */
+function woodArt(n) {
+  const C = campCols(), r = CA.rng('wood', n); let s = '';
+  for (let i = 0; i < n; i++) { const x = -64 + (i % 3) * 9, y = 16 - Math.floor(i / 3) * 6; const a = r() * 6.283; const p = (k) => [x + 4 + Math.cos(a + k) * 4.4, y + 2.5 + Math.sin(a + k) * 3];
+    s += `<path d="M${x - 2} ${y - 1} L${x + 7} ${y + 0.5} L${x + 7} ${y + 5} L${x - 2} ${y + 4}Z" fill="${C.bark}" filter="url(#tw)"/>`;
+    const A = p(0), B = p(2.1), Cc = p(4.2); s += `<path d="M${F1(A[0])} ${F1(A[1])} L${F1(B[0])} ${F1(B[1])} Q${F1(x + 4 + Math.cos(a + 3.15) * 6)} ${F1(y + 2.5 + Math.sin(a + 3.15) * 4.2)} ${F1(Cc[0])} ${F1(Cc[1])}Z" fill="${C.cut}" stroke="${C.bark}" stroke-width=".8" filter="url(#tw)"/>`; }
+  return CA.art(-72, -6, -24, 26, s);
+}
+function shedArt(snow) {
+  const C = campCols(), r = CA.rng('shed', snow, biome()); let s = CA.pole(-71, 24, -71, -6, 2.6, C) + CA.pole(-33, 24, -33, -6, 2.6, C);
+  s += P3.wash(CA.poly([[-77, -3], [-27, -3], [-31, -15], [-73, -15]]), C.bough[0], 0.95, 0.5);
+  for (let i = 0; i < 6; i++) s += CA.bough(r, -76 + i * 8, -9 + (i % 2) * 2, 12, -0.25 + r() * 0.3, C, i);
+  s += CA.pole(-78, -3, -26, -3, 2.2, C);
+  if (snow) s += CA.snow(`M-77 -6 Q-52 -12 -27 -6 L-31 -16 Q-52 -19 -73 -16Z`, C);
+  return CA.art(-82, -22, -22, 28, s);
+}
+function smokerArt(meat, snow) {
+  const C = campCols(), r = CA.rng('smoker', meat, snow); let s = '';
+  s += P3.wash(`M2 26 L12 -2 L22 26 Q12 22 2 26Z`, C.bough[0], 0.55, 0.3); /* boughs over the back to hold the smoke */
+  for (let i = 0; i < 4; i++) s += CA.bough(r, 4 + i * 4, 22 - i * 7, 10, -1.2 + r() * 0.3, C, i, 0.6);
+  s += `<path d="${P3.blob(r, 12, 25, 6, 2)}" fill="#3a2e24" filter="url(#tw)"/><circle cx="10" cy="24.5" r=".8" fill="#d0743a" opacity=".8"/><circle cx="14" cy="25" r=".6" fill="#d0743a" opacity=".7"/>`;
+  s += CA.pole(0, 26, 12, -4, 2, C) + CA.pole(24, 26, 12, -4, 2, C) + CA.pole(12, -4, 14, 24, 2, C) + CA.pole(-2, 10, 26, 10, 1.6, C);
+  if (meat) for (let i = 0; i < 3; i++) s += `<path d="M${3 + i * 8} 11 L${8 + i * 8} 11 L${6.5 + i * 8} 21 L${4 + i * 8} 21Z" fill="#9a5434" filter="url(#tw)"/><path d="M${4 + i * 8} 12 L${5 + i * 8} 19" stroke="${C.fat}" stroke-width=".6" opacity=".6"/>`;
+  if (snow) s += `<path d="${P3.blob(r, 12, -3, 3, 1.2)}" fill="${C.snow}" filter="url(#tw)"/>`;
+  return CA.art(-8, -10, 32, 30, s);
+}
+function rackArt(roof, n, k) {
+  const C = campCols(), r = CA.rng('rack', roof, n, k); let s = '';
+  for (const ox of [0, 28]) s += CA.pole(ox - 5, 26, ox, 4, 1.8, C) + CA.pole(ox + 5, 26, ox, 4, 1.8, C);
+  s += CA.pole(-3, 6, 31, 6, 1.8, C);
+  const col = ['#984a40', '#7c4436', '#5c3a2a'][k];
+  for (let i = 0; i < n; i++) { const L = 12 - k * 1.5 + (r() - 0.5) * 2; s += `<path d="M${2 + i * 5} 6.5 L${4.6 + i * 5} 6.5 L${4 + i * 5} ${F1(6.5 + L)} L${2.6 + i * 5} ${F1(6.5 + L)}Z" fill="${col}" filter="url(#tw)"/>` + (k < 2 ? `<path d="M${3 + i * 5} 8 L${3.2 + i * 5} ${F1(5 + L)}" stroke="${C.fat}" stroke-width=".5" opacity=".5"/>` : ''); }
+  if (roof === 'tarp') s += P3.wash(`M-7 2 L14 -8 L35 2 L33 4 L14 -5 L-5 4Z`, C.tarp, 0.95, 0.5);
+  if (roof === 'boughs') { s += P3.wash(`M-7 2 L14 -8 L35 2 L33 4 L14 -5 L-5 4Z`, C.bough[0], 0.95, 0.5); for (let i = 0; i < 4; i++) s += CA.bough(r, -6 + i * 10, -2 + Math.abs(i - 1.5) * 1.5, 11, i < 2 ? -0.45 : 0.45, C, i); }
+  return CA.art(-10, -12, 40, 30, s);
+}
+function cacheArt(snow) {
+  const C = campCols(), r = CA.rng('cache', snow); let s = CA.pole(1.5, 25, 1.5, -2, 3, C, '#a08c6a');
+  s += `<path d="M-0.2 12 L3.2 12 L3.2 17 L-0.2 17Z" fill="#9aa0a2" opacity=".9"/><path d="M0 12.6 L3 12.6" stroke="#d8dcdc" stroke-width=".6"/>`; /* a tin band so nothing climbs it */
+  s += CA.log(-10, 13, -1, 2.4, C, 'r') + CA.log(-10, 13, -5.5, 2.4, C, 'r');
+  s += P3.wash(`M-12 -8 Q1 -13 15 -8 L14 -6 Q1 -9 -11 -6Z`, C.tarpDk, 0.95, 0.5);
+  s += `<path d="M-5 -9 L-5 1 M8 -9 L8 1" stroke="${C.cord}" stroke-width=".9"/>`;
+  if (snow) s += `<path d="${P3.blob(r, 1.5, -10, 12, 2)}" fill="${C.snow}" filter="url(#tw)"/>`;
+  return CA.art(-16, -16, 20, 28, s);
+}
+function rawArt(pat) {
+  const C = campCols(), r = CA.rng('raw', pat, biome()); let s = CA.stone(r, 14, 2, 20, 6.5, C);
+  pat.split('').forEach((p, i) => { const x = 4 + i * 8; if (p === 'f') s += `<path d="M${x - 6} 0 Q${x} -3.4 ${x + 6} 0 Q${x} 3 ${x - 6} 0Z" fill="${C.fish}" filter="url(#tw)"/><path d="M${x - 5} 0 L${x - 9} -2.6 L${x - 9} 2.6Z" fill="${C.fishDk}"/><path d="M${x - 4} -.6 L${x + 4} -1" stroke="#c6d0d0" stroke-width=".6" opacity=".7"/><circle cx="${x + 4}" cy="-.4" r=".6" fill="#1a1a1a"/>`; else s += `<path d="${P3.blob(r, x, 0, 5.5, 2.6)}" fill="${C.meat}" filter="url(#tw)"/><path d="M${x - 3} -1 Q${x} -2.2 ${x + 3} -1" stroke="${C.fat}" stroke-width=".8" fill="none" opacity=".8"/>`; });
+  return CA.art(-10, -8, 38, 10, s);
+}
+function quarterArt() { const C = campCols(), r = CA.rng('quarter'); return CA.art(-10, -8, 12, 8, P3.wash(P3.blob(r, 0, 0, 7, 4), '#8c4440', 0.95, 0.5) + `<path d="M-3 -1 Q1 -3 5 -1" stroke="${C.fat}" stroke-width=".8" fill="none"/><path d="M4 -3.5 L8.5 -4.5" stroke="#e2dccd" stroke-width="1.6" stroke-linecap="round"/>`); }
+function raidArt() {
+  let s = ''; for (const [ox, oy, a] of [[-20, 36, 0.3], [-4, 44, 1.2], [14, 38, 2.1], [30, 46, 0.8]]) s += `<g transform="translate(${ox} ${oy}) rotate(${F1(a * 57.3)})"><path d="M-5 0 L5 0" stroke="#ddd6c6" stroke-width="2" stroke-linecap="round" filter="url(#tw)"/><circle cx="-5.5" cy="-1.2" r="1.3" fill="#ddd6c6"/><circle cx="-5.5" cy="1.2" r="1.3" fill="#ddd6c6"/><circle cx="5.5" cy="-1.2" r="1.3" fill="#ddd6c6"/><circle cx="5.5" cy="1.2" r="1.3" fill="#ddd6c6"/></g>`;
+  for (let i = 0; i < 6; i++) { const x = -40 + i * 16, y = 52 + (i % 2) * 6; s += `<ellipse cx="${x}" cy="${y}" rx="3.2" ry="4.2" fill="#3c2e20" opacity=".4" transform="rotate(17 ${x} ${y})" filter="url(#tw)"/>` + [-2.6, -0.9, 0.9, 2.6].map(d => `<circle cx="${F1(x + d)}" cy="${F1(y - 5.4 + Math.abs(d) * 0.4)}" r=".9" fill="#3c2e20" opacity=".4"/>`).join(''); }
+  return CA.art(-48, 28, 50, 62, s);
+}
+function clothesArt() {
+  const C = campCols(); let s = CA.pole(0, 22, 0, 0, 1.6, C) + CA.pole(26, 22, 26, 0, 1.6, C) + `<path d="M-1 3 Q13 5.5 27 3" stroke="${C.cord}" stroke-width=".8" fill="none"/>`;
+  s += `<path d="M4 4 L13 4.6 L12.4 15 L4.6 14.6Z" fill="#7a4028" filter="url(#tw)"/><path d="M4 4 L1.6 8 L4.4 9 M13 4.6 L15.4 8.6 L12.6 9.4" stroke="#7a4028" stroke-width="1.6" fill="none" stroke-linecap="round"/>`;
+  s += `<path d="M17 4.6 L20.4 4.6 L20.4 13 L23 14.6 L22.6 16 L17.4 15Z" fill="#4e5a66" filter="url(#tw)"/>`;
+  s += `<circle cx="8" cy="18" r=".6" fill="#9aa6ae" opacity=".7"/><circle cx="20" cy="19.5" r=".5" fill="#9aa6ae" opacity=".6"/>`;
+  return CA.art(-4, -4, 30, 24, s);
+}
+/* a pile left out on the land */
+function pileArt(lg, pl, fw, bm, sc, snow) {
+  const C = campCols(), r = CA.rng('pile', lg, pl, fw, bm, sc, snow, biome()); let s = '';
+  for (let i = 0; i < pl; i++) s += CA.pole(-18, 4 - i * 2, 16, 1 - i * 2, 2, C);
+  for (let i = 0; i < lg; i++) s += CA.log(-16 + i * 3, 13 + i * 3, -2 - i * 5, 3, C, 'r');
+  for (let i = 0; i < fw; i++) { const x = -8 + (i % 3) * 6, y = -8 - Math.floor(i / 3) * 5; s += `<path d="M${x} ${y} L${x + 5} ${y} L${x + 5} ${y + 4} L${x} ${y + 4}Z" fill="${C.bark}" filter="url(#tw)"/><path d="M${x + 5} ${y + 0.4} L${x + 5} ${y + 3.6}" stroke="${C.cut}" stroke-width="1.4"/>`; }
+  if (bm === 1) for (let i = 0; i < 3; i++) s += CA.bough(r, 2 + i * 4, -3 + i, 12, 0.2 - i * 0.3, C, i); else if (bm === 2) s += P3.wash(P3.blob(r, 10, -3, 10, 5), C.moss, 0.95, 0.5);
+  if (sc) for (let i = 0; i < 3; i++) s += sc === 1 ? CA.stone(r, -12 + i * 5, 2, 3, 2.6, C) : P3.wash(P3.blob(r, -12 + i * 5, 2, 3, 2.6), '#8e6e52', 0.95, 0.5);
+  if (snow) s += `<path d="${P3.blob(r, 0, -8 - lg * 3, 14, 2.4)}" fill="${C.snow}" opacity=".85" filter="url(#tw)"/>`;
+  return CA.art(-24, -26, 24, 10, s);
+}
+function cairnArt(v, snow) {
+  const C = campCols(), r = CA.rng('cairn', v, snow, biome()); let s = '';
+  for (const [dy, w2] of [[0, 9], [-6, 7], [-11, 5], [-15, 3.2]]) s += CA.stone(r, (r() - 0.5) * 1.5, dy - 2, w2, 3.3, C);
+  if (snow) s += `<path d="${P3.blob(r, 0, -19, 3.4, 1.2)}" fill="${C.snow}" filter="url(#tw)"/><path d="${P3.blob(r, -1, -9, 5, 1)}" fill="${C.snow}" opacity=".8" filter="url(#tw)"/>`;
+  return CA.art(-12, -22, 12, 6, s);
+}
+/* is this painting made yet? starts it if not */
+function paintReady(key, make) { let c = PAINT.cache.get(key); if (!c) { const a = make(); PAINT.sprite(key, a.w, a.h, a.svg, 2); c = PAINT.cache.get(key); c.ax = a.ax; c.ay = a.ay; c.w = a.w; c.h = a.h; } return !!c.ready; }
+function smokeAt(x, y, col, n, spd, grow) { cx.fillStyle = col; for (let i = 0; i < n; i++) { const k = (W.t * spd + i / n) % 1; cx.beginPath(); cx.arc(x + Math.sin(k * 5 + i) * 4, y - k * 30, 3 + k * grow, 0, 6.28); cx.fill(); } }
+/* everything the camp shows right now, in drawing order: paintings, and the few things that move */
+function campSteps(c, t) {
+  const B = 'camp|' + biome() + '|', out = []; const P = (k, make, x, y, sc) => out.push({ k: B + k, make, x, y, sc }); const Pre = (k, make) => out.push({ k: B + k, make, pre: true }); const Fn = f => out.push({ f });
+  const snow = !!W.snowNow, sn = snow ? 1 : 0; const sx = c.x + 52, sy = c.y - 30; const bag = S.gear.includes('Sleeping bag'); const type = S.shelterType;
+  const cond = S.shelterCond ?? 1, cb = cond >= 0.85 ? 0 : cond >= 0.55 ? 1 : 2; const chim = (S.crafts.chimney || 0) >= 2; const glow = S.fireInside && S.fire;
+  const k = W.cliff, rk = { x: k.x - 4 + (k.x - c.x) * (1 / CS - 1), y: k.y + 30 + (k.y - c.y) * (1 / CS - 1) };
+  const flick = () => 0.5 + Math.sin(t * 9) * 0.1;
+  // a shelter going up
+  const goal = S.shelterGoal, bill = goal && E.shelterBill(S);
+  if (bill && S.shelterWork > 0 && S.shelterWork < bill.sessions && ['hut', 'rock', 'cabin'].includes(goal)) { const q = Math.max(1, Math.min(3, Math.round(S.shelterWork / bill.sessions * 4))); const at = goal === 'rock' ? rk : type ? { x: sx + 86, y: sy + 4 } : { x: sx, y: sy };
+    Fn(() => shadow(at.x, at.y + 12, 44, 10, 0.6)); P(`site|${goal}|${q}|${sn}`, () => siteArt(goal, q, snow), at.x, at.y);
+    if (!type) { Fn(() => shadow(sx - 22, sy + 26, 22, 6, 0.6)); P(`bed|${bag ? 1 : 0}|${sn}`, () => bedArt(bag, snow), sx - 22, sy + 24); } }
+  else if (!type) { Fn(() => shadow(sx, sy + 6, 26, 8, 0.8)); P(`bed|${bag ? 1 : 0}|${sn}`, () => bedArt(bag, snow), sx, sy); }
+  // the shelter
+  if (type === 'tarp') { Fn(() => shadow(sx, sy + 2, 34, 12, 0.8)); P(`tarp|${cb}|${sn}|${bag ? 1 : 0}`, () => tarpArt(cb, snow, bag), sx, sy); }
+  else if (type === 'leanto') { Fn(() => shadow(sx, sy + 6, 38, 12, 0.9)); P(`leanto|${cb}|${sn}|${bag ? 1 : 0}`, () => leantoArt(cb, snow, bag), sx, sy); }
+  else if (type === 'hut') { Fn(() => shadow(sx, sy + 10, 42, 12, 1)); P(`hut|${cb}|${sn}`, () => hutArt(cb, snow), sx, sy); }
+  else if (type === 'rock') { Fn(() => shadow(rk.x, rk.y + 12, 48, 10, 0.9)); P(`rock|${cb}|${sn}`, () => rockArt(cb, snow), rk.x, rk.y);
+    if (glow) Fn(() => { cx.fillStyle = `rgba(240,160,80,${flick()})`; cx.fillRect(rk.x + 1.5, rk.y, 6, 20.5); smokeAt(rk.x + 20, rk.y - 34, 'rgba(196,202,206,.3)', 3, 0.4, 6); }); }
+  else if (type === 'cabin') { Fn(() => shadow(sx, sy + 16, 52, 14, 1.1)); P(`cabin|${cb}|${sn}|${chim ? 1 : 0}`, () => cabinArt(cb, snow, chim), sx, sy);
+    if (glow) Fn(() => { cx.fillStyle = `rgba(240,160,80,${flick()})`; cx.fillRect(sx - 29, sy - 8, 11, 8); cx.fillRect(sx + 6.6, sy + 3, 1.2, 21); if (cb === 2) cx.fillRect(sx + 2, sy + 4, 5, 20); smokeAt(chim ? sx + 28 : sx + 2, chim ? sy - 76 : sy - 64, chim ? 'rgba(196,202,206,.35)' : 'rgba(90,88,84,.35)', 3, 0.4, 6); if (!chim) { cx.fillStyle = 'rgba(90,88,84,.25)'; cx.beginPath(); cx.arc(sx - 20 + Math.sin(t) * 3, sy + 10 - (t * 10 % 20), 4, 0, 6.28); cx.fill(); } }); }
+  // materials, left of the fire
+  const m = S.mats, px = c.x - 74, py = c.y - 40;
+  if (m.poles) { const n = Math.min(6, m.poles); Fn(() => shadow(px + 6, py + 16, 10, 4, 0.6)); P(`mat|poles|${n}`, () => matArt('poles', n), px, py); }
+  if (m.logs) { const n = Math.min(6, Math.ceil(m.logs / 4)); P(`mat|logs|${n}`, () => matArt('logs', n), px, py); }
+  if (m.boughs) { const n = Math.min(5, Math.ceil(m.boughs / 4)); P(`mat|boughs|${n}`, () => matArt('boughs', n), px, py); }
+  if (m.moss) { const n = Math.min(5, Math.round(m.moss / 4)); P(`mat|moss|${n}`, () => matArt('moss', n), px, py); }
+  if (m.bark) { const n = Math.min(3, m.bark); P(`mat|bark|${n}`, () => matArt('bark', n), px, py); }
+  if (m.cordage >= 4) P('mat|cord|1', () => matArt('cord', 1), px, py);
+  // the woodshed and the firewood
+  if (S.crafts.woodshed >= 1) { Fn(() => shadow(c.x - 52, c.y + 24, 20, 6, 0.6)); P(`shed|${sn}`, () => shedArt(snow), c.x, c.y); }
+  if (S.firewood > 0) { const n = Math.min(9, Math.ceil(S.firewood / 3)); Fn(() => shadow(c.x - 52, c.y + 22, 16, 5, 0.6)); P(`wood|${n}`, () => woodArt(n), c.x, c.y); }
+  // the fire
+  Fn(() => shadow(c.x, c.y + 4, 20, 8, 0.5)); const ringSnow = snow && !S.fire ? 1 : 0; P(`ring|${S.firstFire ? 1 : 0}|${ringSnow}`, () => ringArt(!!S.firstFire, !!ringSnow), c.x, c.y);
+  if (S.fire && !S.fireInside) {
+    Fn(() => { cx.fillStyle = 'rgba(230,120,50,.28)'; cx.beginPath(); cx.ellipse(c.x, c.y, 16, 9.5, 0, 0, 6.28); cx.fill(); });
+    const fr = Math.floor(t * 7) % 4; for (let i = 0; i < 4; i++) if (i !== fr) Pre(`flame|${i}`, () => flameArt(i));
+    P(`flame|${fr}`, () => flameArt(fr), c.x, c.y + 2, 1 + Math.sin(t * 13) * 0.05);
+    Fn(() => { cx.fillStyle = '#f0c070'; for (let i = 0; i < 4; i++) { const q = (t * 0.9 + i / 4) % 1; cx.globalAlpha = (1 - q) * 0.9; cx.fillRect(c.x - 6 + i * 4 + Math.sin(q * 9 + i) * 3, c.y - 18 - q * 34, 1.4, 1.4); } cx.globalAlpha = 1;
+      cx.fillStyle = 'rgba(196,202,206,.2)'; for (let i = 0; i < 4; i++) { const q = (t * 0.45 + i / 4) % 1; cx.beginPath(); cx.arc(c.x + Math.sin(q * 6 + i) * 6, c.y - 28 - q * 46, 3 + q * 9, 0, 6.28); cx.fill(); } });
+    if (S.boiled > 0 && E.potLike(S)) P('pot', potArt, c.x, c.y);
+  }
+  // the smoker, the drying rack, the cache
+  if (S.crafts.smoker >= 2) { const x = c.x - 36, y = c.y - 46; const meat = S.stores.some(z => z.smoked || z.where === 'smoker') ? 1 : 0; Fn(() => shadow(x + 12, y + 26, 14, 4, 0.6)); P(`smoker|${meat}|${sn}`, () => smokerArt(meat, snow), x, y);
+    if ((S.today && S.today.done.includes('smoke')) || (S.sys && S.sys.smoking > 0 && S.stores.some(z => z.where === 'smoker'))) Fn(() => smokeAt(x + 12, y - 6, 'rgba(196,202,206,.25)', 3, 0.4, 5)); }
+  if (S.crafts.rack >= 1) { const x = c.x + 112, y = c.y - 52; const roof = S.sys && S.sys.rackRoof ? (S.gear.includes('Tarp') ? 'tarp' : 'boughs') : 'none';
+    const hung = S.stores.filter(z => z.where === 'rack'); const n = Math.min(6, Math.ceil(hung.reduce((a, z) => a + z.por, 0) / 2)); let kb = 0;
+    if (n) { const mo = Math.max(...hung.map(z => z.moist || 0)); const kk = Math.max(0, Math.min(1, (0.75 - mo) / 0.6)); kb = kk < 0.34 ? 0 : kk < 0.67 ? 1 : 2; }
+    Fn(() => shadow(x + 14, y + 26, 18, 4, 0.5)); P(`rack|${roof}|${n}|${kb}`, () => rackArt(roof, n, kb), x, y); }
+  if (S.crafts.cache >= 2) { const away = S.cachePlace === 'away'; const x = away ? c.x + (W.cacheAway.x - c.x) / CS : c.x + 74, y = away ? c.y + (W.cacheAway.y - c.y) / CS : c.y + 20; Fn(() => shadow(x + 2, y + 24, 8, 3, 0.5)); P(`cache|${sn}`, () => cacheArt(snow), x, y); }
+  // food lying about, and what got at it
+  if (S.raw.length) { const pat = S.raw.slice(0, 4).map(z => D.foods[z.id].kind === 'fish' ? 'f' : 'm').join(''); P(`raw|${pat}`, () => rawArt(pat), c.x + 26, c.y + 24); }
+  if (W.carrying === false && S.stores.some(z => D.foods[z.id].kind === 'game' && !z.smoked)) P('quarter', quarterArt, c.x + 44, c.y - 12);
+  if (W.raided === S.day) P('raid', raidArt, c.x, c.y);
+  if (S.wet > 0.4 && S.fire) P('clothes', clothesArt, c.x - 32, c.y + 26);
+  return out;
+}
 function drawCampRaw() {
+  const c = W.camp; if (!W.cam || c.x < W.cam.x - 200 || c.x > W.cam.x + W.cam.w + 200 || c.y < W.cam.y - 200 || c.y > W.cam.y + W.cam.h + 200) return;
+  const steps = campSteps(c, W.t); let ready = true;
+  for (const st of steps) if (st.k && !paintReady(st.k, st.make)) ready = false;
+  if (!ready) { drawCampOld(); return; } /* the old drawing, for the frame or two while the paintings are made */
+  for (const st of steps) { if (st.pre) continue; if (st.f) { st.f(); continue; } const p = PAINT.cache.get(st.k), sc = st.sc || 1; cx.drawImage(p.cv, st.x - p.ax * sc, st.y - p.ay * sc, p.w * sc, p.h * sc); }
+}
+function drawCamp() { if (!hasCamp()) return; const c = W.camp; scaled(c.x, c.y, CS, drawCampRaw); }
+function drawCampOld() {
   const c = W.camp; const lvl = S.shelterLvl; const t = W.t; if (!W.cam || c.x < W.cam.x - 200 || c.x > W.cam.x + W.cam.w + 200 || c.y < W.cam.y - 200 || c.y > W.cam.y + W.cam.h + 200) return;
   const sx = c.x + 52, sy = c.y - 30; const hasTarp = S.gear.includes('Tarp'), bag = S.gear.includes('Sleeping bag'); const type = S.shelterType;
   // shelter
@@ -4658,7 +5009,7 @@ function drawCampRaw() {
   // smoker, cache, raw catch, carcass meat
   if (S.crafts.smoker >= 2) { const x = c.x - 36, y = c.y - 46; shadow(x + 12, y + 26, 14, 4, 0.6); cx.strokeStyle = '#6b5a44'; cx.lineWidth = 2; cx.beginPath(); cx.moveTo(x, y + 26); cx.lineTo(x + 12, y - 4); cx.lineTo(x + 24, y + 26); cx.moveTo(x + 12, y - 4); cx.lineTo(x + 14, y + 24); cx.moveTo(x - 2, y + 10); cx.lineTo(x + 26, y + 10); cx.stroke(); if (S.stores.some(z => z.smoked || z.where === 'smoker')) { cx.fillStyle = '#b5633a'; for (let i = 0; i < 3; i++) { cx.beginPath(); cx.moveTo(x + 3 + i * 8, y + 11); cx.lineTo(x + 7 + i * 8, y + 21); cx.lineTo(x - 1 + i * 8, y + 21); cx.closePath(); cx.fill(); } } if ((S.today && S.today.done.includes('smoke')) || (S.sys && S.sys.smoking > 0 && S.stores.some(z => z.where === 'smoker'))) { cx.fillStyle = 'rgba(200,210,220,.25)'; for (let i = 0; i < 3; i++) { const k = (t * 0.4 + i / 3) % 1; cx.beginPath(); cx.arc(x + 12 + Math.sin(k * 5) * 3, y - 6 - k * 26, 2 + k * 5, 0, 6.28); cx.fill(); } } }
   // drying rack: two A-frames and a crossbar; strips go from red to dark brown as they dry
-  if (S.crafts.rack >= 1) { const x = c.x + 40, y = c.y - 58; shadow(x + 14, y + 26, 18, 4, 0.5); cx.strokeStyle = '#6b5a44'; cx.lineWidth = 2; cx.beginPath();
+  if (S.crafts.rack >= 1) { const x = c.x + 112, y = c.y - 52; shadow(x + 14, y + 26, 18, 4, 0.5); cx.strokeStyle = '#6b5a44'; cx.lineWidth = 2; cx.beginPath();
     for (const ox of [0, 28]) { cx.moveTo(ox + x - 5, y + 26); cx.lineTo(ox + x, y + 4); cx.lineTo(ox + x + 5, y + 26); } cx.moveTo(x - 3, y + 6); cx.lineTo(x + 31, y + 6); cx.stroke();
     if (S.sys && S.sys.rackRoof) { cx.fillStyle = S.gear.includes('Tarp') ? '#3d6f8a' : '#3f5a36'; cx.beginPath(); cx.moveTo(x - 7, y + 2); cx.lineTo(x + 14, y - 8); cx.lineTo(x + 35, y + 2); cx.closePath(); cx.fill(); }
     const hung = S.stores.filter(z => z.where === 'rack'); const n = Math.min(6, Math.ceil(hung.reduce((a, z) => a + z.por, 0) / 2));

@@ -58,7 +58,8 @@ Steps 0 to 3 of TESTPLAN.md (inventory, coverage, every action and event, eight 
 - Phase 1, top bar and tool roll: done. Quiet numbers along the top, jobs grouped by tool on a canvas roll with a paper card, big paper buttons for mini-games and choices.
 - Phase 2, the land: done. Ground, water, river, paths, stones and bedrock painted in washes in each place's palette, a seamless paper texture, muted colours, and light tints from the palette. Drawing is about as fast as before.
 - Phase 3, trees and plants: done. Every tree look in every place painted in watercolour (by age, season and variant), painted berry and rose-hip bushes, muted small plants, logs and stumps. About as fast as before.
-- Phases 4 to 9: not started.
+- Phase 4, camp and shelters: done. The fire, every shelter (sleeping out, tarp, lean-to, debris hut, rock shelter, cabin) sound, worn, broken and in snow, the hut, rock shelter and cabin half built, and the rack, smoker, cache, woodshed, firewood, materials, catch, clothes line, raids, piles and cairns, all painted. 21 new pictures on the sheet. Drawing speed unchanged.
+- Phases 5 to 9: not started.
 
 ## Ideas for later (not started)
 

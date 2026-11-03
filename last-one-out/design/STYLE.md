@@ -64,6 +64,16 @@ The wreck on the far side of each map is the first thing drawn with the painting
 - **Wind** slides a painting a pixel or two instead of bending it. A bend costs too much on slower phones.
 - The old drawings stand in for the frame or two before a painting is ready. They, the small plants, moss, logs and stumps are drawn in muted colours.
 
+## How the camp is painted (phase 4)
+
+- **Every piece is its own painting,** made once for what it shows and reused: the shelter by type, condition (sound, worn, broken) and snow; a half-built shelter by a quarter of the way; the rack by its roof, how much meat hangs and how dry it is; the woodpile by how many pieces; and so on.
+- **Shelters.** Bedroll or bough bed when sleeping out. The tarp is an A-frame with a dark open front, seams, guy lines and pegs; worn shows creases and stains, broken a torn corner. The lean-to is a thatched roof seen from above with the dark open front under the ridge. The debris hut is a mound of leaf litter, moss and boughs with a dark doorway. The rock shelter is a dry-stone wall under a pole and sod roof, with a hide over half the door. The cabin has saddle-notched log walls, a plank door, a greased-hide window and a sod and bough roof, with a stone chimney once built. Wear shows as gaps, holes and fallen poles; snow sits on the roofs and drifts at the base.
+- **Building.** The debris hut shows its ridge and ribs, then litter going on. The rock shelter goes up a course at a time, then the lintel, then the roof poles. The cabin goes up two courses, then four with the door gap, then full walls with bare rafters. A new shelter built while another stands goes up beside it.
+- **The fire** is a ring of stones around a pit (charred once it has burned) and four flame paintings it cycles through, with a little flicker in size. Sparks, smoke, the glow and the light through a cabin window still move frame by frame.
+- **The works:** woodshed, split firewood with the wedge ends showing, the smoker wrapped in boughs, the drying rack (open, boughs or tarp roof), the raised cache with its tin band, materials waiting by the fire, catch on a flat stone, wet clothes on a line, the mess after a raid, piles left out on the land, and cairns.
+- The drying rack now stands to the right of the shelter and the clothes line in front of the fire, so a cabin no longer covers them.
+- If any camp painting isn't ready yet, the whole camp is drawn the old way for that frame, so the two never mix.
+
 ## What stays the same
 
 All game rules, odds and the engine. This is a change to how things are drawn and laid out, not to what happens. The 1,100-plus checks and the bots keep testing the rules unchanged.
@@ -84,7 +94,7 @@ Each phase ends with the full test run, the picture sheet updated, and a commit.
 | 1 | Top bar and tool roll (done Nov 3) | New numbers bar; jobs grouped by tool on the canvas roll; index-card job lists; messages in the new type |
 | 2 | The land (done Nov 3) | Painted ground, water, shore, rivers, rock, paths; light, weather and night tinting |
 | 3 | Trees and plants (done Nov 3) | Every tree kind and age, bushes, moss, cut and used states |
-| 4 | Camp and shelters | Fire, every shelter type at every build stage and condition, drying rack, smoker, cache, woodshed, cairns, piles |
+| 4 | Camp and shelters (done Nov 3) | Fire, every shelter type at every build stage and condition, drying rack, smoker, cache, woodshed, cairns, piles |
 | 5 | Animals, people, tracks | Player, animals, carcasses, blood trails, debris, landmarks |
 | 6 | Interiors | Inside every shelter type, by weather and time of day |
 | 7 | Mini-games | All 26 as close-ups |
