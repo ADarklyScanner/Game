@@ -62,6 +62,7 @@ Steps 0 to 3 of TESTPLAN.md (inventory, coverage, every action and event, eight 
 
 - **Look:** a grown-up watercolour style that fits among Steam survival games but has its own character (mock-ups in progress, nothing changed in the game yet).
 - **Easy and hard modes:** hard mode hides the numbers; the body tells you through notes in the margin, frost at the screen edges and the watch and journal.
+- **Clothing and layers** (design/CLOTHING.md): what you wear changes through the day (jacket off on a mild day, layers on at rest, a dry set for sleeping), every issued piece does something, wear and drying per piece, and a one-tap "Dress for the weather".
 - **Wreck achievement:** finding the crash site in each place is already recorded (`records.wrecks`); the achievement itself comes with the unlocking system.
 - **Set levels and unlocking:** once the drop sites are settled, they become set levels in an unlocking order.
 
