@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Watercolour Mock-up</title>
+<style>
+/*FONTS*/
+:root { --bg: #1b1a16; }
+body { margin: 0; background: var(--bg); color: #ddd5c2; font-family: 'Serif', serif; }
+.wrap { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; padding: 24px 16px; }
+.frame { width: 390px; max-width: 100%; }
+.frame h3 { font: 400 20px 'Serif'; margin: 0 0 8px; color: #cfc6b0; }
+.frame svg { width: 100%; height: auto; display: block; border-radius: 6px; box-shadow: 0 6px 24px rgba(0,0,0,.5); }
+</style></head><body>
+<div class="wrap">
+  <div class="frame" id="f1"><h3>Walking about</h3></div>
+  <div class="frame" id="f2"><h3>Picked up the rod</h3></div>
+</div>
+<script>
+let seed = 11; const R = () => (seed = (seed * 16807) % 2147483647) / 2147483647; const rr = (a, b) => a + R() * (b - a);
+const W = 390, H = 844;
+// late-summer shield country, from photos: olive moss, rust heath, grey granite, near-black spruce, slate water
+const C = { ground: '#6f6f52', moss: '#848459', moss2: '#5c5e43', rust: '#80603f', lichen: '#a6a283', granite: '#8b8a84', granite2: '#6d6c68', spruce: '#263123', spruce2: '#3a4632', sprHi: '#5b6847', birch: '#8f8f55', birchHi: '#b2ab6c', water: '#34474f', water2: '#4d6470', path: '#9b8d72', ink: '#1d1a14', tarp: '#5a6650', fire: '#d9883e' };
+const defs = `<defs>
+  <filter id="wash" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="3" seed="5"/><feDisplacementMap in="SourceGraphic" scale="9"/><feGaussianBlur stdDeviation="0.6"/></filter>
+  <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3"/></filter>
+  <filter id="edge" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="3" seed="5"/><feDisplacementMap in="SourceGraphic" scale="9"/><feGaussianBlur stdDeviation="1.1"/></filter>
+  <filter id="dry" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.035 0.03" numOctaves="3" seed="8" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0.15  0 0 0 0 0.14  0 0 0 0 0.09  0 0 0 2.2 -1.15"/></filter>
+  <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="4" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0.1  0 0 0 0 0.09  0 0 0 0 0.06  0 0 0 0.14 0"/></filter>
+  <filter id="paper"><feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="4" seed="12" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0.95  0 0 0 0 0.9  0 0 0 0 0.8  0 0 0 0.12 0"/></filter>
+  <radialGradient id="vig" cx="50%" cy="48%" r="72%"><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#0d0b08" stop-opacity=".55"/></radialGradient>
+  <radialGradient id="glow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#f0a050" stop-opacity=".5"/><stop offset="1" stop-color="#f0a050" stop-opacity="0"/></radialGradient>
+  <linearGradient id="topfade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#14120e" stop-opacity=".82"/><stop offset="1" stop-color="#14120e" stop-opacity="0"/></linearGradient>
+  <linearGradient id="dusk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3a3f5a" stop-opacity="0"/><stop offset="1" stop-color="#3a2f45" stop-opacity=".18"/></linearGradient>
+</defs>`;
+const blob = (cx, cy, rx, ry, n = 14, j = .2) => { const p = []; for (let i = 0; i < n; i++) { const a = i / n * 6.283, k = 1 + rr(-j, j); p.push([cx + Math.cos(a) * rx * k, cy + Math.sin(a) * ry * k]); } let d = ''; for (let i = 0; i < n; i++) { const a = p[i], b = p[(i + 1) % n]; const m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; d += (i ? ` Q${a[0].toFixed(1)} ${a[1].toFixed(1)} ` : `M${m[0].toFixed(1)} ${m[1].toFixed(1)} Q${b[0].toFixed(1)} ${b[1].toFixed(1)} `) + `${m[0].toFixed(1)} ${m[1].toFixed(1)}`; } return d + 'Z'; };
+// a watercolour patch: pale body, pigment pooled darker at the edge
+const wc = (d, col, op = .5, edgeOp = .35) => `<path d="${d}" fill="${col}" opacity="${op}" filter="url(#wash)"/><path d="${d}" fill="none" stroke="${col}" stroke-width="2.2" opacity="${edgeOp}" filter="url(#edge)"/>`;
+function ground() { let s = `<rect width="${W}" height="${H}" fill="${C.ground}"/>`;
+  for (let i = 0; i < 70; i++) { const col = [C.moss, C.moss2, C.rust, C.lichen, C.moss2][Math.floor(rr(0, 5))]; s += wc(blob(rr(-20, 410), rr(-20, 860), rr(25, 80), rr(18, 55), 12, .3), col, rr(.18, .4), .2); }
+  // granite showing through, with a few cracks
+  [[300, 380, 60, 34], [70, 620, 46, 26], [330, 640, 36, 22]].forEach(([x, y, a, b]) => { const d = blob(x, y, a, b, 11, .22); s += wc(d, C.granite, .55, .5) + wc(blob(x + 6, y + 6, a * .6, b * .5, 9, .3), C.granite2, .35, .2) + `<path d="M${x - a * .5} ${y - 4} q${a * .3} 6 ${a * .6} -2 t${a * .3} 4" stroke="${C.ink}" stroke-width=".6" fill="none" opacity=".45"/>`; });
+  // a worn path to camp: lighter, scuffed, no line
+  for (let i = 0; i < 26; i++) { const t = i / 25; s += wc(blob(250 - t * 60 + rr(-6, 6), 860 - t * 380, rr(10, 16), rr(8, 12), 9, .3), C.path, .22, .1); }
+  return s; }
+function lake() { const pts = [[-10, 60], [60, 50], [140, 64], [210, 52], [262, 86], [258, 130], [222, 168], [180, 206], [138, 240], [86, 268], [30, 292], [-10, 300]];
+  let d = `M${pts[0][0]} ${pts[0][1]}`; for (let i = 1; i < pts.length - 1; i++) { const m = [(pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2]; d += ` Q${pts[i][0] + rr(-4, 4)} ${pts[i][1] + rr(-4, 4)} ${m[0]} ${m[1]}`; } d += ` L-10 300 L-20 -20 L280 -20 L270 60 Z`;
+  let s = `<path d="${d}" fill="${C.water}" opacity=".95" filter="url(#wash)"/><path d="${d}" fill="none" stroke="#1f2c32" stroke-width="5" opacity=".6" filter="url(#edge)"/>`;
+  s += wc(blob(110, 150, 120, 70, 12, .3), C.water2, .35, .15) + wc(blob(70, 110, 70, 30, 10, .3), '#6c8590', .2, .05);
+  // shore: a thin line of light where the water meets stone
+  s += `<path d="${d.split(' L-10 300')[0]}" fill="none" stroke="#c8cdc0" stroke-width="1" opacity=".35" transform="translate(2 3)" filter="url(#wash)"/>`;
+  for (let i = 0; i < 9; i++) { const x = rr(20, 200), y = rr(80, 230); if (y > 300 - x * 1.05) continue; s += `<path d="M${x} ${y} h${rr(14, 30)}" stroke="#a9b8bc" stroke-width=".8" opacity=".35"/>`; }
+  return s; }
+function spruce(x, y, h) { const w = h * .3; let s = `<ellipse cx="${x + h * .32}" cy="${y + 2}" rx="${h * .42}" ry="${h * .1}" fill="#14140c" opacity=".35" filter="url(#soft)"/>`;
+  let d = `M${x} ${y - h}`; const n = 7; for (let i = 1; i <= n; i++) { const t = i / n; d += ` L${x - w * t - rr(0, 3)} ${y - h + t * h * .9 + rr(-2, 2)} L${x - w * t * .45} ${y - h + t * h * .9 - h * .04}`; } d += ` L${x} ${y - h * .05}`; for (let i = n; i >= 1; i--) { const t = i / n; d += ` L${x + w * t * .45} ${y - h + t * h * .9 - h * .04} L${x + w * t + rr(0, 3)} ${y - h + t * h * .9 + rr(-2, 2)}`; } d += ' Z';
+  s += `<path d="${d}" fill="${R() < .5 ? C.spruce : C.spruce2}" opacity=".92" filter="url(#wash)"/><path d="${d}" fill="${C.sprHi}" opacity=".35" transform="translate(${-w * .25} 0) scale(1 1)" filter="url(#wash)" clip-path=""/>`;
+  s += `<path d="M${x} ${y - h * .05} v${h * .07}" stroke="#2a2016" stroke-width="2"/>`; return s; }
+function birch(x, y, h) { return `<ellipse cx="${x + h * .3}" cy="${y + 2}" rx="${h * .34}" ry="${h * .09}" fill="#14140c" opacity=".28" filter="url(#soft)"/><path d="M${x} ${y} L${x + 1} ${y - h * .55}" stroke="#d9d4c2" stroke-width="2.4" opacity=".9"/><path d="M${x} ${y - h * .2} h2 M${x} ${y - h * .38} h2" stroke="#2a241a" stroke-width="1"/>` + wc(blob(x + 2, y - h * .72, h * .3, h * .28, 11, .3), C.birch, .75, .4) + wc(blob(x - 3, y - h * .78, h * .17, h * .15, 9, .3), C.birchHi, .5, .2); }
+function camp(x, y) { let s = wc(blob(x, y, 58, 32, 12, .25), '#6a5640', .45, .3);
+  s += `<circle cx="${x}" cy="${y}" r="46" fill="url(#glow)"/>`;
+  for (let i = 0; i < 8; i++) { const a = i / 8 * 6.283; s += `<ellipse cx="${x + Math.cos(a) * 9}" cy="${y + Math.sin(a) * 5.5}" rx="2.6" ry="1.9" fill="#8b8a84" stroke="#2a2620" stroke-width=".5"/>`; }
+  s += `<path d="M${x - 3} ${y} q2 -9 3 -11 q1 6 4 11 z" fill="${C.fire}" opacity=".9"/><path d="M${x} ${y - 12} c-6 -10 6 -16 0 -30 c-4 -9 4 -14 2 -24" stroke="#c9c4b4" stroke-width="3" fill="none" opacity=".18" filter="url(#soft)"/>`;
+  // tarp lean-to: a sloped sheet with its shadow, two poles, guylines
+  s += `<path d="M${x - 66} ${y + 10} L${x - 50} ${y - 22} L${x - 12} ${y - 18} L${x - 22} ${y + 14} Z" fill="#14140c" opacity=".3" filter="url(#soft)" transform="translate(8 6)"/>` + wc(`M${x - 66} ${y + 10} L${x - 50} ${y - 22} L${x - 12} ${y - 18} L${x - 22} ${y + 14} Z`, C.tarp, .85, .5);
+  s += `<path d="M${x - 50} ${y - 22} L${x - 12} ${y - 18}" stroke="#2a2a20" stroke-width="1.6"/><path d="M${x - 50} ${y - 22} l-14 -6 M${x - 12} ${y - 18} l12 -7" stroke="#c9c2a8" stroke-width=".5" opacity=".7"/>`;
+  s += `<path d="M${x + 24} ${y + 8} l20 -3 M${x + 23} ${y + 12} l21 -2 M${x + 25} ${y + 16} l19 -4" stroke="#5b4430" stroke-width="3" stroke-linecap="round"/><path d="M${x + 24} ${y + 8} l20 -3" stroke="#9c7c58" stroke-width="1" stroke-linecap="round"/>`;
+  return s; }
+function person(x, y) { return `<ellipse cx="${x + 4}" cy="${y + 7}" rx="6" ry="2" fill="#14140c" opacity=".4" filter="url(#soft)"/><path d="${blob(x, y, 4, 6, 8, .08)}" fill="#6e3b2a"/><circle cx="${x}" cy="${y - 7}" r="2.6" fill="#2d241c"/><path d="M${x - 2} ${y + 5} l-.6 4 M${x + 2} ${y + 5} l.6 4" stroke="#2a2a26" stroke-width="1.4"/>`; }
+function world() { seed = 11; let s = ground() + lake();
+  const trees = []; for (let i = 0; i < 30; i++) trees.push([rr(262, 400), rr(90, 720), rr(40, 66), R() < .22]);
+  for (let i = 0; i < 16; i++) trees.push([rr(-10, 150), rr(330, 720), rr(38, 62), R() < .3]);
+  for (let i = 0; i < 7; i++) trees.push([rr(150, 270), rr(580, 700), rr(32, 50), R() < .45]);
+  trees.sort((a, b) => a[1] - b[1]).forEach(([x, y, h, b]) => { if (Math.hypot(x - 192, y - 470) < 92) return; s += b ? birch(x, y, h) : spruce(x, y, h); });
+  s += camp(192, 470) + person(214, 498);
+  s += `<rect width="${W}" height="${H}" fill="url(#dusk)"/><rect width="${W}" height="${H}" filter="url(#dry)" opacity=".3"/><rect width="${W}" height="${H}" filter="url(#paper)"/><rect width="${W}" height="${H}" filter="url(#grain)"/><rect width="${W}" height="${H}" fill="url(#vig)"/>`;
+  return s; }
+// numbers stay on screen, small and quiet
+const hud = `<rect width="${W}" height="120" fill="url(#topfade)"/>
+  <text x="18" y="40" font-family="Serif" font-weight="600" font-size="26" fill="#ece4cf">Day 12</text><text x="18" y="60" font-family="Serif" font-style="italic" font-size="15" fill="#cdc3aa">Subarctic Shore · Great Slave Lake</text>
+  <g font-family="Cond" font-weight="500" font-size="14" fill="#e6dec8" letter-spacing=".3">
+    <text x="18" y="88">186 lb</text><text x="80" y="88" opacity=".9">Health 82</text><text x="160" y="88" opacity=".9">Will 64</text><text x="225" y="88" opacity=".9">Food 2 days</text>
+  </g>
+  <text x="372" y="40" text-anchor="end" font-family="Cond" font-weight="600" font-size="15" fill="#ece4cf">3½ h light</text><text x="372" y="60" text-anchor="end" font-family="Cond" font-weight="500" font-size="13" fill="#bfb69c">4°, wind from the north</text>
+  <path d="M18 98 h96" stroke="#e6dec8" stroke-width="1" opacity=".25"/><path d="M80 98 h${0.82 * 70}" stroke="#a8c08a" stroke-width="2" opacity=".7"/><path d="M160 98 h${0.64 * 55}" stroke="#d6b26a" stroke-width="2" opacity=".7"/>`;
+// tools on an oiled canvas roll, drawn plainly
+const T = [
+  ['Rod', x => `<path d="M${x - 15} 798 L${x + 16} 746" stroke="#2a221a" stroke-width="2.2" stroke-linecap="round"/><path d="M${x - 15} 798 L${x - 8} 786" stroke="#4a3626" stroke-width="4" stroke-linecap="round"/><circle cx="${x - 7}" cy="787" r="4.5" fill="#6b6a64" stroke="#1d1a14" stroke-width=".6"/><path d="M${x + 16} 746 q5 18 -1 32" stroke="#c9c2a8" stroke-width=".5" fill="none"/>`],
+  ['Axe', x => `<path d="M${x - 9} 798 L${x + 9} 748" stroke="#6b4a2c" stroke-width="4.5" stroke-linecap="round"/><path d="M${x + 2} 746 L${x + 22} 751 Q${x + 24} 760 ${x + 19} 768 L${x + 5} 760 Z" fill="#5f6366"/><path d="M${x + 21} 752 Q${x + 24} 760 ${x + 19} 767" stroke="#c8ccc8" stroke-width="1.2" fill="none"/>`],
+  ['Pot', x => `<path d="M${x - 15} 760 L${x - 13} 790 Q${x} 795 ${x + 13} 790 L${x + 15} 760 Z" fill="#2c2c2a"/><path d="M${x - 15} 760 L${x - 13} 790" stroke="#77736a" stroke-width="1" opacity=".6"/><ellipse cx="${x}" cy="760" rx="15" ry="3.5" fill="#46443f"/><path d="M${x - 15} 761 q15 -24 30 0" stroke="#6b6a64" stroke-width="1.2" fill="none"/>`],
+  ['Cord', x => `<ellipse cx="${x}" cy="772" rx="16" ry="11" fill="none" stroke="#9a7c4a" stroke-width="3.5"/><ellipse cx="${x}" cy="772" rx="10" ry="6" fill="none" stroke="#86693c" stroke-width="3.5"/>`],
+  ['Bow', x => `<path d="M${x - 5} 744 q20 28 0 54" stroke="#5e4329" stroke-width="3.2" fill="none"/><path d="M${x - 5} 744 L${x - 5} 798" stroke="#c9c2a8" stroke-width=".6"/>`],
+  ['Knife', x => `<path d="M${x - 13} 790 L${x + 1} 774" stroke="#2e2318" stroke-width="5" stroke-linecap="round"/><path d="M${x + 1} 774 L${x + 17} 754 L${x + 8} 774 Z" fill="#8f9396"/><path d="M${x + 1} 774 L${x + 17} 754" stroke="#d6d9d6" stroke-width=".8"/>`],
+];
+function roll(picked) { let s = `<rect x="0" y="724" width="${W}" height="130" fill="#3b3529"/><rect x="0" y="724" width="${W}" height="130" filter="url(#dry)" opacity=".6"/><path d="M0 730 H${W}" stroke="#7b6f55" stroke-width=".8" stroke-dasharray="6 5" opacity=".7"/><path d="M0 724 H${W}" stroke="#14120e" stroke-width="2" opacity=".6"/>`;
+  T.forEach(([name, draw], i) => { const x = 36 + i * 64, up = name === picked; s += `<g transform="translate(0 ${up ? -18 : 0})" opacity="${picked && !up ? .55 : 1}">${up ? `<ellipse cx="${x + 4}" cy="820" rx="20" ry="4" fill="#000" opacity=".35" filter="url(#soft)"/>` : ''}${draw(x)}</g><text x="${x}" y="826" text-anchor="middle" font-family="Serif" font-size="15" fill="${up ? '#efe7d2' : '#c4baa0'}">${name}</text>`; });
+  return s; }
+const card = `<g transform="translate(20 560)"><rect x="3" y="5" width="350" height="150" rx="3" fill="#000" opacity=".4" filter="url(#soft)"/><rect width="350" height="150" rx="3" fill="#e9e1cc"/><rect width="350" height="150" rx="3" filter="url(#paper)"/><rect width="350" height="150" rx="3" filter="url(#grain)"/>
+  ${[['Fish off the point', '40% · 2½ h', 1], ['Set lines overnight', 'needs bait', 1], ['Check the net', 'floats moving', 1], ['Fish from the raft', 'no raft', .4]].map(([a, b, o], i) => `<text x="18" y="${36 + i * 33}" font-family="Serif" font-size="20" fill="#221d16" opacity="${o}">${a}</text><text x="334" y="${36 + i * 33}" text-anchor="end" font-family="Cond" font-weight="500" font-size="15" fill="${o < 1 ? '#8a3a2a' : '#5b5244'}">${b}</text>${i < 3 ? `<path d="M18 ${46 + i * 33} H334" stroke="#b8ad92" stroke-width=".6"/>` : ''}`).join('')}</g>`;
+const frame = inner => `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${defs}${inner}</svg>`;
+document.querySelector('#f1').insertAdjacentHTML('beforeend', frame(world() + hud + roll(null)));
+document.querySelector('#f2').insertAdjacentHTML('beforeend', frame(world() + hud + `<rect width="${W}" height="${H}" fill="#0d0b08" opacity=".25"/>` + card + roll('Rod')));
+</script></body></html>
