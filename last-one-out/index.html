@@ -201,7 +201,7 @@ summary { cursor: pointer; color: var(--muted); font-size: 13px; }
 .msg.tone-good { color: #d8e6c4; } .msg.tone-bad { color: #f2b8a4; } .msg.tone-warn { color: #f0d39a; }
 .hint { font: italic 17px/1.3 var(--display); color: var(--hud-ink); }
 .mtext { font: italic 17px/1.35 var(--display); color: #efe7d2; }
-.hud .pad { background: rgba(20,18,14,.55); border-radius: 6px; backdrop-filter: none; }
+.hud .pad { background: rgba(36,31,24,.78); border: 1px solid rgba(236,228,207,.16); border-radius: 4px; box-shadow: 0 6px 20px rgba(0,0,0,.35); backdrop-filter: none; }
 .acts [hidden] { display: none !important; }
 /* the tool roll: tools along the bottom; the chosen tool's jobs on a paper card above it */
 .acts.rollmode { display: block; padding: 0; margin: 0 calc(-1 * max(10px, env(safe-area-inset-left, 0px))) calc(-10px - env(safe-area-inset-bottom, 0px)); }
@@ -3561,10 +3561,65 @@ function startMushroom(bush) {
     { label: 'Leave them', sub: '', fn: () => { endMini(); } }], cancel: () => endMini() };
   miniUI(`<div class="mtext">${esc(look.charAt(0).toUpperCase() + look.slice(1))}.</div>`); lastActs = ''; refreshActs();
 }
+// ---------- the hands-on close-ups, painted (phase 7): the still part of each picture becomes one watercolour; what moves stays live
+function muteCol(v, k = 0.24) { if (typeof v !== 'string') return v; let h = v.trim(); if (/^#[0-9a-f]{3}$/i.test(h)) h = '#' + h.slice(1).split('').map(c => c + c).join(''); if (!/^#[0-9a-f]{6}$/i.test(h) || /^#f{6}$/i.test(h)) return v; const n = parseInt(h.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255; const l = 0.3 * r + 0.59 * g + 0.11 * b; r = Math.round(r + (l - r) * k); g = Math.round(g + (l - g) * k); b = Math.round(b + (l - b) * k); return '#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1); }
+function muteTree(el) { for (const e of [el, ...el.querySelectorAll('*')]) for (const a of ['fill', 'stroke']) { const v = e.getAttribute && e.getAttribute(a); if (v) e.setAttribute(a, muteCol(v)); } }
+const PAD_PAINT = new Map();
+function padPaint(inner, w, h) {
+  const key = w + 'x' + h + '|' + padFor + '|' + (W && W.inside ? 1 : 0) + '|' + inner; if (PAD_PAINT.has(key)) return PAD_PAINT.get(key);
+  const NS = 'http://www.w3.org/2000/svg'; const tmp = document.createElementNS(NS, 'svg'); tmp.innerHTML = inner; const kids = [...tmp.children]; let k = 0;
+  let k0 = -1; for (; k < kids.length; k++) { const e = kids[k]; if (e.id || e.hasAttribute('class') || e.hasAttribute('data-i') || e.hasAttribute('stroke-dasharray') || e.querySelector('[id],[class],[data-i]') || e.tagName === 'text') break; }
+  for (const e of kids) muteTree(e);
+  /* a soft wash behind everything, like the picture was painted on the card */
+  const r = CA.rng('pad', w, h, padFor, W && W.inside ? 1 : 0); const C = campCols(); let back = padGround(w, h, !!(W && W.inside), r);
+  const scene = padScene(padFor, w, h); if (scene) { back += scene; k0 = k; }
+  /* the lashing frame becomes real poles */
+  if (!scene && kids[0] && kids[0].tagName === 'path' && kids[0].getAttribute('stroke-width') === '5' && /^M [\d .ML]+$/.test(kids[0].getAttribute('d') || '')) { back += framePoles(kids[0].getAttribute('d'), C); kids[0].setAttribute('opacity', '0'); }
+  const keep = k0 >= 0 ? [] : kids.slice(0, k);
+  const still = keep.map(e => { if (!e.getAttribute('filter')) e.setAttribute('filter', 'url(#tw)'); return e.outerHTML; }).join('');
+  const edge = keep.filter(e => e.getAttribute('fill') && e.getAttribute('fill') !== 'none' && !/rgba/.test(e.getAttribute('fill'))).map(e => { const c = e.cloneNode(true); c.setAttribute('fill', 'none'); c.setAttribute('stroke', mixHex(muteCol(e.getAttribute('fill')).length === 7 ? muteCol(e.getAttribute('fill')) : '#555555', '#120e0a', 0.45)); c.setAttribute('stroke-width', '1.4'); c.setAttribute('opacity', '.45'); c.setAttribute('filter', 'url(#te)'); return c.outerHTML; }).join('');
+  const img = `<svg xmlns="${NS}" width="${w * 2}" height="${h * 2}" viewBox="0 0 ${w} ${h}"><defs>${PAINT.defs}</defs>${back}${still}${edge}</svg>`;
+  const out = `<image href="data:image/svg+xml;charset=utf-8,${encodeURIComponent(img)}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="none" pointer-events="none"/>` + kids.slice(k).map(e => e.outerHTML).join('');
+  PAD_PAINT.set(key, out); if (PAD_PAINT.size > 80) PAD_PAINT.delete(PAD_PAINT.keys().next().value); return out;
+}
+/* which close-up is on the pad: set as each hands-on job starts */
+let padFor = '';
+/* the setting under every close-up: bare ground outside, a worn board inside */
+function padGround(w, h, inside, r) {
+  const C = campCols(); let s = '';
+  if (inside) { s += `<rect x="-4" y="-4" width="${w + 8}" height="${h + 8}" fill="#4a3c2c"/>`; for (let y = 0; y < h; y += 22) s += `<path d="M-4 ${y} L${w + 4} ${y + 1} L${w + 4} ${y + 21} L-4 ${y + 20}Z" fill="${y % 44 ? '#5a4834' : '#544230'}" filter="url(#tw)"/><path d="M-4 ${y + 20.5} L${w + 4} ${y + 21.5}" stroke="#241a10" stroke-width="1.6" opacity=".6"/>` + [0, 1, 2].map(() => `<path d="M${F1(r() * w)} ${F1(y + 5 + r() * 10)} q${F1(20 + r() * 30)} ${F1(r() * 3 - 1.5)} ${F1(50 + r() * 50)} 0" stroke="#3a2c1e" stroke-width=".8" fill="none" opacity=".55"/>`).join(''); }
+  else { s += `<rect x="-4" y="-4" width="${w + 8}" height="${h + 8}" fill="#4a4232"/>`; for (let i = 0; i < 9; i++) s += `<path d="${P3.blob(r, r() * w, r() * h, 30 + r() * 40, 12 + r() * 14)}" fill="${['#5a5040', '#3e3628', '#54503a'][i % 3]}" opacity=".6" filter="url(#wash)"/>`;
+    for (let i = 0; i < 6; i++) s += `<path d="${P3.blob(r, r() * w, r() * h, 8 + r() * 10, 3 + r() * 3)}" fill="${C.moss2}" opacity=".55" filter="url(#tw)"/>`;
+    for (let i = 0; i < 18; i++) { const x = r() * w, y = r() * h, a = r() * 6.28; s += `<path d="M${F1(x)} ${F1(y)} l${F1(Math.cos(a) * 6)} ${F1(Math.sin(a) * 6)}" stroke="#7a6444" stroke-width=".9" opacity=".6"/>`; }
+    for (let i = 0; i < 5; i++) s += CA.stone(r, r() * w, r() * h, 3 + r() * 3, 2 + r() * 1.5, C); }
+  s += `<rect x="-4" y="-4" width="${w + 8}" height="${h + 8}" fill="none" stroke="#120e08" stroke-width="22" opacity=".35" filter="url(#soft)"/>`;
+  return s;
+}
+/* the painted pictures for the close-ups that need more than a setting; replace: the plain shapes go */
+function padScene(id, w, h) {
+  const C = campCols(), r = CA.rng('scene', id, w, h); const sh = (d, col, op = 0.96, e = 0.5) => P3.wash(d, col, op, e);
+  if (id === 'trace-fish') { const body = 'M 40 55 C 70 25, 230 25, 262 55 C 230 85, 70 85, 40 55 Z';
+    return sh('M 120 32 L 150 20 L 172 32 Z', '#566a5e') + sh('M 40 55 L 16 36 L 24 55 L 16 74 Z', '#5a6e64') + sh(body, '#a8b4ac') + sh('M 44 52 C 80 30, 220 30, 258 52 C 220 44, 80 44, 44 52 Z', '#4e6456', 0.95, 0.2) + `<path d="M 60 54 C 120 50, 200 50, 250 54" stroke="#b88a86" stroke-width="5" opacity=".45" filter="url(#tw)"/>` + sh('M 70 64 C 120 76, 200 76, 240 62 C 200 70, 120 70, 70 64 Z', '#dcdcd0', 0.7, 0.1) + Array.from({ length: 26 }, () => `<circle cx="${F1(70 + r() * 160)}" cy="${F1(36 + r() * 14)}" r="${F1(0.9 + r() * 1.2)}" fill="#26302a" opacity=".75"/>`).join('') + `<path d="M 222 38 Q 230 55 222 72" stroke="#3a4840" stroke-width="1.6" fill="none" opacity=".7"/>` + sh('M 150 66 L 168 80 L 176 68 Z', '#6a7c72', 0.9, 0.3) + `<circle cx="236" cy="50" r="3.4" fill="#1a2420"/><circle cx="237" cy="49" r="1" fill="#d8dcd4"/>`; }
+  if (id === 'trace-bird') return sh('M 34 62 L 6 48 L 10 62 L 6 78 Z', '#5a4a38') + sh('M 34 62 C 40 36, 120 26, 196 34 C 236 38, 262 50, 268 62 C 258 82, 190 92, 120 90 C 64 88, 36 80, 34 62 Z', '#7e6a52') + Array.from({ length: 30 }, () => { const x = 50 + r() * 190, y = 40 + r() * 44; return `<path d="M${F1(x)} ${F1(y)} q3 -2 6 0" stroke="#4a3a28" stroke-width="1" fill="none" opacity=".6"/>`; }).join('') + sh('M 60 60 C 100 50, 200 48, 250 58 C 210 72, 110 74, 60 60 Z', '#caa292', 0.95, 0.3) + Array.from({ length: 30 }, () => `<circle cx="${F1(70 + r() * 170)}" cy="${F1(55 + r() * 10)}" r=".6" fill="#8a5a4e" opacity=".6"/>`).join('') + sh('M 90 40 C 130 30, 180 32, 210 44 C 180 40, 130 38, 90 46 Z', '#5a4834', 0.9, 0.2) + sh(P3.blob(r, 262, 44, 15, 14), '#6e5a44') + `<path d="M 276 42 L 292 46 L 276 50 Z" fill="#b8963e"/><path d="${P3.blob(r, 262, 33, 7, 3)}" fill="#a8503a" filter="url(#tw)"/><circle cx="266" cy="40" r="2.5" fill="#1b1410"/>`;
+  if (id === 'trace-small') return Array.from({ length: 4 }, (_, i) => CA.pole([60, 90, 190, 230][i], 86, [56, 88, 190, 236][i], 104, 5, C, '#5a4636', false)).join('') + sh('M 262 42 C 274 22, 292 24, 294 40 C 290 30, 278 32, 270 48 Z', '#6e5a46') + sh('M 30 60 C 50 30, 120 22, 200 26 C 250 28, 275 40, 278 60 C 270 84, 200 92, 120 90 C 60 88, 36 80, 30 60 Z', '#8a7a64') + sh('M 50 72 C 100 86, 200 88, 260 70 C 200 80, 100 80, 50 72 Z', '#c8bea8', 0.8, 0.1) + sh('M 60 40 C 120 28, 200 28, 250 38 C 200 34, 120 34, 60 46 Z', '#6a5a46', 0.8, 0.1) + `<circle cx="270" cy="52" r="2.5" fill="#1b1410"/><circle cx="34" cy="58" r="7" fill="#e6ded0" filter="url(#tw)"/>`;
+  if (id === 'trace-deer') return Array.from({ length: 4 }, (_, i) => CA.pole([60, 90, 190, 230][i], 86, [56, 88, 190, 236][i], 106, 6, C, '#5e4a36', false)).join('') + sh('M 262 42 C 280 30, 292 36, 290 52 C 284 44, 276 44, 268 52 Z', '#6a5038') + sh('M 30 60 C 50 30, 120 22, 200 26 C 250 28, 275 40, 278 60 C 270 84, 200 92, 120 90 C 60 88, 36 80, 30 60 Z', '#8a6a4c') + sh('M 50 74 C 100 88, 200 90, 262 72 C 200 82, 100 82, 50 74 Z', '#d8ccb6', 0.8, 0.1) + sh('M 50 44 C 120 26, 200 26, 260 40 C 200 34, 120 34, 50 50 Z', '#6a4e36', 0.8, 0.1) + `<path d="M 280 34 l 6 -12 M 284 30 l 7 -4" stroke="#6a5a48" stroke-width="2" stroke-linecap="round"/><circle cx="270" cy="52" r="2.5" fill="#1b1410"/>`;
+  if (id === 'fire') return sh('M 110 90 C 140 80, 210 80, 240 90 C 210 96, 140 96, 110 90 Z', '#8a6e4a', 0.9, 0.4) + Array.from({ length: 22 }, () => { const a = r() * 3.14, x = 175 + Math.cos(a) * (30 + r() * 26), y = 82 - Math.sin(a) * (10 + r() * 12); return `<path d="M${F1(x)} ${F1(y)} Q175 ${F1(70 + r() * 8)} ${F1(350 - x)} ${F1(y + 2)}" stroke="${['#d8c49a', '#c4a874', '#e4d8b8'][Math.floor(r() * 3)]}" stroke-width="${F1(1 + r() * 1.6)}" fill="none" filter="url(#tw)"/>`; }).join('') + `<ellipse cx="175" cy="80" rx="14" ry="5" fill="#2a2016" opacity=".6" filter="url(#tw)"/>` + `<path d="M 40 70 L 90 40" stroke="#4a4c4a" stroke-width="7" stroke-linecap="round" filter="url(#tw)"/><path d="M 42 68 L 88 41" stroke="#7a7c78" stroke-width="2" stroke-linecap="round" opacity=".7"/><path d="M 88 42 L 110 28" stroke="#6a4e34" stroke-width="7" stroke-linecap="round" filter="url(#tw)"/><path d="M 110 28 q 14 -6 20 6" stroke="#8a3a2a" stroke-width="1.4" fill="none"/>`;
+  if (id === 'sharpen') return sh('M 40 58 Q 40 55 44 55 L 256 55 Q 260 55 260 58 L 260 74 Q 260 77 256 77 L 44 77 Q 40 77 40 74 Z', '#5e605c') + `<path d="M 44 58 L 256 58" stroke="#8e908a" stroke-width="3" opacity=".7"/>` + `<path d="${P3.blob(r, 150, 60, 60, 2)}" fill="#a8b4b8" opacity=".35" filter="url(#tw)"/>` + Array.from({ length: 10 }, () => `<circle cx="${F1(50 + r() * 200)}" cy="${F1(62 + r() * 12)}" r=".7" fill="#3a3c38" opacity=".7"/>`).join('');
+  if (id === 'snare') return `<path d="M 20 88 Q 150 84 280 88 L 280 100 L 20 100 Z" fill="#3e3426" filter="url(#tw)"/>` + CA.pole(60, 88, 60, 20, 4, C) + `<path d="M 60 34 L 50 24 M 60 34 L 70 24" stroke="${C.pole}" stroke-width="3" stroke-linecap="round"/>` + Array.from({ length: 6 }, (_, i) => CA.bough(r, 210 + i * 10, 80 - (i % 2) * 6, 22, -1.2 + r() * 0.5, C, i)).join('');
+  if (id === 'cairn') return sh('M 92 90 Q 150 82 208 90 L 206 98 Q 150 102 94 98 Z', mixHex(C.stone, '#2a2a26', 0.2)) + `<path d="M 96 90 Q 150 84 204 90" stroke="${C.stoneHi}" stroke-width="2" opacity=".5" fill="none"/>` + [[236, 88, 12, 6], [258, 90, 10, 5], [246, 78, 9, 5], [270, 80, 7, 4], [226, 76, 7, 4]].map(([x, y, a, b]) => CA.stone(r, x, y, a, b, C)).join('');
+  if (id === 'craft_hearth') return sh(P3.blob(r, 150, 50, 26, 22), '#2a221a') + sh(P3.blob(r, 146, 48, 14, 10), '#7e7a72', 0.7, 0.2) + Array.from({ length: 6 }, () => `<path d="M${F1(130 + r() * 40)} ${F1(40 + r() * 20)} l${F1(6 + r() * 6)} ${F1(r() * 4 - 2)}" stroke="#141010" stroke-width="2.4" stroke-linecap="round"/>`).join('') + [[30, 30], [44, 70], [262, 40], [270, 72]].map(([x, y]) => CA.stone(r, x, y, 9, 6, C)).join('');
+  if (id === 'cordage') return Array.from({ length: 14 }, (_, i) => `<path d="M 6 ${F1(30 + i * 3)} Q 40 ${F1(26 + i * 3 + r() * 6)} 70 ${F1(34 + i * 2.4)}" stroke="${['#b49a6a', '#c8ae7e', '#9a7e52'][i % 3]}" stroke-width="1.6" fill="none" filter="url(#tw)"/>`).join('') + `<path d="M 66 30 L 74 74" stroke="#7a5e3e" stroke-width="3" stroke-linecap="round"/>`;
+  if (id === 'firebow') return sh('M 60 70 L 240 70 L 240 80 L 60 80 Z', '#9a7a54') + `<path d="M 60 72 L 240 72" stroke="#b49468" stroke-width="2" opacity=".7"/>` + sh('M 142 70 L 150 80 L 158 70 Z', '#2a2018', 0.9, 0.2) + sh(P3.blob(r, 150, 84, 12, 3), '#2e241a', 0.8, 0.2) + sh('M 146 30 L 154 30 L 154 72 L 146 72 Z', '#c4a070') + `<path d="M 147 32 L 147 70" stroke="#e0c49a" stroke-width="1.4" opacity=".7"/>` + sh(P3.blob(r, 150, 28, 14, 5), '#5a5a54');
+  if (id === 'fire_pots') return sh(P3.blob(r, 150, 92, 140, 12), '#2a2018') + Array.from({ length: 16 }, () => `<circle cx="${F1(20 + r() * 260)}" cy="${F1(86 + r() * 10)}" r="${F1(1 + r() * 2)}" fill="${r() < 0.5 ? '#c8642a' : '#e09a4a'}" opacity=".85"/>`).join('') + [[60, 66], [96, 70], [212, 68], [248, 64]].map(([x, y]) => sh(`M${x - 14} ${y + 16} Q${x - 18} ${y - 4} ${x - 8} ${y - 12} L${x + 8} ${y - 12} Q${x + 18} ${y - 4} ${x + 14} ${y + 16} Z`, '#8a5a3c') + `<path d="M${x - 9} ${y - 12} L${x + 9} ${y - 12}" stroke="#4a3022" stroke-width="2"/>`).join('');
+  return null;
+}
+/* the lashing frame, as real poles: each straight run of the frame becomes a peeled pole */
+function framePoles(d, C) { const segs = []; let cur = null; const tok = d.match(/[ML]|-?\d+(\.\d+)?/g); for (let i = 0; i < tok.length; i++) { if (tok[i] === 'M') { cur = [+tok[i + 1], +tok[i + 2]]; i += 2; } else if (tok[i] === 'L') { const n = [+tok[i + 1], +tok[i + 2]]; segs.push([cur, n]); cur = n; i += 2; } }
+  return segs.map(([a, b]) => CA.pole(a[0], a[1], b[0], b[1], 6.5, C, '#9a8058')).join(''); }
 // ---------- a touch pad in the HUD for the hands-on jobs (SVG, so it takes pointer events directly)
 function pad(inner, w, h, cls) {
   const m = hudEl && hudEl.querySelector('#mini'); if (!m) return null;
-  m.innerHTML = `<svg class="pad ${cls || ''}" viewBox="0 0 ${w} ${h}" width="${Math.min(w, 340)}" height="${Math.min(w, 340) * h / w}">${inner}</svg><div class="mtext" id="padtext"></div>`;
+  m.innerHTML = `<svg class="pad ${cls || ''}" viewBox="0 0 ${w} ${h}" width="${Math.min(w, 340)}" height="${Math.min(w, 340) * h / w}">${padPaint(inner, w, h)}</svg><div class="mtext" id="padtext"></div>`;
   const svg = m.querySelector('svg'); svg.toLocal = (e) => { const r = svg.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * w, y: (e.clientY - r.top) / r.height * h }; };
   return svg;
 }
@@ -4457,8 +4512,8 @@ function interiorArt(type, cb, bag, gear, cw, ch) {
   const hole = (x, y, rx, ry) => `<path d="${blob(x, y, rx, ry)}" fill="#c9cfc8" opacity=".55" filter="url(#tw)"/>`;
   if (type === 'cabin') {
     wall += `<rect x="-10" y="-10" width="${W2}" height="${fy + 10}" fill="#4e3e2c"/>`;
-    for (let y = fy - 26, i = 0; y > -30; y -= 27, i++) { wall += `<path d="M-10 ${F1(y)} Q${F1(cw / 2)} ${F1(y - 3 + r() * 3)} ${W2} ${F1(y)} L${W2} ${F1(y + 25)} L-10 ${F1(y + 25)}Z" fill="${i % 2 ? '#6a5438' : '#735c3e'}" filter="url(#tw)"/>` + `<path d="M-10 ${F1(y + 5)} L${W2} ${F1(y + 4)}" stroke="#94795a" stroke-width="3" opacity=".45" filter="url(#tw)"/>` + `<path d="M-10 ${F1(y + 22)} L${W2} ${F1(y + 22)}" stroke="#1e160e" stroke-width="5" opacity=".35"/>`;
-      if (!(cb === 2 && i === 3)) wall += `<path d="M-10 ${F1(y + 25.5)} L${W2} ${F1(y + 25.5)}" stroke="${C.moss2}" stroke-width="3" opacity=".8" filter="url(#tw)"/>`;
+    for (let y = fy - 26, i = 0; y > -30; y -= 27, i++) { wall += `<path d="M-10 ${F1(y)} Q${F1(cw / 2)} ${F1(y - 3 + r() * 3)} ${W2} ${F1(y)} L${W2} ${F1(y + 25)} L-10 ${F1(y + 25)}Z" fill="${i % 2 ? '#6a5438' : '#735c3e'}" filter="url(#tw)"/>` + `<path d="M-10 ${F1(y + 5)} L${W2} ${F1(y + 4)}" stroke="#94795a" stroke-width="3" opacity=".45"/>` + `<path d="M-10 ${F1(y + 22)} L${W2} ${F1(y + 22)}" stroke="#1e160e" stroke-width="5" opacity=".35"/>`;
+      if (!(cb === 2 && i === 3)) wall += `<path d="M-10 ${F1(y + 25.5)} L${W2} ${F1(y + 25.5)}" stroke="${C.moss2}" stroke-width="3" opacity=".8"/>`;
       for (let k = 0; k < 3; k++) { const x = r() * cw; wall += `<path d="M${F1(x)} ${F1(y + 9 + r() * 8)} q${F1(14 + r() * 20)} ${F1(r() * 2 - 1)} ${F1(30 + r() * 30)} 0" stroke="#3e2f20" stroke-width="1" opacity=".5" fill="none"/>`; } }
     wall += `<path d="M-10 0 L${W2} 0 L${W2} 22 L-10 22Z" fill="#2e2418" filter="url(#tw)"/>`; /* the plate log under the roof */
     for (let i = 0; i < 2; i++) { const x = cw * (0.2 + i * 0.5); wall += `<path d="M${F1(x - 4)} 22 L${F1(x + 4)} 22 L${F1(x + 4)} 34 L${F1(x - 4)} 34Z" fill="#5a4630"/>`; }
@@ -4752,8 +4807,11 @@ function campCols() {
 const CA = {
   poly(pts) { return 'M' + pts.map(p => `${F1(p[0])} ${F1(p[1])}`).join(' L') + 'Z'; },
   /* a pole with its lit edge on the side toward the light (up and left) */
-  pole(x1, y1, x2, y2, w, C, col, hi) { const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1; let nx = -dy / L, ny = dx / L; if (nx + ny > 0) { nx = -nx; ny = -ny; } const o = w * 0.22;
-    return `<path d="M${F1(x1)} ${F1(y1)} L${F1(x2)} ${F1(y2)}" stroke="${col || C.pole}" stroke-width="${F1(w)}" stroke-linecap="round" filter="url(#tw)"/>` + (hi === false ? '' : `<path d="M${F1(x1 + nx * o)} ${F1(y1 + ny * o)} L${F1(x2 + nx * o)} ${F1(y2 + ny * o)}" stroke="${C.poleHi}" stroke-width="${F1(w * 0.3)}" stroke-linecap="round" opacity=".6"/>`); },
+  pole(x1, y1, x2, y2, w, C, col, hi) { const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L; let nx = -uy, ny = ux; const a = w / 2, b = w * 0.42;
+    /* a filled, slightly tapered shape with rounded ends (a plain stroke vanishes under the paint filter when it runs dead straight across or down) */
+    const P = (x, y) => `${F1(x)} ${F1(y)}`; const d = `M${P(x1 + nx * a, y1 + ny * a)} L${P(x2 + nx * b, y2 + ny * b)} Q${P(x2 + ux * b * 1.3, y2 + uy * b * 1.3)} ${P(x2 - nx * b, y2 - ny * b)} L${P(x1 - nx * a, y1 - ny * a)} Q${P(x1 - ux * a * 1.3, y1 - uy * a * 1.3)} ${P(x1 + nx * a, y1 + ny * a)}Z`;
+    if (nx + ny > 0) { nx = -nx; ny = -ny; } const o = w * 0.22;
+    return `<path d="${d}" fill="${col || C.pole}" filter="url(#tw)"/>` + (hi === false ? '' : `<path d="M${P(x1 + nx * o, y1 + ny * o)} L${P(x2 + nx * o, y2 + ny * o)}" stroke="${C.poleHi}" stroke-width="${F1(w * 0.3)}" stroke-linecap="round" opacity=".6"/>`); },
   stone(r, x, y, rx, ry, C, col) { return P3.wash(P3.blob(r, x, y, rx, ry, 9, 0.16), col || C.stone, 0.96, 0.55) + `<path d="${P3.blob(r, x + rx * 0.12, y + ry * 0.38, rx * 0.82, ry * 0.48, 8, 0.2)}" fill="#1b1915" opacity=".3" filter="url(#tw)"/>` + `<path d="${P3.blob(r, x - rx * 0.28, y - ry * 0.38, rx * 0.42, ry * 0.28, 7, 0.25)}" fill="${C.stoneHi}" opacity=".75" filter="url(#tw)"/>`; },
   /* a fir bough: a spray of needles along a twig */
   bough(r, x, y, L, a, C, k = 0, op = 0.92) { const mx = x + Math.cos(a) * L * 0.5, my = y + Math.sin(a) * L * 0.5;
@@ -4762,7 +4820,7 @@ const CA = {
   /* a log lying across the picture: bark, a lit top, a shaded underside, end grain where it was cut */
   log(x1, x2, y, rr, C, ends = 'r') {
     let s = `<path d="M${F1(x1)} ${F1(y - rr)} L${F1(x2)} ${F1(y - rr * 0.92)} L${F1(x2)} ${F1(y + rr)} L${F1(x1)} ${F1(y + rr * 0.95)} Z" fill="${C.bark}" filter="url(#tw)"/>`
-      + `<path d="M${F1(x1 + 1)} ${F1(y - rr * 0.5)} L${F1(x2 - 1)} ${F1(y - rr * 0.48)}" stroke="${C.pole}" stroke-width="${F1(rr * 0.55)}" opacity=".85" filter="url(#tw)"/>`
+      + `<path d="M${F1(x1 + 1)} ${F1(y - rr * 0.5)} L${F1(x2 - 1)} ${F1(y - rr * 0.48)}" stroke="${C.pole}" stroke-width="${F1(rr * 0.55)}" opacity=".85"/>`
       + `<path d="M${F1(x1)} ${F1(y + rr * 0.62)} L${F1(x2)} ${F1(y + rr * 0.62)}" stroke="#16120e" stroke-width="${F1(rr * 0.42)}" opacity=".35"/>`;
     if (ends.includes('r')) s += CA.logEnd(x2, y, rr, C); if (ends.includes('l')) s += CA.logEnd(x1, y, rr, C); return s; },
   shade(d, op = 0.25) { return `<path d="${d}" fill="#14120f" opacity="${op}" filter="url(#tw)"/>`; },
@@ -4857,7 +4915,7 @@ function rockArt(cb, snow) {
 function cabinArt(cb, snow, chim) {
   const C = campCols(), r = CA.rng('cabin', cb, snow, chim); let s = '';
   /* walls: five courses of logs, saddle-notched, the ends standing out at the corners */
-  for (let i = 0; i < 5; i++) { const y = 19.5 - i * 9; s += CA.log(-42, 42, y, 4.4, C, ''); if (i % 2) s += `<path d="M-42 ${F1(y - 4)} L42 ${F1(y - 3.8)} L42 ${F1(y + 4)} L-42 ${F1(y + 4)}Z" fill="#8a7556" opacity=".18"/>`; s += `<path d="M-42 ${F1(y + 4.4)} L42 ${F1(y + 4.4)}" stroke="${C.moss2}" stroke-width="1.4" opacity="${cb === 2 && i === 2 ? 0.15 : 0.75}" filter="url(#tw)"/>`; }
+  for (let i = 0; i < 5; i++) { const y = 19.5 - i * 9; s += CA.log(-42, 42, y, 4.4, C, ''); if (i % 2) s += `<path d="M-42 ${F1(y - 4)} L42 ${F1(y - 3.8)} L42 ${F1(y + 4)} L-42 ${F1(y + 4)}Z" fill="#8a7556" opacity=".18"/>`; s += `<path d="M-42 ${F1(y + 4.4)} L42 ${F1(y + 4.5)}" stroke="${C.moss2}" stroke-width="1.4" opacity="${cb === 2 && i === 2 ? 0.15 : 0.75}"/>`; }
   for (let i = 0; i < 5; i++) { const y = 15 - i * 9; s += CA.logEnd(-45, y, 4, C) + CA.logEnd(45, y, 4, C); }
   /* the gable end over the door, shorter logs up into the peak */
   for (let i = 0; i < 3; i++) { const y = -24 - i * 6.5; const hw = 38 - i * 12; s += CA.log(-hw, hw, y, 3.2, C, ''); }
@@ -5474,6 +5532,10 @@ function drawActor(b) {
   }
   if (b.kind === 'grouse') { drawAnimal({ sp: 'grouse', x: b.x, y: b.y, tx: b.x, ty: b.y, dir: -1, dead: b.dead }); if (!b.dead) { cx.fillStyle = '#5a3f28'; cx.fillRect(b.x - 16, b.y + 2, 32, 2.5); } }
 }
+/* each hands-on job names its close-up as it starts, so the pad can paint the right picture */
+{ const by = (f, name) => function (...a) { padFor = typeof name === 'function' ? name(...a) : name; return f.apply(this, a); };
+  startTaps = by(startTaps, id => id); startSteps = by(startSteps, id => id); startStrokes = by(startStrokes, id => id); startLash = by(startLash, id => id); startTiller = by(startTiller, id => id); startHeat = by(startHeat, id => id); startPour = by(startPour, id => id);
+  startTrace = by(startTrace, k => 'trace-' + k); startFire = by(startFire, () => E.igniter(S) === 'ferro' ? 'fire' : 'firebow'); startSharpen = by(startSharpen, 'sharpen'); startSnare = by(startSnare, 'snare'); startCordage = by(startCordage, 'cordage'); }
 window.__g = { hud: () => updateHud(), fakeMini: (type) => { mini = { type, free: true, acts: [{ label: 'Release' }], update() {}, cancel() { mini = null; } }; }, press: (src) => { const re = new RegExp(src, 'i'); const a = interactions().find(x => re.test(x.label)) || (W.fullActs || []).find(x => re.test(x.label)); if (a) { a.fn(); return a.label; } return null; }, ev: (id) => { const e = E.EVENTS[id]; S.event = { id, title: e.title, text: e.text(S), options: e.options.filter(o => !o.cond || o.cond(S)).map(o => ({ label: o.label, sub: typeof o.sub === 'function' ? o.sub(S) : o.sub })), optIds: e.options.map((o, i) => (!o.cond || o.cond(S)) ? i : -1).filter(i => i >= 0), phase: Math.max(0, S.phase) }; S.today.event = true; spawnEvent(); lastActs = ''; refreshActs(); }, W: () => W, S: () => S, setTarget: (t) => { input.target = t; }, acts: () => interactions().map(a => a.label), mini: () => mini && mini.type, at: () => ({ camp: atCamp(), shore: atShore(), p: W.player, d: dist(W.player, W.camp) }) };
 
 // ------------------------------------------------------------ sheets

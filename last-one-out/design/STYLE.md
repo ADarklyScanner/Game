@@ -89,6 +89,14 @@ The wreck on the far side of each map is the first thing drawn with the painting
 - **Light:** daylight falls in from the door, warmer at dawn and evening; dusk and night darken the room; a fire inside (painted ring and flames) warms it and smokes it without a chimney.
 - **Layout:** the floor sits higher on phones so the bed, the fire and you show above the job list.
 
+## How the hands-on close-ups are painted (phase 7)
+
+- **Every close-up sits on a painted setting:** bare ground with moss, needles and pebbles outside, worn boards inside, with a darkened edge like a vignette.
+- **The still part of each picture becomes one watercolour** (wobbled edges, pigment at the rim, muted colours) made once and kept; the parts you touch and the parts that move stay live, so the controls work as before.
+- **Painted pictures** replace the plain shapes for the trout, the plucked grouse, the hare and the deer you open; the ferro rod, striker and birch-bark tinder nest; the bow-drill fireboard and spindle; the whetstone; the snare stake; the cairn's base and spare stones; the hearth's ash pit; the cordage fibres; and the pot-firing pit. Lashing frames are drawn as real poles.
+- Each job names its close-up as it starts, so the right picture is used.
+- A fix that came out of this: a dead-straight stroke disappears under the paint filter (it has no width for the filter to work on). Poles are now filled shapes, so the camp's uprights, posts and door frames show again.
+
 ## What stays the same
 
 All game rules, odds and the engine. This is a change to how things are drawn and laid out, not to what happens. The 1,100-plus checks and the bots keep testing the rules unchanged.
@@ -112,7 +120,7 @@ Each phase ends with the full test run, the picture sheet updated, and a commit.
 | 4 | Camp and shelters (done Nov 3) | Fire, every shelter type at every build stage and condition, drying rack, smoker, cache, woodshed, cairns, piles |
 | 5 | Animals, people, tracks (done Nov 3) | Player, animals, carcasses, blood trails, debris, landmarks |
 | 6 | Interiors (done Nov 3) | Inside every shelter type, by weather and time of day |
-| 7 | Mini-games | All 26 as close-ups |
+| 7 | Mini-games (done Nov 3) | All 26 as close-ups |
 | 8 | Panels | Pack, map, journal and body, camp, build, menu, records, how to play, setup and end screens |
 | 9 | Finish | Phone speed checks, a full picture-sheet review, old saves, and publishing |
 
