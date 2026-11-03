@@ -380,7 +380,7 @@ function newGame(seasonKey, gear, opts = {}) {
     hours: 0, phase: -1, today: { burn: 0, done: [], lines: [], event: false, night: [] }, event: null, braced: false, lastAction: '',
     sys: { schema: 1, rackRoof: false, smoking: 0 }, // newer systems keep their state here, so older saves stay untouched
     shelterCond: 1, fog: false, wind: false, heat: false, snowfall: false, lastStorm: -9, windows: [], windDir: 0, windStr: 0.3,
-    bagHoles: 0, greenWood: 0, highGround: false, wetStreak: 0, hail: false, thunder: false, flooded: false, lostGear: [], cutTrees: [], pack: {}, piles: [], campPos: null, moveDebt: 0, hideRaw: 0, hideAge: 0, cacheCond: null, potWater: 0, regrow: {}, partial: {}, partialKind: {}, stock: { lake: 1, river: 1, pond: 1, trap: 1, game: 1 }, patch: {}, lure: false, nightHours: 0, tended: false, hints: {}, explored: [], pins: [],
+    bagHoles: 0, greenWood: 0, highGround: false, wetStreak: 0, hail: false, thunder: false, flooded: false, lostGear: [], cutTrees: [], pack: {}, piles: [], campPos: null, campChosen: false, moveDebt: 0, hideRaw: 0, hideAge: 0, cacheCond: null, potWater: 0, regrow: {}, partial: {}, partialKind: {}, stock: { lake: 1, river: 1, pond: 1, trap: 1, game: 1 }, patch: {}, lure: false, nightHours: 0, tended: false, hints: {}, explored: [], pins: [],
   };
   s.windows = makeWindows(s, season);
   for (const m of DATA.meters) s.meters[m[0]] = { dep: 0, exc: 0, intake: 0, state: 'ok' };
@@ -1804,6 +1804,7 @@ function nightAndBody(s, burn, done, lines) {
   }
   if ((s.rain || s.storm) && s.firewood > 0 && !(s.crafts.woodshed >= 1 && !(poorly(s, 'woodshed') && s.storm)) && !has(s, 'Tarp') && !(s.shelterType === 'cabin' || s.shelterType === 'rock')) { s.firewood = round1(Math.max(0, s.firewood - (s.storm ? 1.5 : 0.7))); lines.push(['The woodpile got soaked. Some of it will not burn.', 'muted']); }
   if (s.storm && s.shelterType === 'tarp') s.stats.tarpstorm = true;
+  if ((s.storm || s.wind) && s.sys && s.sys.campSpot && s.sys.campSpot.snag && chance(s, s.storm ? 0.05 : 0.012)) { if (chance(s, 0.35)) { addCond(s, { name: 'Bruised shoulder from a falling limb', days: 4, dmg: 0.6 }); s.health -= 4; lines.push(['A dead limb came down off the snag over camp in the night and caught your shoulder.', 'bad']); } else { if (s.shelterLvl > 0) s.shelterCond = Math.max(0.1, (s.shelterCond ?? 1) - 0.2); lines.push(['A dead limb came down off the snag over camp in the night' + (s.shelterLvl > 0 ? ' and through the roof.' : ', a yard from your head.'), 'warn']); } }
   if (s.storm && s.sys && s.sys.cairns && s.sys.cairns.some(c => c.loose)) { const n0 = s.sys.cairns.length; s.sys.cairns = s.sys.cairns.filter(c => !(c.loose && chance(s, 0.35))); if (s.sys.cairns.length < n0) lines.push([n0 - s.sys.cairns.length === 1 ? 'The wind brought down a cairn you stacked in a hurry.' : 'The wind brought down the cairns you stacked in a hurry.', 'muted']); }
   if (s.shelterLvl > 0) {
     const expo = (s.shelterType === 'cabin' && s.sys && s.sys.fit < 1 ? 1 / s.sys.fit : 1) * (s.shelterType ? SHELTERS[s.shelterType].wear : [0, 1.3, 1, 0.5][s.shelterLvl]) * (s.shelterType === 'cabin' && has(s, 'Scotch eyed auger') ? 0.75 : 1) * (has(s, 'Tarp') && ['leanto', 'hut'].includes(s.shelterType) ? 0.6 : 1);
@@ -1829,7 +1830,7 @@ function nightAndBody(s, burn, done, lines) {
   s.raw = s.raw.filter(x => x.left > 0);
   if (s.crafts.cache >= 2) { s.cacheCond = Math.max(0, (s.cacheCond ?? 0.8) - 0.006 - (s.storm ? 0.05 : s.rain || s.snowfall ? 0.015 : 0)); }
   const cached = s.crafts.cache >= 2 && (s.cacheCond ?? 0.8) > 0.2; const offalPull = 1 + Math.min(1, ((s.sys && s.sys.offal) || 0) / 4); // a gut pile at camp brings them in
-  const raidP = offalPull * (cached ? (s.cachePlace === 'camp' ? 0.025 : 0.008) * (1.9 - 1.5 * (s.cacheCond ?? 0.8)) : 0.045) * (s.raw.length ? 2 : 1) * (s.fireInside || !fire ? 1.3 : 1);
+  const spot = (s.sys && s.sys.campSpot) || {}; const raidP = (spot.trail ? 1.4 : 1) * offalPull * (cached ? (s.cachePlace === 'camp' ? 0.025 : 0.008) * (1.9 - 1.5 * (s.cacheCond ?? 0.8)) : 0.045) * (s.raw.length ? 2 : 1) * (s.fireInside || !fire ? 1.3 : 1);
   const meat = s.stores.filter(x => ['fish', 'game', 'organ', 'fat'].includes(DATA.foods[x.id].kind));
   if ((meat.length || s.raw.length) && se.predators.length && chance(s, raidP)) {
     let lost = 0; const kw = (x) => x.id === 'fat' ? 1.5 : DATA.foods[x.id].kind === 'organ' ? 1.1 : 0.6; const wipe = rnd(s) < (cached ? 0.1 : 0.2) + ((s.cacheCond ?? 0.8) < 0.4 ? 0.1 : 0); const frac = 0.12 + rnd(s) * 0.18; for (const x of meat) { const l = wipe ? x.por : round1(x.por * Math.min(0.6, frac * kw(x))); x.por = round1(x.por - l); lost += l * DATA.foods[x.id].kcal; } s.raw = s.raw.filter((x, i) => { if (wipe || i % 2 === 0) { lost += x.por * DATA.foods[x.id].kcal; return false; } return true; });
@@ -1863,6 +1864,7 @@ function nightAndBody(s, burn, done, lines) {
   const bmr = C.bmrPerLb * s.weight * (1 - C.adapt * lossFrac);
   if (rough) s.shelterLvl = 0;
   let coldMod = (has(s, 'Sleeping bag') && !rough ? 0.55 + Math.min(0.25, (s.bagHoles || 0) * 0.06) : 1) * [1, 0.8, 0.65, 0.5][s.shelterLvl] * (1 + (1 - (s.shelterCond ?? 1)) * 0.6) * (fire ? (s.fireInside ? (green ? 0.7 : 0.6) : (green ? 0.9 : hearth ? 0.76 : 0.8)) * (s.tended ? 0.9 : 1) : (hearth && hadFire && !rough ? 0.9 : 1)) * (1 + s.wet * 0.5) * (1 - 0.15 * sealOf(s)) * (1 - (rough ? 0 : bedWarmth(s))) * (fire && !s.fireInside && s.crafts.reflector >= 1 && s.shelterLvl <= 1 ? (poorly(s, 'reflector') ? 0.94 : 0.88) : 1) * (WALLED.includes(s.shelterType) && snowLoadOf(s) >= 0.5 && snowLoadOf(s) <= 2 ? 0.93 : 1) * (s.shelterType === 'cabin' && s.sys && s.sys.gaps ? 1.08 : 1) * (1 + 0.2 * (1 - clothesOf(s))) * (s.sys && s.sys.mat && s.shelterType && (s.wind || s.storm) ? (s.sys.mat === 'tight' ? 0.9 : 0.97) : 1);
+  { const sp = (s.sys && s.sys.campSpot) || {}; if (!rough && (s.wind || s.storm)) { if (sp.exposed) coldMod *= 1.1; if (sp.windbreak) coldMod *= 0.94; } }
   if (s.crafts.mittens >= 1) coldMod *= s.sys && s.sys.softMittens ? (s.sys.looseMitts ? 0.9 : 0.87) : s.sys && s.sys.looseMitts ? 0.93 : 0.9; if (has(s, 'Bivy bag')) coldMod *= 0.9; if (has(s, 'Blanket')) coldMod *= 0.92; if (has(s, 'Ground sheet')) coldMod *= 0.95; if (has(s, 'Hammock') && T > 0) coldMod *= 0.95;
   const cold = Math.max(0, C.coldBase - T) * C.coldPerDeg * coldMod;
   { const bad = (rough || !fire) && T < 2 && (s.wet > 0.4 || ((rough || s.shelterLvl === 0) && !has(s, 'Sleeping bag'))); /* wet or exposed with no fire: that is what brings it on */ const sys = bad || (s.sys && s.sys.chill) ? sysOf(s) : null;
@@ -2028,6 +2030,22 @@ function moveCampCost(s, metres) {
   const trips = Math.max(1, Math.ceil(kg / carryCap(s))); const hours = round1(trips * metres * 2 / 4000 + 1.5 + (s.shelterType ? 1 : 0));
   return { kg: Math.round(kg), trips, hours };
 }
+// the first camp is wherever you choose to put it: half an hour to clear the ground and ring a fire pit.
+// spot: what the ground is like there, worked out by the screen from the world ({ trail, exposed, windbreak, snag, waterM })
+function makeCamp(s, spot) {
+  if (s.campChosen !== false || s.status !== 'playing') return [];
+  const L = []; s.campChosen = true; sysOf(s).campSpot = Object.assign({}, spot || {});
+  s.hours = round1(Math.min(dayHours(s), s.hours + 0.5)); s.phase = phaseOf(s); s.today.done.push('make_camp');
+  L.push(['Kicked the ground clear, ringed a fire pit with stones and dropped the pack. This is camp.', 'good']);
+  s.today.lines.push(...L); return L;
+}
+// the far side of every drop site hides something that should not be there
+function foundWreck(s) {
+  const first = !(s.stats && s.stats.wreck); const L = [];
+  if (first) { s.stats.wreck = s.day; s.morale = clamp(s.morale + 6, 0, 100); L.push(['A furrow of torn ground, and at the end of it a disc of dull metal half buried in the dirt. It is cold to the touch. There are no footprints but yours.', 'big']); }
+  else L.push(['The wreck is still here. Nothing has moved.', 'muted']);
+  s.today.lines.push(...L); return L;
+}
 function moveCamp(s, metres) {
   const c = moveCampCost(s, metres); const L = [];
   if (s.shelterType) { const b = billFor(s, s.shelterType) || {}; for (const k of ['poles', 'logs', 'boughs', 'moss', 'stone', 'cordage']) if (b[k] && k !== 'stone') s.mats[k] += Math.floor(b[k] / 2); L.push([`Took the ${low(SHELTERS[s.shelterType].name)} down and carried what was worth carrying.`, 'info']); }
@@ -2083,7 +2101,7 @@ function status(s) {
   return { lossFrac: lf, medLimit: medicalLimit(s), weather: weatherName(s), snowshoes: s.crafts.snowshoes >= 1, windChill: Math.round(temperature(s) - (s.storm ? 6 : s.wind ? 4 : 0)), moon: s.moon, aurora: !!s.aurora, windows: activeWindows(s), shelterCond: s.shelterCond ?? 1, shelterType: s.shelterType, canInside: canWorkInside(s), shelter: shelterName(s), shelterLevel: s.shelterLvl, temp: Math.round(temperature(s)), frozen: frozen(s), snowy: snowy(s), remaining: s.rivals.filter(r => !r.out).length, storeKcal: Math.round(storeKcal(s)), rawKcal: Math.round(rawKcal(s)), hoursLeft: hoursLeft(s), dayHours: dayHours(s), lowTide: lowTide(s), igniter: igniter(s) };
 }
 
-const API = { note, sunny, sprayLeft, fallChance, climbAnchor, stalkNoise, fouling, latrineOk, raftOf, raftOk, flintOf, hasBow, bowPower, driftChance, bearings, wade, clothesOf, tomorrow, skyAcc, thinIce, potLike, clayPots, greenPots, bedWarmth, snowLoadOf, bedOf, lampOk, nightOk, haftOf, tinderDamp, fireOdds, sealOf, hasHearth, isDry, onStation, RACK_CAP, DRY_AT, dryDaysLeft, sysOf, cacheSign, low, matName, BIOMES, biomeOf, treeKind, realMedianOf: se => { const d = se.rivals.filter(r => r.days != null).map(r => r.days).sort((a, b) => a - b); return d[d.length >> 1]; }, WEIGHT, loadOf, carryCap, moveCampCost, moveCamp, collectSize, berryRipe, bushRipeDay, stockOf, stockWord, billFor, nightOk, NIGHT_OK, treeYield, treeNames, fishPool, sizeOf, SHELTERS, shelterOptions, chooseShelter, dropPlan, shelterName, canWorkInside, travel, activeWindows, windowOn, timeMult, weatherName, dayFrac, midday, setTune, DATA, C, MATS, ACTIONS, EVENTS, newGame, runDay, beginDay, act, endDay, choose, carryLoad, available, tapOut, placing, status, season, storeKcal, temperature, shelterLevel, SHELTER_NAMES, shelterBill, shelterMissing, matList, fishOdds, huntOdds, bowDrillOdds, dayHours, hoursLeft, phaseOf, lowTide, igniter, blade, cutter, chopper, hasRod, digger };
+const API = { note, sunny, sprayLeft, fallChance, climbAnchor, stalkNoise, fouling, latrineOk, raftOf, raftOk, flintOf, hasBow, bowPower, driftChance, bearings, wade, clothesOf, tomorrow, skyAcc, thinIce, potLike, clayPots, greenPots, bedWarmth, snowLoadOf, bedOf, lampOk, nightOk, haftOf, tinderDamp, fireOdds, sealOf, hasHearth, isDry, onStation, RACK_CAP, DRY_AT, dryDaysLeft, sysOf, cacheSign, low, matName, BIOMES, biomeOf, treeKind, realMedianOf: se => { const d = se.rivals.filter(r => r.days != null).map(r => r.days).sort((a, b) => a - b); return d[d.length >> 1]; }, WEIGHT, loadOf, carryCap, moveCampCost, moveCamp, collectSize, berryRipe, bushRipeDay, stockOf, stockWord, billFor, nightOk, NIGHT_OK, treeYield, treeNames, fishPool, sizeOf, SHELTERS, shelterOptions, chooseShelter, dropPlan, makeCamp, foundWreck, shelterName, canWorkInside, travel, activeWindows, windowOn, timeMult, weatherName, dayFrac, midday, setTune, DATA, C, MATS, ACTIONS, EVENTS, newGame, runDay, beginDay, act, endDay, choose, carryLoad, available, tapOut, placing, status, season, storeKcal, temperature, shelterLevel, SHELTER_NAMES, shelterBill, shelterMissing, matList, fishOdds, huntOdds, bowDrillOdds, dayHours, hoursLeft, phaseOf, lowTide, igniter, blade, cutter, chopper, hasRod, digger };
 if (typeof module !== 'undefined') module.exports = API; else root.Engine = API;
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
@@ -2699,9 +2717,13 @@ function buildWorld() {
   Object.assign(MAP, BIGM); placeOnBig(w, seeded(mkey + 'place'));
   const shoreX = w.shoreX; w.campHome = { x: w.camp.x, y: w.camp.y }; if (S.campPos) w.camp = { x: S.campPos.x, y: S.campPos.y };
   W = w; // the props and decor below read the world
+  { /* the wreck: straight across the map from where the boat left you, nudged onto dry land */
+    const cx0 = MAP.w / 2, cy0 = (MAP.top + MAP.h) / 2; const o = { x: 2 * cx0 - w.campHome.x, y: 2 * cy0 - w.campHome.y }; const ok = (p) => p.y > MAP.top + 400 && p.y < MAP.h - 400 && p.x < MAP.right - 400 && p.x > 400 && (desert || p.x > shoreX(p.y) + 500) && !(w.river && Math.abs(p.y - (w.river.y0 + w.river.y1) / 2) < (w.river.y1 - w.river.y0) / 2 + 220 && p.x < w.river.xEnd + 220);
+    for (let r = 0; r < 9000 && !w.ufo; r += 150) for (let a = 0; a < 6.28 && !w.ufo; a += 0.5) { const p = { x: Math.round(o.x + Math.cos(a) * r), y: Math.round(o.y + Math.sin(a) * r) }; if (ok(p)) w.ufo = p; }
+  }
   w.cal = calibrateHome(w);
   const inRiver = (x, y) => w.river && y > w.river.y0 - 30 && y < w.river.y1 + 30 && x < w.river.xEnd + 30;
-  const clear = (x, y, r) => y > MAP.top + 20 && x < MAP.right - 20 && !(dist({ x, y }, w.campHome) < 150) && !(dist({ x, y }, w.camp) < 150) && !(dist({ x, y }, w.trail) < 130) && !(w.pool && dist({ x, y }, w.pool) < 90) && (desert || x > shoreX(y) + r) && !inRiver(x, y) && !(dist({ x, y }, w.cliff) < 70);
+  const clear = (x, y, r) => y > MAP.top + 20 && x < MAP.right - 20 && !(w.ufo && dist({ x, y }, w.ufo) < 150) && !(dist({ x, y }, w.campHome) < 150) && !(dist({ x, y }, w.camp) < 150) && !(dist({ x, y }, w.trail) < 130) && !(w.pool && dist({ x, y }, w.pool) < 90) && (desert || x > shoreX(y) + r) && !inRiver(x, y) && !(dist({ x, y }, w.cliff) < 70);
   const inAny = (list, p) => list.some(z => dist(z, p) < z.r);
   const LOOK_NAME = { cedar: 'cedar', fir: 'Douglas fir', cypress: 'cypress', podocarp: 'podocarp', pine: bio.id === 'shield' ? 'jack pine' : bio.id === 'chilko' ? 'lodgepole pine' : 'pine', spruce: bio.id === 'coastrain' ? 'Sitka spruce' : null };
   // trees: everywhere, thick in the big timber and the groves, thin in the meadow, the bog and the openings
@@ -3056,9 +3078,63 @@ function nearestBush() { return nearestOf(W.bushes, 42, b => !b.used); }
 function nearestAnimal() { return nearestOf(W.animals, 120, a => !a.dead && !a.fled); }
 function poolNear(r) { for (const p of W.pools || []) if (near(p, r)) return p; return null; }
 function atShore() { return W.desert ? !!poolNear(80) : (W.player.x < W.shoreX(W.player.y) + 70 || atRiver()); }
-function atCamp() { return near(W.camp, 110); }
+function hasCamp() { return !S || S.campChosen !== false; }
+function atCamp() { return hasCamp() && near(W.camp, 110); }
+// what the ground is like at a spot, for choosing camp: water, the game trail, wind off the lake, shelter from trees, dead trees overhead
+function spotOf(p) {
+  const m = px => mFromPx(px); let water = Infinity;
+  if (!W.desert) water = Math.min(water, p.x - W.shoreX(p.y));
+  if (W.river && p.x < W.river.xEnd + 40) water = Math.min(water, Math.max(0, Math.abs(p.y - (W.river.y0 + W.river.y1) / 2) - (W.river.y1 - W.river.y0) / 2));
+  if (W.pond) water = Math.min(water, Math.max(0, dist(p, W.pond) - W.pond.r)); if (W.pool) water = Math.min(water, dist(p, W.pool));
+  const near = (r, f) => W.trees.filter(x => !x.gone && dist(x, p) < r && f(x)).length;
+  const live = x => x.kind !== 'snag' && x.kind !== 'log' && x.age !== 'sapling';
+  const s = { waterM: Math.round(m(water)), trail: !!(W.trail && dist(p, W.trail) < W.trail.r + 60), windbreak: near(260, live) >= 4, snag: near(90, x => x.kind === 'snag') > 0, woodM: null };
+  s.exposed = !W.desert && m(p.x - W.shoreX(p.y)) < 45 && !s.windbreak;
+  const wood = W.trees.filter(x => !x.gone && (x.kind === 'snag' || x.kind === 'log')).map(x => dist(x, p)).sort((a, b) => a - b)[0]; s.woodM = wood == null ? null : Math.round(m(wood));
+  s.bad = water * 1 < 115 ? 'Too close to the water. The ground is wet, and the first storm puts the lake through camp.' : (W.bog && dist(p, W.bog) < W.bog.r) ? 'Bog. Everything you own would be wet by morning.' : (W.cliff && dist(p, W.cliff) < 70) ? 'Right under the rock face. Loose stone comes down off it.' : null;
+  return s;
+}
+function spotNotes(s) {
+  const n = [];
+  n.push([s.waterM <= 60 ? `Water ${s.waterM} m away. Easy to fetch.` : s.waterM <= 200 ? `Water ${s.waterM} m away.` : `Water is ${s.waterM} m away. That is a long carry, every day.`, s.waterM <= 200 ? 'good' : 'warn']);
+  if (s.woodM != null) n.push([s.woodM <= 60 ? `Dead wood ${s.woodM} m away.` : `The nearest dead wood is ${s.woodM} m away.`, s.woodM <= 120 ? 'good' : 'warn']);
+  if (s.windbreak) n.push(['Good trees around. They break the wind.', 'good']);
+  if (s.exposed) n.push(['Open to the lake. Every wind off the water comes straight through.', 'warn']);
+  if (s.trail) n.push(['On a game trail. Animals will come through, and so will whatever hunts them.', 'warn']);
+  if (s.snag) n.push(['A dead tree stands over the spot. In a wind it drops limbs.', 'warn']);
+  return n;
+}
+function openMakeCamp() {
+  if (!W || !S || S.status !== 'playing' || hasCamp()) return;
+  const s = spotOf(W.player);
+  sheet((sh, close) => {
+    sh.append($(`<h2>Make camp here?</h2>`));
+    const rows = $(`<div class="rows"></div>`); for (const [txt, k] of spotNotes(s)) rows.append($(`<div class="row"><span class="tone-${k}">${esc(txt)}</span></div>`)); sh.append(rows);
+    sh.append($(`<div class="muted" style="font-size:13px">Half an hour to clear the ground and ring a fire pit. You can move camp later, but it costs a day of carrying.</div>`));
+    const go = $(`<button class="act primary"><b>Make camp here</b><small>½ h</small></button>`); go.onclick = () => { close(); makeCampHere(s); };
+    const no = $(`<button class="act"><b>Keep looking</b></button>`); no.onclick = close; sh.append(go); sh.append(no);
+  });
+}
+function makeCampHere(s) {
+  const lines = E.makeCamp(S, s || spotOf(W.player)); if (!lines.length) return;
+  W.camp = { x: Math.round(W.player.x), y: Math.round(W.player.y - 60) }; S.campPos = { x: W.camp.x, y: W.camp.y };
+  for (const t of W.trees) if (!t.gone && dist(t, W.camp) < 55) { t.gone = true; if (!S.cutTrees) S.cutTrees = []; if (!S.cutTrees.includes(t.k)) S.cutTrees.push(t.k); }
+  W.tiles = null; banner(lines, 5000); sfx.play('good'); updateHud(); save(); lastActs = ''; refreshActs();
+}
+function makeCampOffer() {
+  if (hasCamp() || !S || !W || W.night || W.inside || mini || S.event || S.phase < 0) return null;
+  const s = spotOf(W.player); if (s.bad) return { label: 'Make camp here', sub: s.bad.split('.')[0], dim: true, fn: () => banner([[s.bad, 'warn']]) };
+  const bits = [`water ${s.waterM} m`]; if (s.windbreak) bits.push('sheltered'); if (s.exposed) bits.push('open to the wind'); if (s.trail) bits.push('game trail'); if (s.snag) bits.push('dead tree over it');
+  return { label: 'Make camp here', sub: bits.join(' · '), primary: true, fn: openMakeCamp };
+}
 function onTrail() { return near(W.trail, 165); }
 function interactions() {
+  const L = interactionsHere(); const offer = makeCampOffer();
+  if (offer) { L.unshift(offer); if (L[L.length - 1].label === 'More…' && W.fullActs) W.fullActs.unshift(offer); }
+  if (W && W.ufo && S && !W.night && !mini && !S.event && S.phase >= 0 && near(W.ufo, 95)) { const w = { label: 'Look over the wreck', sub: S.stats && S.stats.wreck ? 'you have been here before' : 'what is that', primary: !(S.stats && S.stats.wreck), fn: lookAtWreck }; L.unshift(w); if (L[L.length - 1].label === 'More…' && W.fullActs) W.fullActs.unshift(w); }
+  return L;
+}
+function interactionsHere() {
   if (!S || !W) return [];
   if (W.over) return [{ label: 'See how you did', fn: () => { W.over = false; S.status === 'playing' ? renderGame() : renderEnd(); } }];
   if (mini) return mini.acts;
@@ -3103,7 +3179,7 @@ function interactions() {
     { const ready = Object.keys(E.ACTIONS).some(k => k.startsWith('craft_') && av(k).ok); out.push({ label: 'Craft…', sub: ready ? '' : 'see what each thing needs', fn: () => openBuild(false) }); }
     return overflow(out);
   }
-  if (tired) { if (!W.night) { out.push({ label: 'Head back to camp', sub: `${fmtDist(mFromPx(dist(W.player, W.camp)))} in the dark`, primary: true, fn: () => { input.target = { x: W.camp.x, y: W.camp.y + 60 }; lastActs = ''; } }); if (mFromPx(dist(W.player, W.camp)) > 250) out.push({ label: 'Sleep rough out here', sub: 'cold, no fire, a long night', fn: sleepRough }); } return out; }
+  if (tired) { if (!W.night) { if (hasCamp()) out.push({ label: 'Head back to camp', sub: `${fmtDist(mFromPx(dist(W.player, W.camp)))} in the dark`, primary: true, fn: () => { input.target = { x: W.camp.x, y: W.camp.y + 60 }; lastActs = ''; } }); if (!hasCamp() || mFromPx(dist(W.player, W.camp)) > 250) out.push({ label: 'Sleep rough out here', sub: 'cold, no fire, a long night', fn: sleepRough }); } return out; }
   if (S.carcass && W.carcassPos && near(W.carcassPos, 50)) {
     if (!S.carcass.dressed) push('dress', null, startDress);
     else if (!W.carrying) out.push({ label: 'Shoulder a load', sub: `${Math.min(E.C.carry, Math.round(S.carcass.por))} portions · slow walk to camp`, fn: () => { W.carrying = true; sfx.play('tap'); lastActs = ''; } });
@@ -3146,8 +3222,8 @@ function interactions() {
   if (W.bushes.some(b => near(b, 60))) push('inspect');
   if (near(W.cliff, 90)) push('climb', null, () => { doAct('climb'); if (S.sys && S.sys.lookout === S.day) { reveal(W.cliff.x, W.cliff.y, 1600); worldToast([['You can see a long way from up here. Your map has filled in.', 'good']], W.player.x, W.player.y - 10); } });
   if (dist(W.player, W.camp) > 300 && !((S.sys && S.sys.cairns) || []).some(c => c.x != null && dist(c, W.player) < 140)) push('cairn', null, () => startCraft('cairn', false, { x: Math.round(W.player.x), y: Math.round(W.player.y) }));
-  if (S.phase < 2 && dist(W.player, W.camp) > 420 && !atShore() && !atRiver() && !(W.pond && near(W.pond, W.pond.r + 40)) && !near(W.cliff, 80)) { const c = E.moveCampCost(S, mFromPx(dist(W.player, W.camp))); out.push({ label: 'Move camp here', sub: `${c.trips} trip${c.trips > 1 ? 's' : ''} · ${c.kg} kg · about ${fmtH(c.hours)}`, fn: openMoveCamp }); }
-  if (!out.length && !mini && dist(W.player, W.camp) > 160) out.push({ label: 'Head back to camp', sub: `nothing to do here · ${fmtDist(mFromPx(dist(W.player, W.camp)))}`, fn: () => { input.target = { x: W.camp.x, y: W.camp.y + 60 }; lastActs = ''; } });
+  if (hasCamp() && S.phase < 2 && dist(W.player, W.camp) > 420 && !atShore() && !atRiver() && !(W.pond && near(W.pond, W.pond.r + 40)) && !near(W.cliff, 80)) { const c = E.moveCampCost(S, mFromPx(dist(W.player, W.camp))); out.push({ label: 'Move camp here', sub: `${c.trips} trip${c.trips > 1 ? 's' : ''} · ${c.kg} kg · about ${fmtH(c.hours)}`, fn: openMoveCamp }); }
+  if (!out.length && !mini && hasCamp() && dist(W.player, W.camp) > 160) out.push({ label: 'Head back to camp', sub: `nothing to do here · ${fmtDist(mFromPx(dist(W.player, W.camp)))}`, fn: () => { input.target = { x: W.camp.x, y: W.camp.y + 60 }; lastActs = ''; } });
   return overflow(out);
 }
 // after dark, by firelight: people whittled, twisted cordage, cooked and talked to the camera long after sunset
@@ -3165,7 +3241,7 @@ function openMoveCamp() {
     sh.append($(`<h2>Move camp here</h2>`));
     sh.append($(`<div class="rows"><div class="row"><span>Distance</span><span>${fmtDist(d)}</span></div><div class="row"><span>To carry</span><span>${c.kg} kg · ${c.trips} trip${c.trips > 1 ? 's' : ''}</span></div><div class="row"><span>Time</span><span>about ${c.hours} h${c.hours > E.hoursLeft(S) ? ' · runs into tomorrow' : ''}</span></div></div>`));
     sh.append($(`<div class="muted" style="font-size:13px">${S.shelterType ? `The ${E.low(E.SHELTERS[S.shelterType].name)} comes down; about half of it is worth carrying. ` : ''}The fire goes out${S.crafts.smoker >= 2 ? ', the smoker stays' : ''}${S.crafts.woodshed >= 1 ? ', the woodshed stays' : ''}${S.cachePlace === 'camp' ? ', the cache stays' : ''}. Every pile at camp comes with you.${(() => { const lost = [S.crafts.rack ? 'drying rack' : '', S.crafts.hearth ? 'hearth' : '', S.crafts.chimney ? 'chimney' : '', S.crafts.reflector ? 'fire reflector' : '', S.crafts.platform ? 'raised bed frame' : '', S.sys && S.sys.bed > 0 ? 'bough bed' : '', S.sys && S.sys.seal > 0 ? 'chinking' : '', S.sys && S.sys.latrineDay != null ? 'latrine' : '', S.shelterGoal && S.shelterPaid ? 'half-built shelter (about half its materials come back)' : ''].filter(Boolean); return lost.length ? ` Left behind, to build again: ${lost.join(', ')}.` : ''; })()}</div>`));
-    const go = $(`<button class="act primary"><b>Move camp</b><small>start carrying</small></button>`); go.onclick = () => { close(); const lines = E.moveCamp(S, d); W.camp = { x: Math.round(W.player.x), y: Math.round(W.player.y - 60) }; S.campPos = { x: W.camp.x, y: W.camp.y }; for (const t of W.trees) if (!t.gone && dist(t, W.camp) < 55) { t.gone = true; if (!S.cutTrees) S.cutTrees = []; if (!S.cutTrees.includes(t.k)) S.cutTrees.push(t.k); } S.pack = {}; banner(lines, 6000); sfx.play('good'); updateHud(); save(); lastActs = ''; refreshActs(); if (E.hoursLeft(S) < 0.5) dusk(); };
+    const go = $(`<button class="act primary"><b>Move camp</b><small>start carrying</small></button>`); go.onclick = () => { close(); const spot = spotOf(W.player); const lines = E.moveCamp(S, d); W.camp = { x: Math.round(W.player.x), y: Math.round(W.player.y - 60) }; S.campPos = { x: W.camp.x, y: W.camp.y }; if (S.sys) S.sys.campSpot = spot; W.tiles = null; for (const t of W.trees) if (!t.gone && dist(t, W.camp) < 55) { t.gone = true; if (!S.cutTrees) S.cutTrees = []; if (!S.cutTrees.includes(t.k)) S.cutTrees.push(t.k); } S.pack = {}; banner(lines, 6000); sfx.play('good'); updateHud(); save(); lastActs = ''; refreshActs(); if (E.hoursLeft(S) < 0.5) dusk(); };
     const no = $(`<button class="act"><b>Stay put</b></button>`); no.onclick = close; sh.append(go); sh.append(no);
   });
 }
@@ -3215,7 +3291,7 @@ const TOOL_JOBS = {
   hunt: ['hunt', 'track'],
   traps: ['snares', 'deadfalls', 'checktraps'],
 };
-const TOOL_LABELS = { camp: /^(Turn in early|Sleep|Go inside|Go outside|Journal|Head back to camp|Move camp|Sleep rough|Brace the shelter|No light|Stack your load|Load up|Shoulder a load|Take the fat)/, knife: /^Craft/, fish: /^Fish the run/ };
+const TOOL_LABELS = { camp: /^(Make camp here|Look over the wreck|Turn in early|Sleep|Go inside|Go outside|Journal|Head back to camp|Move camp|Sleep rough|Brace the shelter|No light|Stack your load|Load up|Shoulder a load|Take the fat)/, knife: /^Craft/, fish: /^Fish the run/ };
 const TOOL_OF = {}; for (const [k, ids] of Object.entries(TOOL_JOBS)) for (const id of ids) TOOL_OF[id] = k;
 function toolOf(a) {
   if (a.id && TOOL_OF[a.id]) return TOOL_OF[a.id];
@@ -3267,11 +3343,11 @@ function refreshActs() {
     for (const [k, name] of TOOLS) if (groups[k]) { const b = $(`<button class="tool${k === rollSel ? ' sel' : ''}" data-tool="${k}" aria-label="${name}" aria-pressed="${k === rollSel && rollOpen}">${TOOL_ICON[k]}<span>${name}</span></button>`); b.onclick = (e) => { e.stopPropagation(); if (rollSel === k) rollOpen = !rollOpen; else { rollSel = k; rollOpen = true; } lastActs = ''; refreshActs(); sfx.play('tap'); }; roll.append(b); }
     actsEl.append(card, roll);
   }
-  if (!list.length && !mini) hint(W.night ? '' : (S.phase === 3 || E.hoursLeft(S) < 0.5) ? 'Dusk. Get back to camp and sleep.' : S.event && S.event.id === 'bear' ? (W.actor && dist(W.actor, W.camp) < 90 ? 'A bear is in your camp. Get back there.' : 'A bear is heading for your camp.') : S.phase >= 0 ? guideText() : '');
+  if (!list.length && !mini) hint(W.night ? '' : (S.phase === 3 || E.hoursLeft(S) < 0.5) ? (hasCamp() ? 'Dusk. Get back to camp and sleep.' : 'Dusk, and no camp. Make camp where you stand, or sleep rough.') : S.event && S.event.id === 'bear' ? (W.actor && dist(W.actor, W.camp) < 90 ? 'A bear is in your camp. Get back there.' : 'A bear is heading for your camp.') : S.phase >= 0 ? guideText() : '');
   else if (!mini) hint('');
 }
 function goalText() {
-  const st = E.status(S); const c = E.season(S).climate;
+  const st = E.status(S); const c = E.season(S).climate; if (!hasCamp()) return 'Pick a spot for camp';
   if (S.wounded && W.blood.length) return 'Follow the blood trail →';
   if (S.carcass) return S.carcass.dressed ? (W.carrying ? 'Carry the load to camp →' : 'Shoulder a load at the kill →') : 'Gut the kill where it fell →';
   if (S.raw.length) return atCamp() ? 'Clean the catch' : 'Clean the catch at camp →';
@@ -3290,7 +3366,7 @@ function goalText() {
   return '';
 }
 function guideText() {
-  const bits = [];
+  const bits = []; if (!hasCamp()) return 'Walk the ground and pick a spot for camp: near water, near dead wood, out of the wind, off the game trail.';
   if (!S.fire) { if (S.firewood < 1) bits.push('cut firewood at a tree'); else if (S.mats.tinder < 1) bits.push('gather tinder at a tree'); else if (!E.igniter(S)) bits.push('carve a bow drill at camp (needs cordage)'); else bits.push('light the fire at camp'); }
   if (S.shelterLvl === 0) { const m = E.shelterMissing(S); if (m && m.length) bits.push('for a lean-to you still need ' + m.join(', ')); else bits.push('build the lean-to at camp'); }
   if (S.raw.length) bits.push('clean your catch at camp before it spoils');
@@ -3899,8 +3975,8 @@ function paintTile(tx, ty) {
   // the skyline beyond the top of the map, and the far edges
   if (y0 < MAP.top + 2 || x0 + TILE > MAP.right - 140 || y0 + TILE > MAP.h - 170) paintSkyline(c, snow, tile);
   // camp clearing
-  c.fillStyle = snow ? 'rgba(170,180,185,.35)' : 'rgba(90,70,45,.22)'; c.beginPath(); c.ellipse(W.camp.x, W.camp.y, 105, 72, 0, 0, 6.28); c.fill();
-  c.fillStyle = snow ? 'rgba(150,160,165,.3)' : 'rgba(80,62,40,.25)'; c.beginPath(); c.ellipse(W.camp.x, W.camp.y + 4, 40, 26, 0, 0, 6.28); c.fill();
+  if (hasCamp()) c.fillStyle = snow ? 'rgba(170,180,185,.35)' : 'rgba(90,70,45,.22)'; else c.fillStyle = 'rgba(0,0,0,0)'; c.beginPath(); c.ellipse(W.camp.x, W.camp.y, 105, 72, 0, 0, 6.28); c.fill();
+  c.fillStyle = !hasCamp() ? 'rgba(0,0,0,0)' : snow ? 'rgba(150,160,165,.3)' : 'rgba(80,62,40,.25)'; c.beginPath(); c.ellipse(W.camp.x, W.camp.y + 4, 40, 26, 0, 0, 6.28); c.fill();
   // water and shore
   if (!W.desert && x0 < W.shoreMax + 90) {
     const ya = Math.floor((y0 - 40) / 16) * 16, yb = y0 + TILE + 56; const D = vis().decor || {}; const row = (layer, n, m, fn) => scatterRows(tile, layer, n, m, fn);
@@ -3992,6 +4068,7 @@ function draw() {
   drawCamp();
   // sprites sorted by y
   const sprites = [];
+  if (W.ufo && inView(W.ufo.x, W.ufo.y, 200)) sprites.push({ y: W.ufo.y, f: () => drawWreck(W.ufo) });
   for (const tr of W.trees) if (inView(tr.x, tr.y, 60)) sprites.push({ y: tr.y, f: () => drawTree(tr, snow) });
   for (const q of (S.piles || [])) if (inView(q.x, q.y, 40)) sprites.push({ y: q.y, f: () => drawPile(q) });
   for (const pin of (S.pins || [])) if (inView(pin.x, pin.y, 30)) sprites.push({ y: pin.y, f: () => { cx.strokeStyle = '#6a5a4a'; cx.lineWidth = 1.5; cx.beginPath(); cx.moveTo(pin.x, pin.y); cx.lineTo(pin.x, pin.y - 18); cx.stroke(); cx.fillStyle = PIN_COLS[pin.k] || '#fff'; cx.beginPath(); cx.moveTo(pin.x, pin.y - 18); cx.lineTo(pin.x + 10, pin.y - 14); cx.lineTo(pin.x, pin.y - 10); cx.closePath(); cx.fill(); } });
@@ -4035,10 +4112,10 @@ function draw() {
   for (const f of W.fx) if (f.kind === 'flash' || f.kind === 'glow') { cx.fillStyle = f.kind === 'flash' ? `rgba(255,255,255,${0.5 * (1 - f.age / f.life)})` : `rgba(255,170,80,${0.25 * (1 - f.age / f.life)})`; cx.fillRect(cam.x, cam.y, cam.w, cam.h); }
   drawGrain(dpr, cw, ch); drawBodyFx(dpr, cw, ch); cx.setTransform(dpr * W.scale, 0, 0, dpr * W.scale, 0, 0); cx.translate(-W.cam.x, -W.cam.y);
   // labels and toasts
-  if (S.day <= 2) { cx.font = '600 10px ' + (W.mono || 'monospace'); cx.textAlign = 'center'; cx.fillStyle = 'rgba(255,255,255,.6)'; cx.fillText('CAMP', W.camp.x, W.camp.y + 66); }
+  if (S.day <= 2 && hasCamp()) { cx.font = '600 10px ' + (W.mono || 'monospace'); cx.textAlign = 'center'; cx.fillStyle = 'rgba(255,255,255,.6)'; cx.fillText('CAMP', W.camp.x, W.camp.y + 66); }
   cx.font = '700 13px ' + W.font; cx.textAlign = 'center'; cx.lineWidth = 3; cx.lineJoin = 'round';
   for (const x of W.toasts) { const a = x.age < x.life - 0.6 ? 1 : (x.life - x.age) / 0.6; const col = { good: '#9fe09a', big: '#ffd978', bad: '#ff8a7a', warn: '#f0c060', info: '#fff', muted: '#d0d6d0' }[x.k] || '#fff'; cx.globalAlpha = a; cx.strokeStyle = 'rgba(0,0,0,.75)'; cx.fillStyle = col; const yy = x.y - Math.min(28, x.age * 14); cx.strokeText(x.t, x.x, yy); cx.fillText(x.t, x.x, yy); cx.globalAlpha = 1; }
-  const needCamp = (E.hoursLeft(S) < 0.5 || (S.event && S.event.id === 'bear') || W.carrying) && !W.night && !atCamp();
+  const needCamp = hasCamp() && (E.hoursLeft(S) < 0.5 || (S.event && S.event.id === 'bear') || W.carrying) && !W.night && !atCamp();
   const arrowTo = (pt, col) => { const a = Math.atan2(pt.y - W.player.y, pt.x - W.player.x); const x = W.player.x + Math.cos(a) * 60, y = W.player.y + Math.sin(a) * 60; cx.save(); cx.translate(x, y); cx.rotate(a); cx.fillStyle = col; cx.beginPath(); cx.moveTo(10, 0); cx.lineTo(-6, -7); cx.lineTo(-2, 0); cx.lineTo(-6, 7); cx.closePath(); cx.fill(); cx.restore(); };
   if (!W.night && !needCamp) { if (S.carcass && W.carcassPos && !W.carrying && dist(W.player, W.carcassPos) > 50) arrowTo(W.carcassPos, 'rgba(255,200,120,.9)'); else if (S.wounded && W.blood.length) { const b = W.blood.find(x => !x.seen); if (b && dist(W.player, b) > 40) arrowTo(b, 'rgba(255,120,110,.9)'); } else if (S.raw.length && !atCamp() && !mini) arrowTo(W.camp, 'rgba(255,255,255,.5)'); }
   if (needCamp) { const a = Math.atan2(W.camp.y - W.player.y, W.camp.x - W.player.x); const x = W.player.x + Math.cos(a) * 60, y = W.player.y + Math.sin(a) * 60; cx.save(); cx.translate(x, y); cx.rotate(a); cx.fillStyle = 'rgba(255,255,255,.85)'; cx.beginPath(); cx.moveTo(10, 0); cx.lineTo(-6, -7); cx.lineTo(-2, 0); cx.lineTo(-6, 7); cx.closePath(); cx.fill(); cx.restore(); }
@@ -4296,7 +4373,8 @@ function openMap() {
     const dot = (x, y, col, r) => { m.fillStyle = col; m.beginPath(); m.arc(X(x), Y(y), r || 3, 0, 6.28); m.fill(); };
     const placed = [];
     const label = (x, y, txt, always) => { if (!near && !always) return; if (!always && !seen(x, y)) return; const px = X(x); let py = Y(y); if (px < 0 || px > 320 || py < 0 || py > 320) return; m.font = '600 7px ' + (W.mono || 'monospace'); m.textAlign = 'center'; const lw = m.measureText(txt).width; /* step a label down past any it would overlap */ for (let k = 0; k < 6 && placed.some(b => Math.abs(b.x - px) < (b.w + lw) / 2 + 2 && Math.abs(b.y - py) < 9); k++) py += 9; placed.push({ x: px, y: py, w: lw }); m.fillStyle = 'rgba(0,0,0,.6)'; m.fillText(txt, px + 0.5, py + 8.5); m.fillStyle = '#fff'; m.fillText(txt, px, py + 8); };
-    dot(W.camp.x, W.camp.y, '#e8743b', 4); label(W.camp.x, W.camp.y + 10, 'CAMP', true);
+    if (hasCamp()) { dot(W.camp.x, W.camp.y, '#e8743b', 4); label(W.camp.x, W.camp.y + 10, 'CAMP', true); } else { dot(W.campHome.x, W.campHome.y, '#9a9a8a', 3); label(W.campHome.x, W.campHome.y + 10, 'LANDED', true); }
+    if (W.ufo && S.stats && S.stats.wreck) { dot(W.ufo.x, W.ufo.y, '#9fd0a0', 3); label(W.ufo.x, W.ufo.y + 10, 'WRECK', true); }
     label(W.trail.x, W.trail.y, 'GAME TRAIL'); label(W.meadow.x, W.meadow.y, 'MEADOW'); label(W.slope.x, W.slope.y, 'BERRY SLOPE'); label(W.ruin.x, W.ruin.y, 'OLD CAMP'); if (W.pond) label(W.pond.x, W.pond.y, 'BEAVER POND'); if (W.river && S.crafts.bridge >= 2) label(W.river.bridgeX, W.river.y0 - 10, 'LOGS'); label(W.bog.x, W.bog.y, W.desert ? 'FLATS' : 'BOG'); label(W.forest.x, W.forest.y, 'BIG TIMBER'); label(W.cliff.x, W.cliff.y - 12, 'ROCK');
     if (W.river) label(W.river.ford, W.river.y1 + 10, 'FORD'); for (const pl of W.pools || []) label(pl.x, pl.y + 12, 'POOL');
     for (const lm of W.landmarks || []) if (seen(lm.x, lm.y)) { dot(lm.x, lm.y, '#d8c8a0', 3); label(lm.x, lm.y + 6, lm.name.toUpperCase(), true); }
@@ -4327,7 +4405,38 @@ function openMap() {
 }
 const PIN_COLS = { berries: '#c84a6a', game: '#c9b58a', fish: '#5aa0d0', wood: '#a0784c', water: '#7ac0e0', danger: '#e04a3a', herbs: '#7ab060', stones: '#9a9a9a', camp: '#e8743b' };
 // ---------- camp
-function drawCamp() { const c = W.camp; scaled(c.x, c.y, CS, drawCampRaw); }
+// the wreck, painted once in the watercolour style: a scorched furrow, a dented disc half buried, a cracked dome, scattered plating
+const WRECK_SVG = `
+<path d="M8 38 Q60 64 104 96 Q126 112 152 118 L162 102 Q124 82 84 56 Q50 34 16 22 Z" fill="#2b2418" opacity=".6" filter="url(#wash)"/>
+<path d="M14 24 Q52 38 86 60 L80 50 Q50 30 18 18 Z" fill="#7a6448" opacity=".55" filter="url(#wash)"/><path d="M12 40 Q56 64 98 94 L92 100 Q50 72 8 46 Z" fill="#7a6448" opacity=".45" filter="url(#wash)"/>
+<ellipse cx="150" cy="128" rx="74" ry="18" fill="#14140c" opacity=".38" filter="url(#soft)"/>
+<g transform="rotate(-13 136 108)">
+  <ellipse cx="136" cy="110" rx="66" ry="19" fill="#5d6064"/>
+  <ellipse cx="136" cy="105" rx="66" ry="16" fill="#8d9195" filter="url(#wash)"/>
+  <ellipse cx="136" cy="105" rx="66" ry="16" fill="none" stroke="#2c2e30" stroke-width="1.2" opacity=".7"/>
+  <path d="M76 103 Q136 92 196 103" stroke="#d2d6d4" stroke-width="1.3" fill="none" opacity=".7"/>
+  <path d="M108 101 Q111 76 136 73 Q161 76 164 101 Z" fill="#9fb0b6" opacity=".78"/>
+  <path d="M116 98 Q118 82 134 78" stroke="#e8eef0" stroke-width="1.6" fill="none" opacity=".55"/>
+  <path d="M140 76 l-6 10 l7 5 l-5 9 M150 82 l-8 6" stroke="#2c3134" stroke-width=".9" fill="none" opacity=".8"/>
+  <circle cx="86" cy="108" r="2.2" fill="#2e3230"/><circle cx="104" cy="112" r="2.2" fill="#2e3230"/><circle cx="124" cy="114" r="2.2" fill="#bfe6b8"/><circle cx="124" cy="114" r="6" fill="#bfe6b8" opacity=".25"/><circle cx="148" cy="114" r="2.2" fill="#2e3230"/><circle cx="168" cy="111" r="2.2" fill="#2e3230"/><circle cx="186" cy="106" r="2.2" fill="#2e3230"/>
+  <path d="M174 100 q8 -5 16 2 q-4 6 -12 5 Z" fill="#4a4d50" opacity=".8"/>
+  <path d="M94 99 L104 86 L114 97 Z" fill="#a4a8ab" stroke="#2c2e30" stroke-width=".7"/>
+</g>
+<path d="M78 124 Q118 108 168 116 Q192 122 204 132 Q152 142 98 138 Z" fill="#5a4a36" opacity=".92" filter="url(#wash)"/>
+<path d="M96 132 q20 -8 44 -4 M150 128 q16 -2 30 6" stroke="#3c3022" stroke-width="1.2" fill="none" opacity=".6"/>
+<path d="M210 140 l14 -4 l3 6 l-12 4 Z M60 120 l10 -2 l2 5 l-9 2 Z M222 92 l9 -1 l1 4 l-8 1 Z" fill="#8d9195" stroke="#2c2e30" stroke-width=".6"/>
+<path d="M200 58 L252 42" stroke="#4a3626" stroke-width="7" stroke-linecap="round"/><path d="M200 58 L252 42" stroke="#7a5a3a" stroke-width="2" stroke-linecap="round" opacity=".6"/><path d="M196 60 l-6 -6 l4 -3 M198 62 l-5 4" stroke="#4a3626" stroke-width="2.5"/>`;
+function drawWreck(u) {
+  const img = PAINT.sprite('wreck', 260, 160, WRECK_SVG); const k = 0.62;
+  if (img) cx.drawImage(img, u.x - 136 * k, u.y - 112 * k, 260 * k, 160 * k);
+  const ph = phaseName(); if (ph === 'dusk' || ph === 'night' || W.night) { const g = cx.createRadialGradient(u.x - 6, u.y - 2, 2, u.x - 6, u.y - 2, 70); const a = 0.16 + Math.sin(W.t * 1.3) * 0.05; g.addColorStop(0, `rgba(190,235,185,${a})`); g.addColorStop(1, 'rgba(190,235,185,0)'); cx.fillStyle = g; cx.beginPath(); cx.arc(u.x - 6, u.y - 2, 70, 0, 6.283); cx.fill(); }
+}
+function lookAtWreck() {
+  const lines = E.foundWreck(S); const first = lines.length && lines[0][1] === 'big';
+  if (first) { records.wrecks = records.wrecks || {}; if (!records.wrecks[S.seasonKey]) { records.wrecks[S.seasonKey] = S.day; saveRecords(); } sfx.play('good'); }
+  banner(lines, first ? 9000 : 3000); updateHud(); save(); lastActs = ''; refreshActs();
+}
+function drawCamp() { if (!hasCamp()) return; const c = W.camp; scaled(c.x, c.y, CS, drawCampRaw); }
 function drawCampRaw() {
   const c = W.camp; const lvl = S.shelterLvl; const t = W.t; if (!W.cam || c.x < W.cam.x - 200 || c.x > W.cam.x + W.cam.w + 200 || c.y < W.cam.y - 200 || c.y > W.cam.y + W.cam.h + 200) return;
   const sx = c.x + 52, sy = c.y - 30; const hasTarp = S.gear.includes('Tarp'), bag = S.gear.includes('Sleeping bag'); const type = S.shelterType;
@@ -4782,7 +4891,7 @@ function scrubRivals(g) { // old saves carry the earlier roster's names: map by 
   if (g.replaced) { const gap = se.rivals.find(b => b.place !== 1 && !have.has(b.place)); g.replaced = (gap || se.rivals[hash(g.replaced) % se.rivals.length]).name; }
 }
 function migrate(g) { // fill anything a newer build added, so a save survives updates
-  repairSave(g);
+  repairSave(g); if (g.campChosen === undefined) g.campChosen = true; /* runs from before camps were chosen keep the camp they had */
   const needRivals = g.rivalsV !== 1;
   if (g.sys !== undefined && (!g.sys || typeof g.sys !== 'object' || Array.isArray(g.sys) || g.sys.schema !== 1)) { console.warn('Save had an unreadable sys block; reset it.'); g.sys = undefined; }
   if (g.mapV === undefined) g.mapV = 1; // saves from before drop sites varied keep the map they started on

@@ -197,6 +197,13 @@ A whole-game bug hunt (see TESTPLAN.md and BUGS.md) found and fixed 84 bugs. The
 - **Fumbling matters:** a missed bite costs most of the fishing session, a ferro rod left unblown goes out, and a rushed bed or roof repair comes out worse.
 - **Phone screens:** long messages wrap, things to pick up show above the trees, map labels no longer overlap, and the Craft menu is always there at camp.
 
+## Choosing camp, and something on the far side (Nov 3, 2026)
+
+- **You choose where camp goes.** The boat leaves you at the landing with no camp. Walk the ground and pick a spot: "Make camp here" shows what the spot is like before you commit (how far the water is, where the nearest dead wood is, whether trees shelter it, whether it is open to the lake, on a game trail or under a dead tree). Making camp takes half an hour. Until then there is no fire ring and no camp work; if night comes first, make camp where you stand or sleep rough.
+- **The spot matters, a little.** On a game trail, animals raid the food more often. Open to the lake, windy nights are colder; good trees around make them warmer. Under a dead tree, a storm can drop a limb on you or the roof. Too close to the water, in the bog or right under the rock face, you cannot camp at all.
+- Moving camp later works as before and re-reads the new spot. Runs saved before this keep the camp they had.
+- **A wreck.** Straight across the map from the landing, in every place, a small craft has come down. Finding it is noted in the run and in your records for an achievement later. It glows faintly after dark.
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.

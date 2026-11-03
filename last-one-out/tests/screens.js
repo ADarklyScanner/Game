@@ -14,7 +14,7 @@ const PHASES = {
   ended: s => { s.status = 'medical'; s.endReason = 'Test ending.'; },
 };
 function state(place, phase) {
-  const s = E.newGame(place, ['Pot', 'Knife', 'Ferro rod', 'Axe', 'Saw', 'Fishing gear', 'Sleeping bag', 'Paracord', 'Bow and arrows', 'Gillnet'], { seed: 42, weight: 200 });
+  const s = E.newGame(place, ['Pot', 'Knife', 'Ferro rod', 'Axe', 'Saw', 'Fishing gear', 'Sleeping bag', 'Paracord', 'Bow and arrows', 'Gillnet'], { seed: 42, weight: 200 }); s.campChosen = true;
   E.beginDay(s); s.event = null; s.storm = s.rain = false; Object.assign(s.mats, { poles: 20, cordage: 20, stone: 20, clay: 12, moss: 10, boughs: 20, hide: 6, bone: 4, feathers: 4, bark: 10, logs: 10, tinder: 5 });
   s.fire = true; s.firewood = 20; s.stores.push({ id: 'hare', por: 3, left: 4, smoked: false }, { id: 'fat', por: 2, left: 90, smoked: false, rendered: true }); s.raw.push({ id: 'trout', por: 2, left: 2 });
   s.carcass = { id: 'hare', por: 3, big: false, dressed: false, day: s.day }; PHASES[phase](s); return s;

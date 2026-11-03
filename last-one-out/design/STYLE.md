@@ -40,6 +40,10 @@ The aim: fit in among Steam survival games without copying them. Painted, muted 
 
 **Roughness: lived-in but tidy, leaning clean.** There's a little paper grain, an occasional stain and a soft vignette. Text must always be easy to read on a phone.
 
+## First painted piece
+
+The wreck on the far side of each map is the first thing drawn with the painting helper (`PAINT.sprite`): written once as a small watercolour SVG, turned into an image the first time it is needed, and reused. Phases 2 to 5 do the same for the land, trees, camp and animals.
+
 ## What stays the same
 
 All game rules, odds and the engine. This is a change to how things are drawn and laid out, not to what happens. The 1,100-plus checks and the bots keep testing the rules unchanged.

@@ -142,4 +142,15 @@ const snowDay = place => E.DATA.seasons.find(x => x.key === place).climate.snow;
   const s = camp(); s.fire = true; s.stores = [{ id: 'trout', por: 4, left: 60, smoked: false, dried: true, moist: 0.1 }, { id: 'fat', por: 2, left: 90, smoked: false, rendered: true }]; const k0 = E.storeKcal(s);
   if (E.available(s, 'craft_pemmican').ok) { E.act(s, 'craft_pemmican'); check('pemmican keeps its calories (within 2 kcal)', Math.abs(E.storeKcal(s) - k0) < 2, [k0, E.storeKcal(s)]); } else passes++;
 }
+{ // where camp sits matters: a game trail brings raiders, open shore lets the wind in, trees break it, a snag drops limbs
+  const mk = () => { const s = camp('US-S6', 5); s.campChosen = false; return s; };
+  const s = mk(); const L = E.makeCamp(s, { trail: true }); check('making camp works once', L.length === 1 && s.campChosen === true && s.sys.campSpot.trail); check('and only once', E.makeCamp(s, {}).length === 0);
+  const lines = trail => { let n = 0; for (let i = 0; i < 3000; i++) { const t = camp('US-S6', 4000 + i); t.sys.campSpot = { trail }; t.stores.push({ id: 'trout', por: 6, left: 4, smoked: false }); t.event = null; const L = E.endDay(t); if (L.some(l => /got into the food/.test(l[0]))) n++; } return n; };
+  const a = lines(false), b = lines(true); check('a camp on a game trail is raided more', b > a * 1.2, [a, b]);
+  const cold = sp => { const t = camp('US-S6', 7); t.sys.campSpot = sp; t.wind = true; t.storm = false; t.fire = false; t.event = null; E.endDay(t); return t.lastDay.cold; };
+  const c0 = cold({}), cx = cold({ exposed: true }), cw = cold({ windbreak: true }); check('open to the lake: colder in wind', cx > c0, [c0, cx]); check('good trees around: warmer in wind', cw < c0, [c0, cw]);
+  let hits = 0; for (let i = 0; i < 2000; i++) { const t = camp('US-S6', 6000 + i); t.sys.campSpot = { snag: true }; t.storm = true; t.event = null; const L = E.endDay(t); if (L.some(l => /dead limb/.test(l[0]))) hits++; } check('a snag over camp drops limbs in storms (about 5%)', hits > 60 && hits < 160, hits);
+  let none = 0; for (let i = 0; i < 1000; i++) { const t = camp('US-S6', 6000 + i); t.storm = true; t.event = null; const L = E.endDay(t); if (L.some(l => /dead limb/.test(l[0]))) none++; } check('no snag, no limbs', none === 0, none);
+  const w = camp(); const f1 = E.foundWreck(w), f2 = E.foundWreck(w); check('finding the wreck counts once', f1[0][1] === 'big' && f2[0][1] === 'muted' && w.stats.wreck === w.day);
+}
 console.log(fails ? `${fails} regression check(s) failed, ${passes} passed.` : `All ${passes} regression checks passed.`); process.exitCode = fails ? 1 : 0;

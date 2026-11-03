@@ -10,7 +10,7 @@ fs.writeFileSync(TMP, html.replace(hook, `window.__t = { S: () => S, W: () => W,
 const OUT = path.resolve(process.argv[2] || path.join(__dirname, '..', 'design', 'sheet')); fs.mkdirSync(path.join(OUT, 'img'), { recursive: true });
 const KEY = 'last-one-out-v1'; const save = s => JSON.stringify(s, (k, v) => v === Infinity ? 1e9 : v);
 const GEAR = ['Pot', 'Knife', 'Ferro rod', 'Axe', 'Fishing gear', 'Sleeping bag', 'Paracord', 'Bow and arrows', 'Trapping wire', 'Gillnet'];
-function state(place, f) { const s = E.newGame(place, GEAR, { seed: 42, weight: 200 }); E.beginDay(s); s.event = null; s.storm = s.rain = s.fog = false; s.firewood = 6; s.mats.tinder = 3; Object.assign(s.mats, { poles: 8, cordage: 8, boughs: 8, stone: 6 }); s.raw = [{ id: 'trout', por: 2, left: 2 }]; if (f) f(s); return s; }
+function state(place, f) { const s = E.newGame(place, GEAR, { seed: 42, weight: 200 }); s.campChosen = true; E.beginDay(s); s.event = null; s.storm = s.rain = s.fog = false; s.firewood = 6; s.mats.tinder = 3; Object.assign(s.mats, { poles: 8, cordage: 8, boughs: 8, stone: 6 }); s.raw = [{ id: 'trout', por: 2, left: 2 }]; if (f) f(s); return s; }
 const shots = [];
 const add = (group, name, caption, place, setup, after, vp) => shots.push({ group, name, caption, place, setup, after, vp: vp || [390, 844] });
 // every place, as you arrive
@@ -19,6 +19,10 @@ for (const se of D.seasons) add('Every place on day 1', 'place-' + se.key.replac
 const P = 'US-S6';
 const toTree = () => { const W = window.__t.W(); const t = W.trees.find(x => !x.gone && x.kind === 'conifer' && x.age === 'mature'); W.player.x = t.x + 20; W.player.y = t.y + 10; };
 const toShore = () => { const W = window.__t.W(); const y = W.camp.y + 40; W.player.y = y; W.player.x = W.shoreX(y) + 18; };
+add('Choosing camp', 'landed', 'Just landed: no camp yet', P, s => { s.campChosen = false; });
+add('Choosing camp', 'make-camp', 'Make camp here? The spot report', P, s => { s.campChosen = false; }, () => { const W = window.__t.W(); W.player.x += 300; W.player.y += 200; window.__t.call('openMakeCamp'); });
+add('The wreck', 'wreck-day', 'The wreck, by day', P, null, () => { const W = window.__t.W(); W.player.x = W.ufo.x + 30; W.player.y = W.ufo.y + 70; });
+add('The wreck', 'wreck-dusk', 'The wreck, at dusk', P, s => { s.hours = E.dayHours(s) - 0.6; s.phase = 2; }, () => { const W = window.__t.W(); W.player.x = W.ufo.x + 30; W.player.y = W.ufo.y + 70; });
 add('A day at one camp', 'camp', 'At camp, morning: the most likely job is open', P);
 add('A day at one camp', 'camp-knife', 'At camp, Knife picked', P, null, () => document.querySelector('.tool[data-tool=knife]').click());
 add('A day at one camp', 'tree', 'At a big spruce', P, null, toTree);

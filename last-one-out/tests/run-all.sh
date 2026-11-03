@@ -25,4 +25,5 @@ node styles.js 2
 node ui-check.js
 node handson.js
 node screens.js
+node campsite.js
 echo "Everything passed."

@@ -7,7 +7,7 @@ const html = fs.readFileSync(SRC, 'utf8'); const hook = 'window.claude?.hot?.sna
 if (!html.includes(hook)) throw new Error('hook point not found'); fs.writeFileSync(TMP, html.replace(hook, 'window.__test = { startCraft: (...a) => startCraft(...a), S: () => S, W: () => W };\n' + hook));
 const KEY = 'last-one-out-v1'; const save = s => JSON.stringify(s, (k, v) => v === Infinity ? 1e9 : v);
 let fails = 0, passes = 0; const check = (name, ok, detail) => { if (ok) passes++; else { fails++; console.log('FAIL', name, detail ?? ''); } };
-function base() { const s = E.newGame('US-S2', ['Pot', 'Knife', 'Ferro rod', 'Axe', 'Saw', 'Fishing gear', 'Sleeping bag', 'Paracord', 'Rations'], { seed: 31, weight: 200 }); E.beginDay(s); s.event = null; s.storm = s.rain = s.fog = s.wind = false; s.fire = true; s.firewood = 20;
+function base() { const s = E.newGame('US-S2', ['Pot', 'Knife', 'Ferro rod', 'Axe', 'Saw', 'Fishing gear', 'Sleeping bag', 'Paracord', 'Rations'], { seed: 31, weight: 200 }); s.campChosen = true; E.beginDay(s); s.event = null; s.storm = s.rain = s.fog = s.wind = false; s.fire = true; s.firewood = 20;
   Object.assign(s.mats, { poles: 20, cordage: 20, stone: 20, clay: 12, moss: 10, boughs: 20, hide: 6, bone: 4, feathers: 4, bark: 10, logs: 10 }); s.shelterType = 'cabin'; s.shelterLvl = 3; s.stores.push({ id: 'fat', por: 4, left: 90, smoked: false, rendered: true }); return s; }
 // jobs sit on the tool roll: a job under another tool is in the page but hidden until its tool is picked
 const buttons = p => p.evaluate(() => [...document.querySelectorAll('button')].filter(b => b.offsetParent || b.dataset.tool && b.classList.contains('actbtn')).map(b => b.textContent.trim()));
