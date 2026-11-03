@@ -573,6 +573,22 @@ function wade(s, bridge) {
 }
 // ------------------------------------------------------------------ pottery: shape, dry for days, fire in a pit. A fired pot cooks like a metal one but cracks now and then
 const clayPots = s => (s.sys && s.sys.clayPots) || 0;
+/* where today's water came from, if anywhere. At the water's edge (a job there, or in the browser game simply walking down to it); a walk down
+   from a camp within 150 m of the water, on any day you are up and about; water kept at camp (hauled, boiled or melted); tea or broth; rain
+   caught in a pot or a tarp. A frozen lake needs an axe for a hole, or a hole already chopped for fishing. raw: you drank it unboiled. */
+function waterToday(s) {
+  const t = s.today || { done: [] }; const done = t.done || []; const c = season(s).climate;
+  if (c.water === 'scarce') return { ok: (s.water || 0) > 0, raw: false, how: 'carried' };
+  const ice = !frozen(s) || !!t.iceHole || chopper(s);
+  const edge = !!t.drank || done.some(id => { const w = ACTIONS[id] && ACTIONS[id].where; return w === 'water' || w === 'shore'; });
+  const spot = (s.sys && s.sys.campSpot) || {}; const walk = done.length > 0 && !(spot.waterM > 150);
+  const brewed = done.includes('needle_tea') || done.includes('bone_broth') || done.includes('melt_snow') || done.includes('boil');
+  if ((edge || walk) && ice) return { ok: true, raw: !(s.boiled > 0), how: edge ? 'edge' : 'walk' };
+  if (s.boiled > 0 || brewed) return { ok: true, raw: false, how: 'boiled' };
+  if ((s.potWater || 0) > 0) return { ok: true, raw: true, how: 'kept' };
+  if ((s.rain || s.storm) && (potLike(s) || has(s, 'Tarp'))) return { ok: true, raw: false, how: 'rain' };
+  return { ok: false, raw: false, how: frozen(s) && (edge || walk) ? 'ice' : 'none' };
+}
 function potLike(s) { return has(s, 'Pot') || clayPots(s) > 0; }
 function greenPots(s) { return (s.sys && s.sys.greenPots) || []; }
 function dryPots(s, fire, lines) {
@@ -1185,7 +1201,7 @@ function act(s, id, opts = {}) {
   if (s.phase > 2 && !nightOk(s, id)) return [];
   const lines = []; const av = available(s, id); const A = ACTIONS[id];
   if (!av.ok) { lines.push([`Couldn't ${A.label.toLowerCase()}: ${av.why.toLowerCase()}.`, 'muted']); return lines; }
-  const h = A.hours * (s.health < 40 ? 1.25 : 1);
+  const h = A.hours * (s.health < 40 ? 1.25 : 1) * (s.sys && s.sys.dry ? 1.25 : 1); /* thirst slows every job */
   if ((s.rain || s.storm) && !opts.inside && !['inside', 'camp'].includes(A.where)) s.wet = Math.min(1, s.wet + (s.storm ? 0.2 : 0.12) * h);
   if ((s.rain || s.storm) && opts.inside) s.morale += 0.5;
   const atNight = s.phase === 3; if (atNight) { s.nightHours = round1((s.nightHours || 0) + h); const lamp = lampOk(s) && (!s.fire || (!!opts.inside && !s.fireInside)) && !['light_fire', 'tend_fire'].includes(id); if (lamp) burnLamp(s, h, lines, !!opts.inside); else s.morale -= 0.3 * h; } // steady lamplight takes the strain out of night work
@@ -1942,8 +1958,8 @@ function nightAndBody(s, burn, done, lines) {
   // water
   const c = se.climate; let waterOk = true; let dmg = 0;
   if (c.water === 'scarce') { const need = s.heat ? 2 : 1; if ((s.water || 0) >= need) s.water -= need; else if ((s.water || 0) > 0) { s.water = 0; lines.push(['Not enough water for a day this hot. Thirsty and slow.', 'warn']); dmg += 2; } else waterOk = false; }
-  /* where water is all around you drink whenever you are up and about, or from a pot kept at camp; a day lying still with none to hand is a day without */
-  else if (!(s.today && (s.today.done.length || s.today.drank)) && !((s.potWater || 0) > 0 || s.boiled > 0)) waterOk = false;
+  /* where water is all around: you have to get to it, or have some at camp (waterToday); a day lying still with none to hand is a day without */
+  let drankRaw = false; if (c.water !== 'scarce') { const wt = waterToday(s); waterOk = wt.ok; drankRaw = wt.raw; if (wt.how === 'kept') s.potWater = Math.max(0, s.potWater - 1); if (wt.how === 'ice') lines.push(['The lake is frozen hard and you have nothing to cut a hole with. Melt snow by the fire, or go without.', 'warn']); }
 
   // eating
   const target = { full: tdee, moderate: tdee * 0.7, lean: tdee * 0.4 }[s.ration];
@@ -1995,7 +2011,7 @@ function nightAndBody(s, burn, done, lines) {
   const treated = s.boiled > 0 || c.water === 'scarce';
   { const sys = s.day > 3 ? sysOf(s) : s.sys; if (sys) { if (latrineOk(s)) sys.fouling = Math.max(0, Math.round((fouling(s) - 0.03) * 1000) / 1000); else if (s.day > 3) sys.fouling = Math.min(1, Math.round((fouling(s) + 0.015) * 1000) / 1000); } }
   if (fouling(s) > 0.5 && T > 10 && !latrineOk(s) && chance(s, 0.15)) lines.push(['Flies, and a smell on the path down to the water. The camp needs a proper latrine.', 'muted']);
-  if (!treated && waterOk && chance(s, (potLike(s) || has(s, 'Canteen') ? 0.004 : 0.012) * soap * (1 + 2 * fouling(s)))) sick(s, 'Giardia from untreated water', lines); /* only on days you drank it */
+  if (!treated && drankRaw && chance(s, (potLike(s) || has(s, 'Canteen') ? 0.004 : 0.012) * soap * (1 + 2 * fouling(s)))) sick(s, 'Giardia from untreated water', lines); /* only on days you drank it */
   if (ate.rawMeat && (!fire || (COOK_RISKS && s.cook === 'raw')) && chance(s, 0.04 * soap)) sick(s, 'Food poisoning from raw meat', lines);
   if (ate.rawFish && chance(s, 0.02 * soap)) sick(s, 'Food poisoning from raw fish', lines);
   if (ate.worms && !s.conditions.some(c => c.name === 'Trichinosis') && !((s.sys && s.sys.latent) || []).length && chance(s, ate.wormsRaw ? 0.15 : 0.03)) {
@@ -2170,7 +2186,7 @@ function status(s) {
   return { lossFrac: lf, medLimit: medicalLimit(s), weather: weatherName(s), snowshoes: s.crafts.snowshoes >= 1, windChill: Math.round(temperature(s) - (s.storm ? 6 : s.wind ? 4 : 0)), moon: s.moon, aurora: !!s.aurora, windows: activeWindows(s), shelterCond: s.shelterCond ?? 1, shelterType: s.shelterType, canInside: canWorkInside(s), shelter: shelterName(s), shelterLevel: s.shelterLvl, temp: Math.round(temperature(s)), frozen: frozen(s), snowy: snowy(s), remaining: s.rivals.filter(r => !r.out).length, storeKcal: Math.round(storeKcal(s)), rawKcal: Math.round(rawKcal(s)), hoursLeft: hoursLeft(s), dayHours: dayHours(s), lowTide: lowTide(s), igniter: igniter(s) };
 }
 
-const API = { note, sunny, sprayLeft, fallChance, climbAnchor, stalkNoise, fouling, latrineOk, raftOf, raftOk, flintOf, hasBow, bowPower, driftChance, bearings, wade, clothesOf, tomorrow, skyAcc, thinIce, potLike, clayPots, greenPots, bedWarmth, snowLoadOf, bedOf, lampOk, nightOk, haftOf, tinderDamp, fireOdds, sealOf, hasHearth, isDry, onStation, RACK_CAP, DRY_AT, dryDaysLeft, sysOf, cacheSign, low, matName, BIOMES, biomeOf, treeKind, realMedianOf: se => { const d = se.rivals.filter(r => r.days != null).map(r => r.days).sort((a, b) => a - b); return d[d.length >> 1]; }, WEIGHT, loadOf, carryCap, moveCampCost, moveCamp, collectSize, berryRipe, bushRipeDay, stockOf, stockWord, billFor, nightOk, NIGHT_OK, treeYield, treeNames, fishPool, sizeOf, SHELTERS, shelterOptions, chooseShelter, dropPlan, makeCamp, foundWreck, shelterName, canWorkInside, travel, activeWindows, windowOn, timeMult, weatherName, dayFrac, midday, setTune, DATA, C, MATS, ACTIONS, EVENTS, newGame, runDay, beginDay, act, endDay, choose, carryLoad, available, tapOut, placing, status, season, storeKcal, temperature, shelterLevel, SHELTER_NAMES, shelterBill, shelterMissing, matList, fishOdds, huntOdds, bowDrillOdds, dayHours, hoursLeft, phaseOf, lowTide, igniter, blade, cutter, chopper, hasRod, digger };
+const API = { waterToday, note, sunny, sprayLeft, fallChance, climbAnchor, stalkNoise, fouling, latrineOk, raftOf, raftOk, flintOf, hasBow, bowPower, driftChance, bearings, wade, clothesOf, tomorrow, skyAcc, thinIce, potLike, clayPots, greenPots, bedWarmth, snowLoadOf, bedOf, lampOk, nightOk, haftOf, tinderDamp, fireOdds, sealOf, hasHearth, isDry, onStation, RACK_CAP, DRY_AT, dryDaysLeft, sysOf, cacheSign, low, matName, BIOMES, biomeOf, treeKind, realMedianOf: se => { const d = se.rivals.filter(r => r.days != null).map(r => r.days).sort((a, b) => a - b); return d[d.length >> 1]; }, WEIGHT, loadOf, carryCap, moveCampCost, moveCamp, collectSize, berryRipe, bushRipeDay, stockOf, stockWord, billFor, nightOk, NIGHT_OK, treeYield, treeNames, fishPool, sizeOf, SHELTERS, shelterOptions, chooseShelter, dropPlan, makeCamp, foundWreck, shelterName, canWorkInside, travel, activeWindows, windowOn, timeMult, weatherName, dayFrac, midday, setTune, DATA, C, MATS, ACTIONS, EVENTS, newGame, runDay, beginDay, act, endDay, choose, carryLoad, available, tapOut, placing, status, season, storeKcal, temperature, shelterLevel, SHELTER_NAMES, shelterBill, shelterMissing, matList, fishOdds, huntOdds, bowDrillOdds, dayHours, hoursLeft, phaseOf, lowTide, igniter, blade, cutter, chopper, hasRod, digger };
 if (typeof module !== 'undefined') module.exports = API; else root.Engine = API;
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
@@ -2980,7 +2996,7 @@ function updateHud() {
   hudEl.querySelector('#h-day').textContent = S.day;
   { const arrow = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'][Math.round(((S.windDir || 0) / 6.283) * 8) % 8]; const sky = S.storm ? `storm ${arrow}` : S.snowfall ? 'snowing' : S.rain ? 'rain' : S.fog ? 'fog' : st.weather === 'wind' ? `wind ${arrow}` : st.weather === 'heat' ? 'hot' : `breeze ${arrow}`;
     hudEl.querySelector('#h-temp').textContent = `${st.temp}°${st.windChill < st.temp - 2 ? ` (feels ${st.windChill}°)` : ''}, ${sky}${st.frozen ? ', ice' : st.snowy && !S.snowfall ? ', snow on the ground' : ''}`; }
-  const condEl = hudEl.querySelector('#h-cond'); const bits = st.windows.map(w => w.label); const arrow = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'][Math.round(((S.windDir || 0) / 6.283) * 8) % 8]; /* the weather is in the line under the light now */ void arrow; if (st.shelterCond < 0.5 && S.shelterLvl) bits.push('Roof leaking'); { const kg = E.loadOf(S.pack || {}); if (kg > 0.5) bits.push(`Pack ${Math.round(kg)}/${E.carryCap(S)} kg`); } { const b = bodyState(); const felt = []; if (b.wet > 0.5) felt.push('Soaked'); if (b.cold > 0.5) felt.push('Freezing'); if (b.hot) felt.push('Overheating'); if (b.starving > 0.4) felt.push('Starving'); else if (b.hungry > 0.5) felt.push('Hungry'); if (b.hurt > 0.4) felt.push('Hurt'); if (b.sick) felt.push('Sick'); if (b.low > 0.5) felt.push('Low'); bits.push(...felt.slice(0, 2)); } condEl.textContent = bits.join(' · '); condEl.hidden = !bits.length;
+  const condEl = hudEl.querySelector('#h-cond'); const bits = st.windows.map(w => w.label); const arrow = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'][Math.round(((S.windDir || 0) / 6.283) * 8) % 8]; /* the weather is in the line under the light now */ void arrow; if (st.shelterCond < 0.5 && S.shelterLvl) bits.push('Roof leaking'); { const kg = E.loadOf(S.pack || {}); if (kg > 0.5) bits.push(`Pack ${Math.round(kg)}/${E.carryCap(S)} kg`); } { const b = bodyState(); const felt = []; { const dry = S.sys && S.sys.dry; const wt = E.waterToday(S); if (dry) felt.push('Dehydrated'); else if (!wt.ok && S.phase >= 0 && st.hoursLeft < 5) felt.push('Thirsty'); } if (b.wet > 0.5) felt.push('Soaked'); if (b.cold > 0.5) felt.push('Freezing'); if (b.hot) felt.push('Overheating'); if (b.starving > 0.4) felt.push('Starving'); else if (b.hungry > 0.5) felt.push('Hungry'); if (b.hurt > 0.4) felt.push('Hurt'); if (b.sick) felt.push('Sick'); if (b.low > 0.5) felt.push('Low'); bits.push(...felt.slice(0, 2)); } condEl.textContent = bits.join(' · '); condEl.hidden = !bits.length;
   const goalEl = hudEl.querySelector('#h-goal'); const gt = S.status === 'playing' && S.phase >= 0 ? goalText() : ''; goalEl.textContent = gt; goalEl.hidden = !gt;
   const hl = st.hoursLeft; hudEl.querySelector('#h-time').textContent = S.phase < 0 || S.phase === 3 ? 'Night' : `${halves(hl)} h light`;
   const lf = st.lossFrac; const wbar = lf >= 0.25 ? 'b' : lf >= 0.18 ? 'w' : '';
@@ -3083,7 +3099,7 @@ function reveal(x, y, r) {
 }
 function update(dt) {
   if (W.paused) return;
-  W.t += dt; W.cellT = (W.cellT || 0) + dt; if (W.cellT > 0.5) { W.cellT = 0; ensureCells(); if (S && S.today && !S.today.drank && !W.desert && atShore()) S.today.drank = true; /* a drink at the water's edge */ }
+  W.t += dt; W.cellT = (W.cellT || 0) + dt; if (W.cellT > 0.5) { W.cellT = 0; ensureCells(); if (S && S.today && !S.today.drank && !W.desert && atShore() && !W.inside) { S.today.drank = true; if (!(E.waterToday(S).how === 'ice')) banner([['A long drink at the water\'s edge.', 'muted']], 1800); } /* a drink at the water's edge */ }
   W.revealT = (W.revealT || 0) + dt; if (W.revealT > 0.4) { W.revealT = 0; reveal(W.player.x, W.player.y, S.fog ? 150 : W.night ? 90 : 230); }
   const p = W.player; const busy = !!(mini && !mini.free) || W.night || (S.event && S.event.id === 'wound');
   let v = keyVec() || (input.joy ? input.vec : null);
@@ -5774,7 +5790,7 @@ function openCamp() {
       ${S.gear.includes('Axe') || S.gear.includes('Hatchet') ? `<div class="row"><span>Axe</span><span>${S.sys && S.sys.axeOff ? 'head off the handle' : `${S.axeEdge > 0.8 ? 'sharp' : S.axeEdge > 0.5 ? 'getting dull' : 'dull'} · ${E.haftOf(S) < 0.35 ? 'head loose' : 'head tight'}`}</span></div>` : ''}
       <div class="row"><span>Fire</span><span>${S.fire ? 'Burning' : 'Out'} · <span class="num">${Math.round(S.firewood)}</span> days of wood · ${st.igniter === 'ferro' ? 'ferro rod' : st.igniter === 'bowdrill' ? 'bow drill' : 'no way to light one'} · ${S.mats.tinder > 0 ? `${S.mats.tinder} tinder${E.tinderDamp(S) > 0.2 ? ', damp' : ''}` : 'no tinder'}</span></div>
       <div class="row"><span>Shelter</span><span>${esc(st.shelter)}${S.shelterLvl ? ` · ${Math.round(st.shelterCond * 100)}% sound` : ''}${S.shelterLvl < 3 ? ` · next: ${esc(E.SHELTER_NAMES[S.shelterLvl + 1])}` : ''}</span></div>
-      <div class="row"><span>Water</span><span>${S.boiled > 0 ? 'Boiled' : E.season(S).climate.water === 'scarce' ? `${S.water || 0} days in hand` : 'Drinking it raw'}${S.potWater ? ` · ${S.potWater} pot${S.potWater > 1 ? 's' : ''} at camp` : ''}${S.wet > 0.4 ? ' · you are wet' : ''}</span></div>
+      <div class="row"><span>Water</span><span>${(() => { const wt = E.waterToday(S); return wt.ok ? ({ edge: 'Drank at the water today', walk: 'Drank at the water today', boiled: 'Boiled water today', kept: 'From the pot at camp today', rain: 'Rainwater today', carried: 'Carried water today' }[wt.how] || 'Drank today') : (S.sys && S.sys.dry ? `No water for ${S.sys.dry} day${S.sys.dry > 1 ? 's' : ''}` : 'Not yet today'); })()} · ${S.boiled > 0 ? 'Boiled' : E.season(S).climate.water === 'scarce' ? `${S.water || 0} days in hand` : 'Drinking it raw'}${S.potWater ? ` · ${S.potWater} pot${S.potWater > 1 ? 's' : ''} at camp` : ''}${S.wet > 0.4 ? ' · you are wet' : ''}</span></div>
       <div class="row"><span>Net</span><span>${S.net ? (S.net.torn ? 'Torn' : 'Set') : E.available(S, 'setnet').ok ? 'Not set' : '—'}</span></div>
       <div class="row"><span>Traps</span><span>${traps.join(', ') || 'None out'}</span></div>
       ${built.length ? `<div class="row"><span>Built</span><span>${esc(built.join(', '))}</span></div>` : ''}
