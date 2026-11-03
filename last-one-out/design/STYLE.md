@@ -104,6 +104,15 @@ The wreck on the far side of each map is the first thing drawn with the painting
 - **The map** is drawn in ink and wash on paper: grey-blue water, dashed brown trails, soft green woods. Ground you have not walked is blank paper, so the map fills in as you go.
 - **Setup and the end of a run** use the warm canvas palette with paper cards for the places and the ten items. Light mode uses paper throughout.
 
+## The last of it (phase 8b)
+
+- **Things to pick up** (worms, mussels, kelp, stones, boughs, bark, tinder, grubs, moss, berries, leaves, roots), the **small plants** (mushrooms in each of their looks, greens, roots, nettles, cattails, seed heads, picked or under snow), **moss patches** and **tree ferns** are painted. Tall plants still sway a little.
+- **The mountain skyline** is painted with washes: pigment along each ridge top and lighter and darker washes on the slopes, seeded by position so the map's tiles still meet.
+- **Every event has a painting** above its choices: the place's trees, the hour (dusk for the night visitors), water or ground, and the subject (the bear by the fire, wolves on the ridge as silhouettes, eyes in the dark, ducks, the fish run, the storm, the flood, the axe in the tide and so on).
+- **Badges** carry a painted stamp, faded until earned. **The end of a run** opens on a painting of the lake with the floatplane come to take you out.
+- **Inside,** the things you have made show up: the can stove and its pipe, the tallow lamp (lit at night, with its glow), the woven mat and the snowshoes on the wall.
+- **Icons** on the tool roll and the top bar have painted edges and muted colours. The player's hands and tools, the fishing float, rain, the aurora and the moving parts of the close-ups are in the muted palette.
+
 ## What stays the same
 
 All game rules, odds and the engine. This is a change to how things are drawn and laid out, not to what happens. The 1,100-plus checks and the bots keep testing the rules unchanged.
