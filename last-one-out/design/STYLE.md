@@ -97,6 +97,13 @@ The wreck on the far side of each map is the first thing drawn with the painting
 - Each job names its close-up as it starts, so the right picture is used.
 - A fix that came out of this: a dead-straight stroke disappears under the paint filter (it has no width for the filter to work on). Poles are now filled shapes, so the camp's uprights, posts and door frames show again.
 
+## How the panels are made (phase 8)
+
+- **Panels are objects.** Every panel is a sheet of paper (grain, faint stains, ink text); the journal, body and notes are a ruled notebook with a red margin line, journal entries in handwriting; the pack is a stitched canvas bag with its materials on paper tags; the map is folded paper with its creases.
+- **Type:** headings in the book face in small caps over a ruled line; section names in italic; numbers, labels and small print in the condensed label face. The slashed-zero face is gone; all body text is the book face, with lining figures.
+- **The map** is drawn in ink and wash on paper: grey-blue water, dashed brown trails, soft green woods. Ground you have not walked is blank paper, so the map fills in as you go.
+- **Setup and the end of a run** use the warm canvas palette with paper cards for the places and the ten items. Light mode uses paper throughout.
+
 ## What stays the same
 
 All game rules, odds and the engine. This is a change to how things are drawn and laid out, not to what happens. The 1,100-plus checks and the bots keep testing the rules unchanged.
@@ -121,7 +128,7 @@ Each phase ends with the full test run, the picture sheet updated, and a commit.
 | 5 | Animals, people, tracks (done Nov 3) | Player, animals, carcasses, blood trails, debris, landmarks |
 | 6 | Interiors (done Nov 3) | Inside every shelter type, by weather and time of day |
 | 7 | Mini-games (done Nov 3) | All 26 as close-ups |
-| 8 | Panels | Pack, map, journal and body, camp, build, menu, records, how to play, setup and end screens |
+| 8 | Panels (done Nov 3) | Pack, map, journal and body, camp, build, menu, records, how to play, setup and end screens |
 | 9 | Finish | Phone speed checks, a full picture-sheet review, old saves, and publishing |
 
 ## Which tool each job sits under (phase 1)

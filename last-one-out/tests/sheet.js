@@ -117,6 +117,16 @@ add(H, 'mini-drill', 'Carving a bow-drill set', P, null, craft('craft_bowdrill')
 add('Panels', 'map', 'The map', P, null, () => { window.__t.call('openMap'); });
 add('Panels', 'pack', 'The pack', P, null, () => { window.__t.call('openPack'); });
 add('Panels', 'body', 'The body', P, null, () => { window.__t.call('openBody'); });
+add('Panels', 'journal', 'The journal', P, s => { s.day = 6; }, () => { window.__t.call('openJournal'); });
+add('Panels', 'notes', 'Notes', P, null, () => { window.__t.call('openNotes'); });
+add('Panels', 'camp-panel', 'The camp panel', P, s => { kit(s); shel(s, 'leanto'); }, () => { window.__t.call('openCamp'); });
+add('Panels', 'build', 'What you can build', P, s => kit(s), () => { window.__t.call('openBuild'); });
+add('Panels', 'menu', 'The menu', P, null, () => { window.__t.call('openMenu'); });
+add('Panels', 'how', 'How to play', P, null, () => { window.__t.call('openHow'); });
+add('Panels', 'records', 'Records', P, null, () => { window.__t.call('openRecords'); });
+add('Panels', 'setup', 'Choosing where to go and what to take', P, null, () => { window.__t.call('renderSetup'); });
+add('Panels', 'end', 'The end of a run', P, s => { s.day = 41; s.status = 'tapped'; s.endReason = 'You tapped out on day 41.'; }, () => { window.__t.call('renderEnd'); });
+
 add('Other sizes', 'small', 'Small phone, 320 wide', P, null, null, [320, 640]);
 add('Other sizes', 'desktop', 'Desktop, 1280 wide', P, null, null, [1280, 800]);
 (async () => {

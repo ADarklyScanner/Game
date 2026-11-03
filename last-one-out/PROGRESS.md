@@ -62,7 +62,8 @@ Steps 0 to 3 of TESTPLAN.md (inventory, coverage, every action and event, eight 
 - Phase 5, animals, people and tracks: done. All 36 animals painted in three poses and dead, the bear, the player, carcasses, tracks, snares and deadfalls, wreck debris, landmarks and boulders. 5 new pictures on the sheet. Drawing speed unchanged.
 - Phase 6, interiors: done. Inside the tarp, lean-to, debris hut, rock shelter and cabin, sound, worn and broken, with the land, sky and weather through the doorway, daylight and firelight, and you sitting by the fire. The room sits above the job list on phones. 11 new pictures on the sheet.
 - Phase 7, mini-games: done. Every hands-on close-up has a painted setting and watercolour art; the trout, grouse, hare, deer, fire-lighting, whetstone, snare, cairn, hearth, cordage and pot-firing have their own paintings, and lashing frames are real poles. Fixed poles vanishing from the camp art. 20 close-ups on the sheet.
-- Phases 8 and 9: not started.
+- Phase 8, panels: done. Paper panels, a notebook for the journal, body and notes, a canvas pack, an ink-and-wash map that starts blank and fills in, the setup and end screens on warm canvas with paper cards, and the slashed-zero face removed. 9 more panels on the sheet.
+- Phase 9: not started.
 
 ## Ideas for later (not started)
 
