@@ -53,7 +53,7 @@ async function tapAround(p, n) { for (let i = 0; i < n; i++) { await p.evaluate(
     await p.keyboard.press('Escape'); await p.waitForTimeout(800);
     const bar = await p.evaluate(() => document.body.innerText);
     await p.evaluate(() => { const m = [...document.querySelectorAll('button')].find(e => /^More…/.test(e.textContent.trim())); if (m) m.click(); }); await p.waitForTimeout(300);
-    const more = await p.evaluate(() => document.body.innerText); if (!/Render fat/i.test(bar + more)) fail('food buttons', 'Render fat not offered at camp. Bar: ' + bar.replace(/\s+/g, ' ').slice(0, 300));
+    const more = await p.evaluate(() => document.body.innerText + ' ' + [...document.querySelectorAll('button.actbtn')].map(b => b.textContent).join(' ')); /* jobs under other tools are in the page but hidden */ if (!/Render fat/i.test(bar + more)) fail('food buttons', 'Render fat not offered at camp. Bar: ' + bar.replace(/\s+/g, ' ').slice(0, 300));
     await p.keyboard.press('Escape'); await p.waitForTimeout(200);
     await tapAround(p, 40); if (errs.length) fail('food screens', errs.slice(0, 2)); await ctx.close();
   }

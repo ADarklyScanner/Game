@@ -52,6 +52,12 @@ Field notebook, look-alike plants and looking closely, unknown berries (eat, tes
 
 Steps 0 to 3 of TESTPLAN.md (inventory, coverage, every action and event, eight player styles) plus helper reviews of the engine, the screens, saves from every old version and a fresh-eyes playtest: done, 84 bugs fixed, listed in BUGS.md. Engine fixes each have a regression check (tests/regress.js); screen fixes were checked in the browser.
 
+## New look: grown-up watercolour (design/STYLE.md)
+
+- Phase 0, foundation: done. Typefaces bundled in the file (no internet needed), place palettes, painting helpers, paper grain, and the picture sheet (`tests/sheet.js`).
+- Phase 1, top bar and tool roll: done. Quiet numbers along the top, jobs grouped by tool on a canvas roll with a paper card, big paper buttons for mini-games and choices.
+- Phases 2 to 9: not started.
+
 ## Ideas for later (not started)
 
 - **Look:** a grown-up watercolour style that fits among Steam survival games but has its own character (mock-ups in progress, nothing changed in the game yet).

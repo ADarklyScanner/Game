@@ -56,8 +56,8 @@ Each phase ends with the full test run, the picture sheet updated, and a commit.
 
 | # | Phase | What changes |
 |---|---|---|
-| 0 | Foundation | Typefaces bundled, place palettes, paper and grain textures, the painting helpers, the first picture sheet |
-| 1 | Top bar and tool roll | New numbers bar; jobs grouped by tool on the canvas roll; index-card job lists; messages in the new type |
+| 0 | Foundation (done Nov 3) | Typefaces bundled, place palettes, paper and grain textures, the painting helpers, the first picture sheet |
+| 1 | Top bar and tool roll (done Nov 3) | New numbers bar; jobs grouped by tool on the canvas roll; index-card job lists; messages in the new type |
 | 2 | The land | Painted ground, water, shore, rivers, rock, paths; light, weather and night tinting |
 | 3 | Trees and plants | Every tree kind and age, bushes, moss, cut and used states |
 | 4 | Camp and shelters | Fire, every shelter type at every build stage and condition, drying rack, smoker, cache, woodshed, cairns, piles |
@@ -67,7 +67,21 @@ Each phase ends with the full test run, the picture sheet updated, and a commit.
 | 8 | Panels | Pack, map, journal and body, camp, build, menu, records, how to play, setup and end screens |
 | 9 | Finish | Phone speed checks, a full picture-sheet review, old saves, and publishing |
 
+## Which tool each job sits under (phase 1)
+
+| Tool | Jobs |
+|---|---|
+| Camp | build and repair the shelter, rest, sleep or turn in, go inside or out, bough bed, latrine, splint, mend, roof work, letter, camera, journal, read the sky, shadow stick, moss check, cairn, climb, scout, move camp, the load and the stack |
+| Fire | light, tend, move the fire in or out, cook, boil, melt snow, tea, broth, smoke, dry food, render fat, dry out, smoke clothes, pots, fetch water |
+| Gather | berries, greens, mushrooms, roots, shellfish, seaweed, insects, nettles, cattails, nuts, rose hips, seeds, forage, look closely, bait, moss, stones, clay, tinder, debris, boughs, bark |
+| Knife | clean, dress, hide, sharpen, whittle, cordage, and Craft… |
+| Wood | firewood, poles, logs, fix the axe |
+| Fish | fishing, the gill net, set lines, the raft |
+| Hunt | hunt, track |
+| Traps | snares, deadfalls, check the traps |
+
+Only the tools with something to do where you stand appear on the roll. When you arrive somewhere new, the tool for the most likely job opens by itself, so the main job is still one tap (and Space still does it). Tapping the open tool again folds the card away to see the land.
+
 ## Decisions still open
 
-- **Which tool a job belongs to.** For example, gathering berries goes under "hands" and boughs under the knife or hands. I'll propose a full list in phase 1.
 - **Desktop layout.** The mock-ups are phone screens. On a wide screen the world fills the window and the roll stays centred at the bottom.
