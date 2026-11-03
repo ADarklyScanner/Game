@@ -367,7 +367,8 @@ const foundCount = (s, cls) => s.found.filter(f => f.cls === cls).length;
 const blade = s => has(s, 'Knife') || has(s, 'Multitool') || s.crafts.stoneblade >= 1; // a knapped stone blade cuts, but it is brittle
 const chopper = s => (has(s, 'Axe') || has(s, 'Hatchet')) && !(s.sys && s.sys.axeOff); // no axe while its head is off
 const cutter = s => chopper(s) || has(s, 'Saw');
-const cutsIce = s => cutter(s);
+/* an axe or saw opens the ice whenever you need it; without one, a hole broken by hand stays open for the day */
+const cutsIce = s => cutter(s) || !!(s.today && s.today.iceHole);
 const digger = s => has(s, 'Shovel') || s.crafts.diggingstick >= 1;
 const hasNetGear = s => has(s, 'Gillnet') || s.crafts.net >= 2;
 const hasRod = s => (has(s, 'Fishing gear') && s.hooks > 0 && s.line > 0) || (s.crafts.handline >= 1 && s.hooks > 0);
@@ -781,6 +782,7 @@ const ACTIONS = {
   render_fat: { label: 'Render fat', hours: 1, effort: 'light', group: 'Camp', where: 'camp' },
   boil: { label: 'Boil water', hours: 0.5, effort: 'light', group: 'Camp', where: 'camp' },
   water: { label: 'Fetch water', hours: 0.25, effort: 'light', group: 'Camp', where: 'water' },
+  ice_hole: { label: 'Break a hole in the ice', hours: 1, effort: 'heavy', group: 'Camp', where: 'water' },
   dry: { label: 'Dry out by the fire', hours: 1, effort: 'rest', group: 'Camp', where: 'camp' },
   repair: { label: 'Patch the shelter', hours: 1.5, effort: 'moderate', group: 'Camp', where: 'camp' },
   fire_in: { label: 'Bring the fire inside', hours: 0.5, effort: 'light', group: 'Camp', where: 'camp' },
@@ -876,7 +878,7 @@ function available(s, id) {
   switch (id) {
     case 'fish': {
       if (!hasRod(s)) return r(false, has(s, 'Fishing gear') ? (s.hooks <= 0 ? 'No hooks left. Carve gorge hooks' : 'No line left') : 'Needs fishing gear or a handline');
-      if (frozen(s) && !cutsIce(s)) return r(false, 'Water is frozen. Needs an axe or saw for an ice hole');
+      if (frozen(s) && !cutsIce(s)) return r(false, 'Water is frozen. Break a hole in the ice first');
       if (c.water === 'scarce' && !se.pools.fish.length) return r(false, 'No fish here');
       if (s.storm) return r(false, 'Too rough to fish');
       if (windowOn(s, 'freezeup')) return r(false, 'Freeze-up. Ice too thin to walk, too thick to cast');
@@ -885,7 +887,7 @@ function available(s, id) {
     case 'setnet': {
       if (!hasNetGear(s)) return r(false, 'Needs a gill net');
       if (s.net && !s.net.torn) return r(false, 'The net is already set');
-      if (frozen(s) && !cutsIce(s)) return r(false, 'Ice. Needs an axe or saw');
+      if (frozen(s) && !cutsIce(s)) return r(false, 'Ice. Break a hole in the ice first');
       if (s.storm) return r(false, 'Too rough to wade out');
       if (windowOn(s, 'freezeup')) return r(false, 'Freeze-up. Wait for solid ice');
       if (s.net && s.net.torn && s.mats.cordage < 2 && !(s.line >= 15)) return r(false, 'Torn. Needs 2 cordage or some fishing line to mend');
@@ -1020,7 +1022,8 @@ function available(s, id) {
       return s.stores.some(hangable) ? r(true, '', '') : r(false, 'Nothing fresh to smoke');
     }
     case 'boil': return !(potLike(s) || has(s, 'Canteen') || has(s, 'Frying pan') || (s.containers && s.containers > 0)) ? r(false, 'Nothing to boil in') : !s.fire ? r(false, 'Needs a fire') : !(s.potWater >= 1) ? r(false, 'No water at camp. Fetch some') : s.boiled >= 2 ? r(false, 'Enough boiled for now') : r(true, '', 'Safe water for a day or two');
-    case 'water': { const cap = waterCap(s); if (c.water === 'scarce') return r(true, '', (s.water > 0 ? `${s.water} days to drink` : 'Out of water') + (cap ? ` · fills ${cap} pot${cap > 1 ? 's' : ''}` : '')); if (!cap) return r(false, 'Nothing to carry it in'); if ((s.potWater || 0) >= cap) return r(false, 'Already full'); if (frozen(s) && !cutsIce(s)) return r(false, 'Frozen. Needs an axe or saw for a hole'); return r(true, '', `fills ${cap} pot${cap > 1 ? 's' : ''} · ${s.potWater || 0} at camp`); }
+    case 'ice_hole': return !frozen(s) ? r(false, 'The water is open') : cutter(s) ? r(false, 'Your blade opens a hole when you need one') : s.today.iceHole ? r(false, 'The hole is open today') : s.mats.stone < 1 && s.mats.poles < 1 ? r(false, 'Needs a heavy stone or a stout pole') : r(true, '', temperature(s) < -15 ? 'thick ice · slow, hard work · water and fishing today' : 'water and fishing today');
+    case 'water': { const cap = waterCap(s); if (c.water === 'scarce') return r(true, '', (s.water > 0 ? `${s.water} days to drink` : 'Out of water') + (cap ? ` · fills ${cap} pot${cap > 1 ? 's' : ''}` : '')); if (!cap) return r(false, 'Nothing to carry it in'); if ((s.potWater || 0) >= cap) return r(false, 'Already full'); if (frozen(s) && !cutsIce(s)) return r(false, 'Frozen. Break a hole in the ice first'); return r(true, '', `fills ${cap} pot${cap > 1 ? 's' : ''} · ${s.potWater || 0} at camp`); }
     case 'dry_food': { if (!(s.crafts.rack >= 1)) return r(false, 'Build a drying rack first'); const free = capOf(s, 'rack') - onStation(s, 'rack'); if (free < 0.5) return r(false, 'The rack is full'); const fresh = s.stores.filter(hangable); if (!fresh.length) return r(false, 'Nothing fresh to hang'); const n = Math.min(free, fresh.reduce((a, x) => a + x.por, 0)); const d = dryDaysLeft(s, 'rack', { moist: 0.72, thick: !blade(s) }); return r(true, '', `${Math.round(n)} portions · ${d ? `about ${d} day${d === 1 ? '' : 's'} in this weather` : 'too wet to dry today'}${sysOf(s).rackRoof ? '' : ' · no roof'}`); }
     case 'render_fat': { if (!s.fire) return r(false, 'Needs a fire'); if (!s.stores.some(x => x.id === 'fat' && !x.rendered)) return r(false, 'No raw fat'); const pot = potLike(s) || has(s, 'Frying pan'); return r(true, '', pot ? 'slowly, in the pot' : 'on a flat stone · loses a third'); }
     case 'craft_rack': return s.crafts.rack >= 1 ? (sysOf(s).rackRoof ? r(false, 'Built') : s.mats.boughs >= 4 ? r(true, '', 'roof the rack with 4 boughs') : r(false, 'Built. 4 boughs would roof it')) : s.mats.poles < 3 ? r(false, 'Needs 3 poles') : s.mats.cordage < 2 ? r(false, 'Needs 2 cordage') : r(true, '', has(s, 'Tarp') || s.mats.boughs >= 4 ? '3 poles, 2 cordage, a roof' : '3 poles, 2 cordage · no roof without 4 boughs');
@@ -1126,7 +1129,7 @@ const PATCH = { berries: 0.06, rosehips: 0.06, seeds: 0.08, roots: 0.06, cattail
 const PATCH_BACK = { forage: 0.015, greens: 0.02, nettle: 0.02, mushrooms: 0.03, shellfish: 0.01, seaweed: 0.02, insects: 0.01 };
 function fishOdds(s, water) {
   const se = season(s); let p = 0.38 * se.mult.fish * s.skill.fish * stockOf(s, water || 'lake');
-  if (frozen(s)) p *= 0.55; if (s.storm) p *= 0.5; if (!s.mats.bait) p *= s.lure ? (poorly(s, 'lure') ? 0.72 : 0.85) : 0.55; if (s.crafts.handline >= 1 && !has(s, 'Fishing gear')) p *= (poorly(s, 'handline') ? 0.7 : 0.8) * (s.crafts.leader >= 1 && !s.spate ? 1.3 : 1); // thick cord is easy to see in clear water
+  if (frozen(s)) p *= 0.55; if (s.storm) p *= 0.5; if (!s.mats.bait) p *= s.lure ? (poorly(s, 'lure') ? 0.72 : 0.85) : 0.55; if (s.crafts.handline >= 1 && !has(s, 'Fishing gear')) p *= (poorly(s, 'handline') ? 0.55 : 0.65) * /* a carved gorge on twisted bark loses most of what bites; steel hooks and real line hold them */ (s.crafts.leader >= 1 && !s.spate ? 1.3 : 1); // thick cord is easy to see in clear water
   p *= timeMult(s, 'fish'); if (windowOn(s, 'run')) p *= 1.6; if (s.wind) p *= 0.75; if (s.heat && midday(s)) p *= 0.6;
   return p;
 }
@@ -1296,7 +1299,7 @@ function doAction(s, id, lines, mod, opts) {
       const got = s.net.catch.splice(0);
       if (got.length) { for (const f of got) addRaw(s, f, lines, 'Net:'); s.morale += 2; }
       else lines.push([s.net.torn ? 'The net is torn and empty.' : 'Empty net.', 'muted']);
-      if (!frozen(s)) s.wet = Math.min(1, s.wet + 0.3);
+      if (!frozen(s)) s.wet = Math.min(1, s.wet + 0.15); /* hauled in by its shore line: wet arms, not a wade */
       break;
     }
     case 'hunt': {
@@ -1457,6 +1460,7 @@ function doAction(s, id, lines, mod, opts) {
       break;
     }
     case 'boil': s.potWater -= 1; s.boiled = 2; lines.push([`Boiled a pot of water. Safe to drink for a day or two${s.potWater ? ` (${s.potWater} more at camp)` : ''}.`, 'info']); break;
+    case 'ice_hole': { s.today.iceHole = true; if (temperature(s) < -15) { s.hours = round1(s.hours + 0.75); s.today.burn += C.burnPerHour.heavy * 0.75; } lines.push([s.mats.stone >= 1 ? 'Lifted the heaviest stone you could and dropped it on the ice, again and again, until water welled up. Cleared the chips with your hands.' : 'Drove a sharpened pole into the ice until it went through, then worked the hole wide with it. Water at last.', 'info']); if (s.health < 60 && chance(s, 0.04)) { s.wet = Math.min(1, s.wet + 0.4); lines.push(['Slipped on the ice and put a knee through the hole. One leg soaked.', 'warn']); } break; }
     case 'water': { const cap = waterCap(s); if (season(s).climate.water === 'scarce') { s.water = cap ? 3 : 1; s.potWater = cap; lines.push([cap ? 'Hauled water from the pool. Enough to drink for three days.' : 'Drank your fill at the pool. Nothing to carry any back in.', 'info']); } else { s.potWater = cap; lines.push([`Carried ${cap === 1 ? 'a potful' : cap + ' potfuls'} of water back to camp.`, 'info']); } break; }
     case 'work_hide': { const sys = sysOf(s); if (X.good === false && chance(s, 0.35)) { s.mats.hide -= 1; lines.push(['Scraped too hard in one place and went right through the skin. The hide tore along the cut and is only good for scraps.', 'bad']); break; } s.mats.hide -= 1; sys.leather = (sys.leather || 0) + 1; lines.push([`Scraped the last fat and membrane off over a log, rubbed it with ${s.stores.some(x => x.id === 'organ') ? 'brains and liver' : 'fat'}, then pulled and worked it over a pole as it dried until it went soft and white.`, 'good']); break; }
     case 'inspect': { sysOf(s).inspectDay = s.day; lines.push(['Slowed down. Every plant turned over, smelled, the leaf edge checked against the last one.', 'info']); break; }
@@ -1820,8 +1824,9 @@ function nightAndBody(s, burn, done, lines) {
   const se = season(s); const T = temperature(s);
   // passive catches
   if (s.net && !s.net.torn) {
-    if (chance(s, 0.45 * se.mult.fish * stockOf(s, 'lake') * (frozen(s) ? 0.6 : 1) * (windowOn(s, 'run') ? 1.6 : 1) * (s.net.poor ? 0.55 : 1) * (poorly(s, 'net') && !has(s, 'Gillnet') ? 0.75 : 1))) { const n = 1 + Math.floor(rnd(s) * (frozen(s) ? 2 : windowOn(s, 'run') ? 4 : 3)); takeStock(s, 'lake', n); for (let k = 0; k < n; k++) s.net.catch.push(pickW(s, se.pools.fish)); }
-    if (s.net.catch.length > 3) s.net.catch.splice(0, s.net.catch.length - 3);
+    /* a net fishes all night, every night: the steadiest food there is where the fish are (a factory gill net more so than one knotted from salvage) */
+    if (chance(s, 0.6 * se.mult.fish * stockOf(s, 'lake') * (frozen(s) ? 0.75 : 1) * (windowOn(s, 'run') ? 1.6 : 1) * (s.net.poor ? 0.55 : 1) * (has(s, 'Gillnet') ? 1 : poorly(s, 'net') ? 0.6 : 0.8))) { const n = 1 + Math.floor(rnd(s) * (frozen(s) ? 2 : windowOn(s, 'run') ? 4 : 3)); takeStock(s, 'lake', n); for (let k = 0; k < n; k++) s.net.catch.push(pickW(s, se.pools.fish)); }
+    if (s.net.catch.length > 4) s.net.catch.splice(0, s.net.catch.length - 4);
     if (chance(s, 0.025 * (s.storm ? 4 : s.wind ? 2.5 : 1))) { s.net.torn = true; s.net.catch = []; lines.push([s.storm || s.wind ? 'The weather tore the net.' : 'Something tore the net.', 'bad']); }
   }
   if (s.trapsCatch.length) { const before = s.trapsCatch.length; s.trapsCatch = s.trapsCatch.filter(() => !chance(s, 0.15)); if (s.trapsCatch.length < before) lines.push([pick1(s, ['Something got to a snared animal before you did: tufts of fur, blood on the snow and a snapped wire.', 'Fresh fox tracks round the trapline in the morning. One of the snares is empty and pulled flat.']), 'muted']); }
@@ -3319,7 +3324,7 @@ function interactionsHere() {
   const tree = nearestOf(W.trees, 46, t => !t.gone), bush = nearestBush(), ani = nearestAnimal(), moss = nearestOf(W.mossSpots, 40, m => !m.used), track = nearestOf(W.tracks, 40), bed = nearestOf(W.beds, 48, b => !b.used);
   if (atShore()) {
     if (push('fish', 'Cast a line', () => startFish(false)) && atRiver()) { const st = E.stockOf(S, 'river'); out[out.length - 1].sub = `river · ${Math.round(Math.min(0.95, E.fishOdds(S, 'river')) * 100)}%${E.stockWord(st) ? ' · ' + E.stockWord(st) : ''}`; } if (near(W.netSpot, 80)) { push('setnet', null, startNet); push('checknet'); }
-    push('raft_fish'); push('beach_raft');
+    push('ice_hole'); push('raft_fish'); push('beach_raft');
     push('bait', null, () => startCollect('bait', 'worm')); push('setlines'); if (bed) push('shellfish', null, () => startCollect('shellfish', 'shell', bed)); if (!atRiver()) push('seaweed', null, () => startCollect('seaweed', 'weed')); push('dig_clay', null, () => startCollect('dig_clay', 'clay'));
     if (W.debris.some(d => !d.taken && near(d, 40))) push('search', 'Pick it up'); else push('search', W.desert ? 'Search the pool edge' : 'Walk the shore'); push('stones', null, () => startCollect('stones', 'stone'));
   }
@@ -3421,7 +3426,7 @@ const TOOL_JOBS = {
   gather: ['berries', 'greens', 'mushrooms', 'roots', 'shellfish', 'seaweed', 'insects', 'nettle', 'cattail', 'pinenuts', 'rosehips', 'seeds', 'forage', 'inspect', 'bait', 'moss', 'stones', 'dig_clay', 'tinder', 'search', 'boughs', 'bark'],
   knife: ['clean', 'dress', 'work_hide', 'sharpen', 'whittle', 'cordage', 'cut_belt'],
   wood: ['firewood', 'cut_poles', 'cut_logs', 'fix_axe'],
-  fish: ['fish', 'setnet', 'checknet', 'setlines', 'raft_fish', 'beach_raft'],
+  fish: ['ice_hole', 'fish', 'setnet', 'checknet', 'setlines', 'raft_fish', 'beach_raft'],
   hunt: ['hunt', 'track'],
   traps: ['snares', 'deadfalls', 'checktraps'],
 };

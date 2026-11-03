@@ -37,6 +37,16 @@ const nights = (mk, n, f) => { let hit = 0; for (let i = 0; i < n; i++) { const 
   let burnt = 0, good = 0; for (let i = 0; i < 200; i++) { const c = camp('US-S6', 300 + i); c.stores = [{ id: 'trout', por: 3, left: 5, smoked: false }]; c.hours = i % 9; E.act(c, 'cook'); const t = c.today.lines.map(l => l[0]).join(' '); if (/charred/.test(t)) burnt++; if (/just right/.test(t)) good++; }
   check('cooking sometimes scorches', burnt > 5 && burnt < 60, burnt); check('and sometimes comes out just right', good > 15, good);
 }
+{ // a frozen lake with no axe or saw: break a hole by hand, or go without water
+  const s = camp('US-S6', 9, ['Knife']); s.day = 60; E.beginDay(s); s.event = null; s.mats.stone = 2;
+  check('the lake is frozen and there is no axe', E.status(s).frozen && !E.cutter(s));
+  s.crafts.handline = 1; s.hooks = 3; check('fishing says to break a hole first', /hole/i.test(E.available(s, 'fish').why || ''), E.available(s, 'fish').why);
+  check('breaking a hole is offered', E.available(s, 'ice_hole').ok, E.available(s, 'ice_hole').why);
+  E.act(s, 'ice_hole'); check('then there is water today', E.waterToday(s).ok, JSON.stringify(E.waterToday(s)));
+  check('and the hole can be fished', E.available(s, 'setlines').why !== 'Ice');
+  const n = camp('US-S6', 9, ['Knife']); n.day = 60; E.beginDay(n); n.event = null; n.mats.stone = 0; n.mats.poles = 0; check('it needs a stone or a pole', !E.available(n, 'ice_hole').ok);
+  const a = camp('US-S6', 9); a.day = 60; E.beginDay(a); a.event = null; check('with an axe it is not needed', !E.available(a, 'ice_hole').ok);
+}
 { // something alive in a snare is a real choice
   check('the snare event exists', !!E.EVENTS.snarepred && E.EVENTS.snarepred.options.length === 3);
 }

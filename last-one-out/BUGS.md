@@ -128,7 +128,17 @@ Old saves from all 24 earlier versions load and play on, and save, reload and co
 | 95 | Raft | Capsize only | The wind pushes it down the lake |
 | 96 | Snowshoe wear (found by tests/upkeep.js) | Would have crashed walking in deep snow once the lacing wore through | Fixed before release |
 
+### Found by the gear simulation (Nov 3, tests/gearsim)
+
+| # | Bug | Fix |
+|---|---|---|
+| 97 | A frozen lake with no axe or saw meant no water at all: every such run died of thirst two or three days after freeze-up, whatever else it carried (US-S6 always on day 47, US-S11 on day 37) | **Break a hole in the ice** with a heavy stone or a sharpened pole: an hour of hard work (more in deep cold), and the hole gives water and fishing for the day |
+| 98 | The gill net cost more than it caught: two wades a day, soaked each time, and the same lake stock the rod uses | It fishes a little better (60% of nights in an average place, up to four in it), and lifting it by its shore line wets your arms, not your waist. A net knotted from salvage still fishes less than a real one |
+| 99 | A carved gorge hook on bark cord caught 80% as well as steel hooks and line | 65% (55% if rushed) |
+
 ### Test-side problems (not game bugs)
+
+- The test bot could not make do without gear. With no axe or saw it still aimed for a log cabin and never built anything; with no ferro rod it never made a bow drill; it gathered every material forever instead of what the shelter still needed, and stopped gathering once the shelter was up (so no drying rack or smoker). It now builds the best roof it has the tools for (a quick one first), makes a bow drill (and a stone blade for it), gathers what its shelter and camp works lack, breaks ice for water, and lifts the gill net once a day when the floats show a catch. The no-gear average went from 22 to 39 days. Because the bot changed, the balance reference was re-recorded with the new bot on the original game (median 62, mean 61.7); the current game is at 62 and 60.8 (−1.5%).
 
 - The test bot never hauled water in the dry places and lived off its starting supply. It now hauls water when it runs low, as the game tells a player to. Its median in the dry desert site went from 13 days (dying of thirst) to 35; the old number came from the bot, not the rules.
 - The rule checks skip through days without doing any jobs. The test loader now gives the character in them a drink each day; whole days played by the bots and the lazy test are left alone.
@@ -165,4 +175,6 @@ Nothing.
 
 The full test bot, 1,020 games, against the original game: median 56 → 56 days (0.0%), mean 56.4 → 54.9 (−2.7%). No place moved more than 10%.
 
-After the water fixes (Nov 3): median 56 → 56 days (0.0%), mean 56.4 → 56.1 (−0.5%). The dry desert site moved because the bot now hauls water (see above); the two lake sites that moved about 11% (US-S10, AU-S3) had moved before the water fixes.
+After the water fixes (Nov 3): median 56 → 56 days (0.0%), mean 56.4 → 56.1 (−0.5%).
+
+After the gear-simulation fixes (Nov 3), with the better test bot on both: median 62 → 62 days (0.0%), mean 61.7 → 60.8 (−1.5%). The dry desert site moved because the bot now hauls water (see above); the two lake sites that moved about 11% (US-S10, AU-S3) had moved before the water fixes.
