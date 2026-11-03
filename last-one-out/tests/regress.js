@@ -153,4 +153,14 @@ const snowDay = place => E.DATA.seasons.find(x => x.key === place).climate.snow;
   let none = 0; for (let i = 0; i < 1000; i++) { const t = camp('US-S6', 6000 + i); t.storm = true; t.event = null; const L = E.endDay(t); if (L.some(l => /dead limb/.test(l[0]))) none++; } check('no snag, no limbs', none === 0, none);
   const w = camp(); const f1 = E.foundWreck(w), f2 = E.foundWreck(w); check('finding the wreck counts once', f1[0][1] === 'big' && f2[0][1] === 'muted' && w.stats.wreck === w.day);
 }
+{ // the issued kit: a dry change of clothes, the spares to dry again, one photograph a day, the belt as lacing, gaiters against a strike
+  const s = camp(); s.wet = 0.8; check('a dry change is offered when soaked', E.available(s, 'change_dry').ok, E.available(s, 'change_dry').why);
+  E.act(s, 'change_dry'); check('changing leaves you nearly dry', s.wet <= 0.1, s.wet); check('and the spares wet', s.sys.sparesWet === true);
+  s.wet = 0.8; s.hours = 1; check('no second change until the spares are dry', !E.available(s, 'change_dry').ok, E.available(s, 'change_dry').why);
+  s.fire = true; E.act(s, 'dry'); check('drying by the fire dries the spares too', s.sys.sparesWet === false);
+  let dried = 0; for (let i = 0; i < 400; i++) { const t2 = camp('US-S6', 7000 + i); t2.sys.sparesWet = true; t2.event = null; E.endDay(t2); E.beginDay(t2); if (!t2.sys.sparesWet) dried++; } check('spares dry on the line on fair days', dried > 120 && dried < 320, dried);
+  const p = camp(); p.morale = 50; E.act(p, 'photo'); const m1 = p.morale; check('the photograph lifts your will a little', m1 > 50 && m1 <= 53, m1); check('once a day', !E.available(p, 'photo').ok);
+  const b = camp(); const c0 = b.mats.cordage; E.act(b, 'cut_belt'); check('the belt gives 2 cordage, once', b.mats.cordage === c0 + 2 && !E.available(b, 'cut_belt').ok);
+  let struck = 0; for (let i = 0; i < 2000; i++) { const t3 = camp('US-S12', 8000 + i); t3.event = { id: 'snake', optIds: [0, 1] }; const L = E.choose(t3, 0); if (L.some(l => /gaiter/.test(l[0]))) struck++; } check('backing away from a snake: the gaiter takes a strike now and then', struck > 200 && struck < 420, struck);
+}
 console.log(fails ? `${fails} regression check(s) failed, ${passes} passed.` : `All ${passes} regression checks passed.`); process.exitCode = fails ? 1 : 0;

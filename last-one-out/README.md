@@ -204,6 +204,16 @@ A whole-game bug hunt (see TESTPLAN.md and BUGS.md) found and fixed 84 bugs. The
 - Moving camp later works as before and re-reads the new spot. Runs saved before this keep the camp they had.
 - **A wreck.** Straight across the map from the landing, in every place, a small craft has come down. Finding it is noted in the run and in your records for an achievement later. It glows faintly after dark.
 
+## Issued clothing and personal items (Nov 3, 2026)
+
+Everyone gets the same clothing and a few personal things on top of the ten items they choose: two pairs of boots (high-leg and ankle), a T-shirt, two shirts, two sweaters (or a sweater and a vest), six pairs of wool socks, two hats, a buff, a bandana, a shemagh, three pairs of gloves, two sets of thermals, two pairs of underwear, a jacket, two pairs of pants, insulated pants, a waterproof shell, snake gaiters and a leather belt; a toothbrush, glasses if you wear them, and one 4×6 photograph. The list is on the setup screen and in the pack.
+
+- **A dry change.** Soaked at camp, you can change into the spare set (15 minutes) and be nearly dry at once. The wet set then has to dry: by the fire, or on the line overnight on a fair day. Until then there is no second change.
+- **The photograph.** Looking at it once a day lifts your will a little, a bit more on a day you have worked.
+- **The belt.** Once, it can be cut into leather lacing: 2 cordage.
+- **Snake gaiters.** Backing away from a snake, a strike at your shin sometimes hits the gaiter instead. A bad moment, no bite.
+- The rest (hats, gloves, buff, shell, insulated pants, thermals) is part of how warm and dry you already are in the game, so it changes nothing new. The clothes still wear out and can be mended.
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.
