@@ -56,7 +56,8 @@ Steps 0 to 3 of TESTPLAN.md (inventory, coverage, every action and event, eight 
 
 - Phase 0, foundation: done. Typefaces bundled in the file (no internet needed), place palettes, painting helpers, paper grain, and the picture sheet (`tests/sheet.js`).
 - Phase 1, top bar and tool roll: done. Quiet numbers along the top, jobs grouped by tool on a canvas roll with a paper card, big paper buttons for mini-games and choices.
-- Phases 2 to 9: not started.
+- Phase 2, the land: done. Ground, water, river, paths, stones and bedrock painted in washes in each place's palette, a seamless paper texture, muted colours, and light tints from the palette. Drawing is about as fast as before.
+- Phases 3 to 9: not started.
 
 ## Ideas for later (not started)
 

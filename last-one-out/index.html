@@ -2394,6 +2394,10 @@ const BVIS = {
   sapmi: { name: 'arctic fell country', grass: '#86966e', grass2: '#7a8a64', grass3: '#93a27a', tuft: '#6a7a52', rock: '#8a8c88', rockHi: '#a8aaa6', trunk: '#4a3a30', conifer: ['#1e3628', '#284832', '#32583c', '#3e6a48', '#4e7c56'], leaf: '#8aa266', leafHi: '#a2b87c', fall: '#d8b048', fallHi: '#ecc860', fallDay: 1, birch: '#d8d2c6', water: '#2a5a72', deep: '#183e52', sand: '#a29e90', sand2: '#928e80', flower: ['#ffffff', '#f2ecf6', '#c9a0e0'], sky: '#c4d0d8', ridge: ['#9aa6ae', '#84929c', '#6e7e8a'], mtn: 'fells', snowcap: 1, floor: 'rgba(25,40,30,.2)', meadow: 'rgba(200,200,150,.12)', shore: 'pebble', density: 0.7, looks: { birch: [['mtnbirch', 1]], conifer: [['pine', 1]] }, decor: { lichen: 1.4, stones: 1, boulder: 0.6 } },
 };
 function vis() { return (W && W.vis) || BVIS.shield; }
+// the watercolour look: every colour of every place pulled a quarter of the way toward its own grey, once, at load.
+// Trees, bushes, rocks and decor then sit in the muted palette at no cost per frame.
+{ const mute = (h, k) => { if (typeof h !== 'string' || !/^#[0-9a-f]{6}$/i.test(h)) return h; const n = parseInt(h.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255; const l = 0.3 * r + 0.59 * g + 0.11 * b; r = Math.round(r + (l - r) * k); g = Math.round(g + (l - g) * k); b = Math.round(b + (l - b) * k); return '#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1); };
+  for (const v of Object.values(BVIS)) for (const [key, val] of Object.entries(v)) { if (key === 'decor' || key === 'looks') continue; if (Array.isArray(val)) v[key] = val.map(x => mute(x, 0.28)); else v[key] = mute(val, 0.28); } }
 
 // ---- the layout: water, river, camp and the places worth walking to, from the run's seed
 function makeLayout(w, rnd, bio) {
@@ -2494,9 +2498,8 @@ function paintDecor(c, snow, tile) { let rnd = seeded(W.mkey + 'dec');
   let li = 0; const spots = (n, m, fn) => { li++; scatter(tile, 40 + li, n, 70, (x, y, r) => { if (y < MAP.top || !onLand(x, y, m) || !away(x, y)) return; rnd = r; fn(x, y); }); };
   if (D.outcrop) spots(Math.round(26 * D.outcrop), 60, (x, y) => { // bare bedrock, rounded by ice
     const rx = 30 + rnd() * 60, ry = rx * (0.35 + rnd() * 0.25), a = rnd() * 0.8 - 0.4;
-    c.fillStyle = 'rgba(10,18,12,.18)'; c.beginPath(); c.ellipse(x + 4, y + 5, rx, ry, a, 0, 6.28); c.fill();
-    c.fillStyle = snow ? '#c6ced2' : V.rock; c.beginPath(); c.ellipse(x, y, rx, ry, a, 0, 6.28); c.fill();
-    c.fillStyle = snow ? '#e8eef0' : V.rockHi; c.beginPath(); c.ellipse(x - rx * 0.2, y - ry * 0.25, rx * 0.65, ry * 0.5, a, 0, 6.28); c.fill();
+    c.fillStyle = 'rgba(20,20,12,.16)'; c.beginPath(); c.ellipse(x + 5, y + 6, rx, ry, a, 0, 6.28); c.fill();
+    wash(c, x, y, rx, ry, snow ? '#c6ced2' : V.rock, 0.92, rnd, a); wash(c, x - rx * 0.2, y - ry * 0.25, rx * 0.65, ry * 0.5, snow ? '#e8eef0' : V.rockHi, 0.5, rnd, a);
     c.strokeStyle = 'rgba(40,40,40,.18)'; c.lineWidth = 1; for (let k = 0; k < 3; k++) { c.beginPath(); c.moveTo(x - rx * 0.6 + k * rx * 0.4, y - ry * 0.5); c.lineTo(x - rx * 0.5 + k * rx * 0.45, y + ry * 0.4); c.stroke(); }
     if (!snow) { c.fillStyle = 'rgba(190,200,160,.55)'; for (let k = 0; k < 5; k++) { c.beginPath(); c.arc(x + (rnd() - 0.5) * rx * 1.4, y + (rnd() - 0.5) * ry, 2 + rnd() * 4, 0, 6.28); c.fill(); } } });
   if (snow) return;
@@ -2669,17 +2672,17 @@ let W = null, raf = 0, lastT = 0, cv = null, cx = null, hudEl = null, actsEl = n
 const PAINT = {
   // muted colours for each kind of country, taken from photos of it
   pal: {
-    shield: { ground: '#6f6f52', moss: '#848459', moss2: '#5c5e43', rust: '#80603f', lichen: '#a6a283', granite: '#8b8a84', conifer: '#263123', conifer2: '#3a4632', leaf: '#8f8f55', water: '#34474f', water2: '#4d6470', path: '#9b8d72' },
-    taiga: { ground: '#6b6a4e', moss: '#7f8052', moss2: '#575a40', rust: '#7c5c3c', lichen: '#a8a488', granite: '#8a8780', conifer: '#2a3424', conifer2: '#3d4833', leaf: '#93915a', water: '#36484e', water2: '#506670', path: '#9a8b70' },
-    barrens: { ground: '#7a7458', moss: '#8a835c', moss2: '#646048', rust: '#8a5e3c', lichen: '#b4ae92', granite: '#94918a', conifer: '#2c3627', conifer2: '#40492f', leaf: '#9a8f58', water: '#3a4b52', water2: '#566a72', path: '#a3957a' },
-    chilko: { ground: '#6c6c50', moss: '#7d7f52', moss2: '#56593f', rust: '#7a5a3a', lichen: '#a29e80', granite: '#87847e', conifer: '#25301f', conifer2: '#38432d', leaf: '#8d8c56', water: '#3a5058', water2: '#557078', path: '#978a6e' },
+    shield: { ground: '#6f6f52', moss: '#848459', moss2: '#5c5e43', rust: '#80603f', lichen: '#a6a283', granite: '#8b8a84', conifer: '#263123', conifer2: '#3a4632', leaf: '#8f8f55', water: '#3b5764', water2: '#5f7d88', path: '#9b8d72' },
+    taiga: { ground: '#6b6a4e', moss: '#7f8052', moss2: '#575a40', rust: '#7c5c3c', lichen: '#a8a488', granite: '#8a8780', conifer: '#2a3424', conifer2: '#3d4833', leaf: '#93915a', water: '#3c5862', water2: '#5e7c86', path: '#9a8b70' },
+    barrens: { ground: '#7a7458', moss: '#8a835c', moss2: '#646048', rust: '#8a5e3c', lichen: '#b4ae92', granite: '#94918a', conifer: '#2c3627', conifer2: '#40492f', leaf: '#9a8f58', water: '#3f5964', water2: '#617f8a', path: '#a3957a' },
+    chilko: { ground: '#6c6c50', moss: '#7d7f52', moss2: '#56593f', rust: '#7a5a3a', lichen: '#a29e80', granite: '#87847e', conifer: '#25301f', conifer2: '#38432d', leaf: '#8d8c56', water: '#3e5d68', water2: '#62838e', path: '#978a6e' },
     delta: { ground: '#6e6d4c', moss: '#828155', moss2: '#5a5b3e', rust: '#7e5d3d', lichen: '#a4a084', granite: '#8a8780', conifer: '#283322', conifer2: '#3b4630', leaf: '#8e8f58', water: '#45524e', water2: '#5f6e68', path: '#9a8c70' },
-    coastrain: { ground: '#56604a', moss: '#66733f', moss2: '#46523a', rust: '#6e5638', lichen: '#93977c', granite: '#7c7e7a', conifer: '#1f2a20', conifer2: '#2f3b2c', leaf: '#6d7a45', water: '#33454c', water2: '#4b616a', path: '#857c66' },
-    patagonia: { ground: '#7a7650', moss: '#8a8656', moss2: '#626042', rust: '#8a6440', lichen: '#b0aa88', granite: '#8f8a80', conifer: '#283224', conifer2: '#3c4630', leaf: '#8a7f4a', water: '#3c5058', water2: '#58707a', path: '#a39678' },
+    coastrain: { ground: '#56604a', moss: '#66733f', moss2: '#46523a', rust: '#6e5638', lichen: '#93977c', granite: '#7c7e7a', conifer: '#1f2a20', conifer2: '#2f3b2c', leaf: '#6d7a45', water: '#385460', water2: '#5a7984', path: '#857c66' },
+    patagonia: { ground: '#7a7650', moss: '#8a8656', moss2: '#626042', rust: '#8a6440', lichen: '#b0aa88', granite: '#8f8a80', conifer: '#283224', conifer2: '#3c4630', leaf: '#8a7f4a', water: '#3f5c68', water2: '#62818c', path: '#a39678' },
     karoo: { ground: '#9a8460', moss: '#8e8458', moss2: '#6e6446', rust: '#a06a44', lichen: '#c0b08a', granite: '#9a8f80', conifer: '#4a4a30', conifer2: '#5e5a3a', leaf: '#7e7a48', water: '#5a6458', water2: '#76807a', path: '#b6a07c' },
     tasrain: { ground: '#5a6048', moss: '#6a7444', moss2: '#4a523a', rust: '#73583a', lichen: '#959a7e', granite: '#7e7f7a', conifer: '#26301f', conifer2: '#38432c', leaf: '#6a7048', water: '#3a4a4c', water2: '#526668', path: '#887d66' },
-    nzbeech: { ground: '#5e644a', moss: '#6c7846', moss2: '#4c553a', rust: '#74593a', lichen: '#999d80', granite: '#80817c', conifer: '#26301f', conifer2: '#37422c', leaf: '#5e6c3c', water: '#36484e', water2: '#506670', path: '#8a8068' },
-    sapmi: { ground: '#726e54', moss: '#827f58', moss2: '#5e5c44', rust: '#84603e', lichen: '#b2ae94', granite: '#908d86', conifer: '#2a3426', conifer2: '#3e4832', leaf: '#a09a60', water: '#384a50', water2: '#53686f', path: '#9e9278' },
+    nzbeech: { ground: '#5e644a', moss: '#6c7846', moss2: '#4c553a', rust: '#74593a', lichen: '#999d80', granite: '#80817c', conifer: '#26301f', conifer2: '#37422c', leaf: '#5e6c3c', water: '#3c5862', water2: '#5e7c86', path: '#8a8068' },
+    sapmi: { ground: '#726e54', moss: '#827f58', moss2: '#5e5c44', rust: '#84603e', lichen: '#b2ae94', granite: '#908d86', conifer: '#2a3426', conifer2: '#3e4832', leaf: '#a09a60', water: '#3c5864', water2: '#5e7c87', path: '#9e9278' },
   },
   // the filters that make a flat shape read as paint: a wobbled wash, pigment pooled at the edge, dry-brush grain
   defs: '<filter id="wash" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="3" seed="5"/><feDisplacementMap in="SourceGraphic" scale="9"/><feGaussianBlur stdDeviation="0.6"/></filter>'
@@ -3917,15 +3920,34 @@ function drawGround(cam) {
   // one tile of the next ring per frame, so walking never has to stop and paint
   let done = false; for (let ty = Math.max(0, y0 - 1); ty <= Math.min(ny - 1, y1 + 1) && !done; ty++) for (let tx = Math.max(0, x0 - 1); tx <= Math.min(nx - 1, x1 + 1); tx++) if (!W.tiles.has(ty * 1000 + tx)) { getTile(tx, ty); done = true; break; }
 }
+/* ---------- the land in watercolour (design/STYLE.md, phase 2): uneven washes with pigment pooled at the edge,
+   dry-brush streaks, and a paper underneath. Plain canvas drawing, so it is fast and works in every browser. */
+function washPath(c, x, y, rx, ry, r, rot) { const n = 10, p = []; for (let i = 0; i < n; i++) { const a = i / n * 6.283 + (rot || 0); const k = 0.76 + r() * 0.48; p.push([x + Math.cos(a) * rx * k, y + Math.sin(a) * ry * k]); } c.beginPath(); c.moveTo((p[0][0] + p[1][0]) / 2, (p[0][1] + p[1][1]) / 2); for (let i = 1; i <= n; i++) { const a = p[i % n], b = p[(i + 1) % n]; c.quadraticCurveTo(a[0], a[1], (a[0] + b[0]) / 2, (a[1] + b[1]) / 2); } c.closePath(); }
+function wash(c, x, y, rx, ry, col, a, r, rot) { washPath(c, x, y, rx, ry, r, rot); c.globalAlpha = a; c.fillStyle = col; c.fill(); c.globalAlpha = Math.min(1, a * 1.5); c.strokeStyle = col; c.lineWidth = Math.max(0.8, Math.min(rx, ry) * 0.07); c.stroke(); c.globalAlpha = 1; }
+function dryBrush(c, x, y, len, ang, col, a, r) { c.save(); c.translate(x, y); c.rotate(ang); c.strokeStyle = col; c.lineCap = 'round'; for (let k = 0; k < 4; k++) { c.globalAlpha = a * (0.5 + r() * 0.5); c.lineWidth = 0.8 + r() * 1.4; const yy = (k - 1.5) * 2.2 + r(); let x0 = -len / 2 + r() * len * 0.2; c.beginPath(); c.moveTo(x0, yy); while (x0 < len / 2) { const seg = 4 + r() * 12; c.lineTo(Math.min(len / 2, x0 + seg), yy + r() - 0.5); x0 += seg + (r() < 0.3 ? 3 + r() * 6 : 0); c.moveTo(x0, yy + r() - 0.5); } c.stroke(); } c.restore(); c.globalAlpha = 1; }
+// the paper under the paint: soft blotches and fine granulation, one seamless sheet laid across the whole map
+function bloomTex() {
+  if (PAINT.bloomCv) return PAINT.bloomCv; const S2 = 1024;
+  const g = document.createElement('canvas'); g.width = g.height = S2; const x = g.getContext('2d'); const r = rngFrom(hash32(3, 11, 977));
+  x.fillStyle = '#f2ece0'; x.fillRect(0, 0, S2, S2);
+  for (let k = 0; k < 150; k++) { const px = r() * S2, py = r() * S2, rad = 30 + r() * 130; const d = r() < 0.5 ? '210,199,178' : '224,215,196'; const a = 0.3 + r() * 0.35;
+    for (const ox of [-S2, 0, S2]) for (const oy of [-S2, 0, S2]) { const cx0 = px + ox, cy0 = py + oy; if (cx0 + rad < 0 || cx0 - rad > S2 || cy0 + rad < 0 || cy0 - rad > S2) continue; const gr = x.createRadialGradient(cx0, cy0, rad * 0.2, cx0, cy0, rad); gr.addColorStop(0, `rgba(${d},${a})`); gr.addColorStop(1, `rgba(${d},0)`); x.fillStyle = gr; x.fillRect(cx0 - rad, cy0 - rad, rad * 2, rad * 2); } }
+  for (let k = 0; k < 10000; k++) { x.fillStyle = `rgba(90,74,52,${0.06 + r() * 0.1})`; x.fillRect(r() * S2, r() * S2, 1 + r(), 1 + r()); }
+  PAINT.bloomCv = g; return g;
+}
+// every painted tile ends here: the paper pressed through, continuous from tile to tile
+function watercolourTile(c, x0, y0, tx, ty, snow) {
+  c.save(); c.globalCompositeOperation = 'multiply'; c.globalAlpha = snow ? 0.42 : 0.52; c.fillStyle = c.createPattern(bloomTex(), 'repeat'); c.fillRect(x0, y0, TILE + 2, TILE + 2); c.restore();
+}
 function paintTile(tx, ty) {
   const st = E.status(S); const P = pal(); const snow = st.snowy, ice = st.frozen; const x0 = tx * TILE, y0 = ty * TILE;
   const tile = { tx, ty, x0, y0, hit: (x, y, r) => x + r > x0 - 2 && x - r < x0 + TILE + 2 && y + r > y0 - 2 && y - r < y0 + TILE + 2 };
   const g = document.createElement('canvas'); g.width = g.height = TILE + 2; const c = g.getContext('2d'); c.translate(-x0, -y0);
   c.beginPath(); c.rect(x0, y0, TILE + 2, TILE + 2); c.clip();
   let rnd = seeded(W.mkey + 'x'); const sh0 = (x, y) => W.desert || x > W.shoreX(y);
-  c.fillStyle = snow ? '#dfe4e6' : P.grass; c.fillRect(x0, y0, TILE + 2, TILE + 2);
+  const PP = PAINT.palOf(S.seasonKey); c.fillStyle = snow ? '#e4e3dc' : PP.ground; c.fillRect(x0, y0, TILE + 2, TILE + 2);
   // mottling at three scales, so the ground reads as ground and not as paint
-  [[40, 160, 320, 0.28], [220, 20, 70, 0.9], [900, 3, 9, 0.6]].forEach(([n, s0, s1, a], j) => scatter(tile, 10 + j, n, s1, (x, y, r) => { const rx = s0 + r() * (s1 - s0), ry = rx * (0.4 + r() * 0.3); c.globalAlpha = a; c.fillStyle = snow ? (r() < 0.5 ? 'rgba(255,255,255,.22)' : 'rgba(170,185,195,.14)') : (r() < 0.5 ? P.grass2 : P.grass3); c.beginPath(); c.ellipse(x, y, rx, ry, r() * 3, 0, 6.28); c.fill(); })); c.globalAlpha = 1;
+  { const cols = snow ? ['#c4ccd0', '#f1f0ea', '#d6dada'] : [PP.moss, PP.moss2, PP.rust, PP.lichen, PP.moss, P.grass2, P.grass3, PP.lichen]; [[44, 140, 300, 0.3], [220, 22, 70, 0.34], [600, 4, 12, 0.32]].forEach(([n, s0, s1, a], j) => scatter(tile, 10 + j, n, s1, (x, y, r) => { const rx = s0 + r() * (s1 - s0), ry = rx * (0.45 + r() * 0.3); wash(c, x, y, rx, ry, cols[Math.floor(r() * cols.length)], a, r, r() * 3); })); if (!snow) scatter(tile, 13, 60, 60, (x, y, r) => dryBrush(c, x, y, 30 + r() * 50, -0.3 + r() * 0.6, PP.moss2, 0.22, r)); }
   // shade under the big timber and the groves
   if (!snow) for (const z of [W.forest, ...(W.groves || [])]) { if (!tile.hit(z.x, z.y, z.r * 1.2)) continue; const g2 = c.createRadialGradient(z.x, z.y, z.r * 0.2, z.x, z.y, z.r * 1.15); g2.addColorStop(0, P.floor || 'rgba(20,40,25,.24)'); g2.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g2; c.beginPath(); c.ellipse(z.x, z.y, z.r * 1.15, z.r * 0.95, 0, 0, 6.28); c.fill(); }
   paintDecor(c, snow, tile);
@@ -3940,8 +3962,8 @@ function paintTile(tx, ty) {
   // trail: packed dirt with a worn centre
   c.lineCap = 'round'; c.lineJoin = 'round';
   const trail = (thin) => { c.beginPath(); for (const q of W.paths || []) { if (!!q.thin !== thin) continue; c.moveTo(q.a.x, q.a.y); c.quadraticCurveTo(q.cp.x, q.cp.y, q.b.x, q.b.y); } };
-  for (const thin of [false, true]) { c.strokeStyle = snow ? 'rgba(150,160,165,.45)' : 'rgba(96,74,46,.45)'; c.lineWidth = thin ? 18 : 30; trail(thin); c.stroke(); c.strokeStyle = snow ? 'rgba(120,130,135,.35)' : 'rgba(120,96,62,.5)'; c.lineWidth = thin ? 8 : 14; trail(thin); c.stroke(); }
-  for (const q of W.paths || []) for (let i = 0; i < 40; i++) { const t = rnd(); const x = (1 - t) * (1 - t) * q.a.x + 2 * (1 - t) * t * q.cp.x + t * t * q.b.x, y = (1 - t) * (1 - t) * q.a.y + 2 * (1 - t) * t * q.cp.y + t * t * q.b.y; c.fillStyle = 'rgba(70,55,35,.35)'; c.beginPath(); c.arc(x + rnd() * 20 - 10, y + rnd() * 20 - 10, 1.5, 0, 6.28); c.fill(); }
+  { const col = snow ? '#c3c8c8' : PP.path; for (const thin of [false, true]) { c.globalAlpha = 0.22; c.strokeStyle = col; c.lineWidth = thin ? 16 : 26; trail(thin); c.stroke(); } c.globalAlpha = 1; }
+  { const col = snow ? '#c3c8c8' : PP.path; for (const q of W.paths || []) for (let i = 0; i < (q.thin ? 26 : 44); i++) { const tt = rnd(); const x = (1 - tt) * (1 - tt) * q.a.x + 2 * (1 - tt) * tt * q.cp.x + tt * tt * q.b.x, y = (1 - tt) * (1 - tt) * q.a.y + 2 * (1 - tt) * tt * q.cp.y + tt * tt * q.b.y; washPath(c, x + rnd() * 8 - 4, y + rnd() * 8 - 4, (q.thin ? 7 : 11) + rnd() * 6, (q.thin ? 5 : 8) + rnd() * 4, rnd, rnd() * 3); c.globalAlpha = 0.16; c.fillStyle = col; c.fill(); c.globalAlpha = 1; if (rnd() < 0.3) { c.fillStyle = 'rgba(60,48,32,.3)'; c.beginPath(); c.arc(x + rnd() * 16 - 8, y + rnd() * 16 - 8, 1.2, 0, 6.28); c.fill(); } } }
   if (tile.hit(W.meadow.x, W.meadow.y, W.meadow.r + 80) || tile.hit(W.bog.x, W.bog.y, W.bog.r + 80)) { rnd = seeded(W.mkey + 'zones');
   // zones: the meadow is lighter and flowery, the bog darker and wetter
   if (!snow) { c.fillStyle = P.meadow || 'rgba(210,225,130,.16)'; c.beginPath(); c.ellipse(W.meadow.x, W.meadow.y, W.meadow.r + 40, W.meadow.r * 0.8 + 30, 0.2, 0, 6.28); c.fill();
@@ -3960,8 +3982,8 @@ function paintTile(tx, ty) {
     const hw = (x) => hw0 * Math.max(0.14, Math.min(1, (xe - x) / 260)); const wob = (x) => Math.sin(x / 90) * 6 + Math.sin(x / 37) * 2;
     const band = (pad) => { c.beginPath(); c.moveTo(xs, rc - hw(xs) - pad + wob(xs)); for (let x = xs; x <= xe; x += 12) c.lineTo(x, rc - hw(x) - pad + wob(x)); c.quadraticCurveTo(xe + 10 + pad, rc + wob(xe), xe, rc + hw(xe) + pad + wob(xe)); for (let x = xe; x >= xs; x -= 12) c.lineTo(x, rc + hw(x) + pad + wob(x)); c.closePath(); };
     c.fillStyle = snow ? '#c9b58a' : P.sand; band(16); c.fill();
-    const rg = c.createLinearGradient(0, r.y0, 0, r.y1); rg.addColorStop(0, ice ? '#c9d8e0' : P.water); rg.addColorStop(0.5, ice ? '#d6e3ea' : P.deep); rg.addColorStop(1, ice ? '#c9d8e0' : P.water);
-    c.fillStyle = rg; band(0); c.fill(); if (!ice) { c.fillStyle = 'rgba(120,190,200,.22)'; band(-hw0 * 0.55); c.fill(); }
+    const rg = c.createLinearGradient(0, r.y0, 0, r.y1); rg.addColorStop(0, ice ? '#c9d4d8' : PP.water2); rg.addColorStop(0.5, ice ? '#d4dde0' : PP.water); rg.addColorStop(1, ice ? '#c9d4d8' : PP.water2);
+    c.fillStyle = rg; band(0); c.fill(); if (!ice) { c.fillStyle = 'rgba(150,172,176,.2)'; band(-hw0 * 0.55); c.fill(); c.globalAlpha = 0.4; c.strokeStyle = '#1d2a30'; c.lineWidth = 4; band(-1); c.stroke(); c.globalAlpha = 1; }
     // the ford: pale shallows and stepping stones
     c.fillStyle = ice ? 'rgba(240,245,248,.5)' : 'rgba(170,205,200,.32)'; c.beginPath(); c.ellipse(r.ford, rc, 54, hw0 + 6, 0, 0, 6.28); c.fill();
     for (let i = 0; i < 6; i++) rock(c, r.ford - 30 + i * 12, r.y0 + 8 + (i % 2) * 36 + rnd() * 6, 4 + rnd() * 3, P, rnd);
@@ -3995,13 +4017,13 @@ function paintTile(tx, ty) {
   // water and shore
   if (!W.desert && x0 < W.shoreMax + 90) {
     const ya = Math.floor((y0 - 40) / 16) * 16, yb = y0 + TILE + 56; const D = vis().decor || {}; const row = (layer, n, m, fn) => scatterRows(tile, layer, n, m, fn);
-    const wat = c.createLinearGradient(0, 0, 330, 0); wat.addColorStop(0, ice ? '#bfd0da' : P.deep); wat.addColorStop(1, ice ? '#d6e3ea' : P.water);
+    const wat = c.createLinearGradient(0, 0, 330, 0); wat.addColorStop(0, ice ? '#bfccd2' : PP.water); wat.addColorStop(1, ice ? '#d4dde0' : PP.water2);
     const tide = st.lowTide ? -16 : 0;
     c.fillStyle = wat; c.beginPath(); c.moveTo(-50, ya); for (let y = ya; y <= yb; y += 16) c.lineTo(W.shoreX(y) + tide, y); c.lineTo(-50, yb); c.closePath(); c.fill();
-    if (!ice) { c.fillStyle = 'rgba(255,255,255,.07)'; row(60, 60, 40, (y, r) => { const x = r() * (W.shoreX(y) - 40); c.beginPath(); c.ellipse(x, y, 14 + r() * 20, 2, 0, 0, 6.28); c.fill(); }); }
+    if (!ice) { c.strokeStyle = 'rgba(214,222,220,.16)'; c.lineWidth = 1; row(60, 60, 40, (y, r) => { const x = r() * (W.shoreX(y) - 40); c.beginPath(); c.moveTo(x, y); c.lineTo(x + 20 + r() * 50, y + r() - 0.5); c.stroke(); }); }
     else { c.strokeStyle = 'rgba(110,140,160,.55)'; c.lineWidth = 1; row(61, 26, 100, (y, r) => { const x = r() * (W.shoreX(y) - 30); c.beginPath(); c.moveTo(x, y); let px = x, py = y; for (let k = 0; k < 4; k++) { px -= 10 + r() * 20; py += r() * 16 - 8; c.lineTo(px, py); } c.stroke(); }); c.fillStyle = 'rgba(255,255,255,.35)'; row(62, 40, 30, (y, r) => { const x = r() * (W.shoreX(y) - 30); c.beginPath(); c.ellipse(x, y, 10 + r() * 18, 4 + r() * 6, 0, 0, 6.28); c.fill(); }); }
-    c.fillStyle = ice ? 'rgba(230,238,242,.7)' : 'rgba(120,190,200,.35)'; c.beginPath(); for (let y = ya; y <= yb; y += 16) { const sx = W.shoreX(y); if (y === ya) c.moveTo(sx, y); else c.lineTo(sx, y); } for (let y = yb; y >= ya; y -= 16) c.lineTo(W.shoreX(y) - 14 - Math.sin(y / 31) * 4, y); c.closePath(); c.fill();
-    c.fillStyle = snow ? '#e6e9ea' : P.sand; c.beginPath(); for (let y = ya; y <= yb; y += 16) { const sx = W.shoreX(y); if (y === ya) c.moveTo(sx, y); else c.lineTo(sx, y); } for (let y = yb; y >= ya; y -= 16) c.lineTo(W.shoreX(y) + 20 + Math.sin(y / 37) * 5, y); c.closePath(); c.fill();
+    c.fillStyle = ice ? 'rgba(230,238,242,.7)' : 'rgba(150,178,180,.3)'; c.beginPath(); for (let y = ya; y <= yb; y += 16) { const sx = W.shoreX(y); if (y === ya) c.moveTo(sx, y); else c.lineTo(sx, y); } for (let y = yb; y >= ya; y -= 16) c.lineTo(W.shoreX(y) - 14 - Math.sin(y / 31) * 4, y); c.closePath(); c.fill();
+    c.fillStyle = snow ? '#e6e9ea' : P.sand; c.beginPath(); for (let y = ya; y <= yb; y += 16) { const sx = W.shoreX(y); if (y === ya) c.moveTo(sx, y); else c.lineTo(sx, y); } for (let y = yb; y >= ya; y -= 16) c.lineTo(W.shoreX(y) + 20 + Math.sin(y / 37) * 5, y); c.closePath(); c.fill(); if (!ice) { c.strokeStyle = 'rgba(20,32,38,.32)'; c.lineWidth = 5; c.beginPath(); for (let y = ya; y <= yb; y += 16) { const sx = W.shoreX(y) - 15 - Math.sin(y / 31) * 4; if (y === ya) c.moveTo(sx, y); else c.lineTo(sx, y); } c.stroke(); c.strokeStyle = 'rgba(236,232,220,.42)'; c.lineWidth = 1.2; c.beginPath(); for (let y = ya; y <= yb; y += 16) { const sx = W.shoreX(y) - 2; if (y === ya) c.moveTo(sx, y); else c.lineTo(sx, y); } c.stroke(); }
     if (!snow) {
       c.fillStyle = P.sand2; row(63, 80, 10, (y, r) => { const x = W.shoreX(y) + 2 + r() * 16; c.beginPath(); c.ellipse(x, y, 1.6 + r() * 2, 1 + r(), 0, 0, 6.28); c.fill(); });
       c.fillStyle = 'rgba(60,70,40,.5)'; row(64, 50, 14, (y, r) => { const x = W.shoreX(y) + 6 + r() * 5; c.beginPath(); c.ellipse(x, y, 4 + r() * 5, 1.2, 0.2, 0, 6.28); c.fill(); });
@@ -4016,12 +4038,13 @@ function paintTile(tx, ty) {
   if (W.river && !W.desert && tile.y0 < W.river.y1 + 90 && tile.y0 + TILE > W.river.y0 - 90) { const r = W.river; const wob = (x, k) => Math.sin(x / 90) * 6 * k; const x0 = W.shoreX(r.y0) - 40, x1 = W.shoreX(r.y0) + 34; c.fillStyle = ice ? '#d6e3ea' : P.deep; c.beginPath(); c.moveTo(x0, r.y0 + wob(x0, 1)); c.lineTo(x1, r.y0 + wob(x1, 1)); c.lineTo(x1, r.y1 + wob(x1, 1)); c.lineTo(x0, r.y1 + wob(x0, 1)); c.closePath(); c.fill(); if (!ice) { c.fillStyle = 'rgba(200,225,235,.35)'; c.beginPath(); c.ellipse(x0 - 10, (r.y0 + r.y1) / 2, 26, 14, 0, 0, 6.28); c.fill(); } }
   rnd = seeded(W.mkey + 'pool');
   for (const pl of W.pools || []) if (pl && tile.hit(pl.x, pl.y, 60)) { const pg = c.createRadialGradient(pl.x, pl.y, 4, pl.x, pl.y, 34); pg.addColorStop(0, '#2f6a78'); pg.addColorStop(1, '#4d8a97'); c.fillStyle = 'rgba(90,70,45,.3)'; c.beginPath(); c.ellipse(pl.x, pl.y, 44, 30, 0, 0, 6.28); c.fill(); c.fillStyle = pg; c.beginPath(); c.ellipse(pl.x, pl.y, 34, 22, 0, 0, 6.28); c.fill(); c.fillStyle = '#8a7a5a'; for (let i = 0; i < 9; i++) { const a = i / 9 * 6.28; c.beginPath(); c.arc(pl.x + Math.cos(a) * 36, pl.y + Math.sin(a) * 24, 2.5 + rnd() * 2, 0, 6.28); c.fill(); } }
+  watercolourTile(c, x0, y0, tx, ty, snow);
   return g;
 }
 function rock(c, x, y, r, P, rnd) {
-  c.fillStyle = 'rgba(10,18,12,.2)'; c.beginPath(); c.ellipse(x + 2, y + 3, r, r * 0.6, 0, 0, 6.28); c.fill();
-  c.fillStyle = P.rock; c.beginPath(); c.moveTo(x - r, y + r * 0.3); c.lineTo(x - r * 0.6, y - r * 0.5); c.lineTo(x + r * 0.3, y - r * 0.7); c.lineTo(x + r, y - r * 0.1); c.lineTo(x + r * 0.7, y + r * 0.5); c.lineTo(x - r * 0.4, y + r * 0.6); c.closePath(); c.fill();
-  c.fillStyle = P.rockHi; c.beginPath(); c.moveTo(x - r * 0.6, y - r * 0.5); c.lineTo(x + r * 0.3, y - r * 0.7); c.lineTo(x + r * 0.2, y - r * 0.2); c.lineTo(x - r * 0.5, y - r * 0.1); c.closePath(); c.fill();
+  c.fillStyle = 'rgba(20,20,12,.18)'; c.beginPath(); c.ellipse(x + r * 0.35, y + r * 0.35, r * 1.05, r * 0.55, 0, 0, 6.28); c.fill();
+  wash(c, x, y, r, r * 0.68, P.rock, 0.92, rnd, rnd() * 3); wash(c, x - r * 0.25, y - r * 0.25, r * 0.55, r * 0.32, P.rockHi, 0.55, rnd, rnd() * 3);
+  c.strokeStyle = 'rgba(30,28,24,.4)'; c.lineWidth = 0.7; c.beginPath(); c.moveTo(x - r * 0.3, y - r * 0.1); c.lineTo(x + r * 0.1, y + r * 0.25); c.stroke();
 }
 
 function draw() {
@@ -4102,13 +4125,13 @@ function draw() {
   // effects
   for (const f of W.fx) { if (f.kind === 'chip') { cx.fillStyle = '#d8b07a'; for (let i = 0; i < 5; i++) { const k = f.age / f.life; cx.fillRect(f.x - 12 + i * 6 + k * 26 * (i % 2 ? 1 : -1), f.y + 2 + k * 30 - 16 * Math.sin(k * 3.14) * (1 + i % 3), 2.5, 2.5); } } if (f.kind === 'spark') { const k = f.age / f.life; cx.fillStyle = '#ffd070'; for (let i = 0; i < 8; i++) { cx.globalAlpha = 1 - k; cx.fillRect(f.x - 8 + i * 2.5 + k * 34 * (i % 2 ? 1 : -1) * ((i % 3) / 3 + 0.3), f.y - 8 + k * 40 - 10 * Math.sin(k * 3.14), 1.8, 1.8); } cx.globalAlpha = 1; } }
   // weather
-  if (S.storm || S.rain) { cx.fillStyle = `rgba(30,40,55,${S.storm ? .32 : .16})`; cx.fillRect(cam.x, cam.y, cam.w, cam.h); const cold = snow || st.temp < 0; const n = S.storm ? 70 : 34; cx.strokeStyle = cold ? 'rgba(255,255,255,.85)' : 'rgba(205,222,240,.55)'; cx.lineWidth = 1.2; cx.lineCap = 'round'; for (let i = 0; i < n; i++) { const x = cam.x + ((i * 97 + t * (S.storm ? 240 : 150)) % (cam.w + 40)) - 20, y = cam.y + ((i * 61 + t * (cold ? 110 : 430)) % (cam.h + 40)) - 20; if (cold) { cx.fillStyle = 'rgba(255,255,255,.85)'; cx.beginPath(); cx.arc(x + Math.sin(t * 2 + i) * 4, y, 1.6, 0, 6.28); cx.fill(); } else { cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x - (S.storm ? 6 : 3), y + 12); cx.stroke(); } } if (S.storm) { cx.strokeStyle = 'rgba(255,255,255,.12)'; for (let i = 0; i < 8; i++) { const y = cam.y + ((i * 131 + t * 60) % cam.h), x = cam.x + ((i * 223 + t * 520) % (cam.w + 100)) - 50; cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x + 40, y - 2); cx.stroke(); } }
+  if (S.storm || S.rain) { cx.fillStyle = `rgba(50,60,70,${S.storm ? .34 : .18})`; cx.fillRect(cam.x, cam.y, cam.w, cam.h); const cold = snow || st.temp < 0; const n = S.storm ? 70 : 34; cx.strokeStyle = cold ? 'rgba(255,255,255,.85)' : 'rgba(205,222,240,.55)'; cx.lineWidth = 1.2; cx.lineCap = 'round'; for (let i = 0; i < n; i++) { const x = cam.x + ((i * 97 + t * (S.storm ? 240 : 150)) % (cam.w + 40)) - 20, y = cam.y + ((i * 61 + t * (cold ? 110 : 430)) % (cam.h + 40)) - 20; if (cold) { cx.fillStyle = 'rgba(255,255,255,.85)'; cx.beginPath(); cx.arc(x + Math.sin(t * 2 + i) * 4, y, 1.6, 0, 6.28); cx.fill(); } else { cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x - (S.storm ? 6 : 3), y + 12); cx.stroke(); } } if (S.storm) { cx.strokeStyle = 'rgba(255,255,255,.12)'; for (let i = 0; i < 8; i++) { const y = cam.y + ((i * 131 + t * 60) % cam.h), x = cam.x + ((i * 223 + t * 520) % (cam.w + 100)) - 50; cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x + 40, y - 2); cx.stroke(); } }
     // hail: white pellets that bounce off the ground; thunder: the sky goes white for a frame now and then
     if (S.hail && !W.inside) { cx.fillStyle = 'rgba(240,246,255,.9)'; for (let i = 0; i < 40; i++) { const ph = ((i * 0.13 + t * 1.7) % 1); const x = cam.x + ((i * 89) % cam.w), yb = cam.y + ((i * 53) % cam.h); const y = ph < 0.7 ? yb - (0.7 - ph) * 500 : yb - Math.sin((ph - 0.7) / 0.3 * Math.PI) * 14; cx.beginPath(); cx.arc(x, y, 2, 0, 6.28); cx.fill(); } }
     if (S.thunder && !W.inside) { const cyc = t % 9.5; if (cyc < 0.14 || (cyc > 0.22 && cyc < 0.3)) { cx.fillStyle = `rgba(235,240,255,${cyc < 0.14 ? 0.55 : 0.3})`; cx.fillRect(cam.x, cam.y, cam.w, cam.h); if (cyc < 0.14) { cx.strokeStyle = 'rgba(255,255,255,.95)'; cx.lineWidth = 2; const x0 = cam.x + cam.w * (0.3 + 0.4 * Math.abs(Math.sin(Math.floor(t / 9.5) * 3.7))); let x = x0, y = cam.y; cx.beginPath(); cx.moveTo(x, y); for (let k = 0; k < 7; k++) { x += (k % 2 ? 14 : -10) * (1 + Math.sin(k + Math.floor(t / 9.5))); y += 34; cx.lineTo(x, y); } cx.stroke(); } } } }
   else if (snow) { cx.fillStyle = 'rgba(255,255,255,.75)'; for (let i = 0; i < (S.snowfall ? 70 : 16); i++) { const x = cam.x + ((i * 131 + t * 15 + Math.sin(t + i) * 10) % (cam.w + 20)) - 10, y = cam.y + ((i * 71 + t * 35) % (cam.h + 20)) - 10; cx.beginPath(); cx.arc(x, y, 1.4, 0, 6.28); cx.fill(); } }
   // light
-  const tint = { dawn: 'rgba(255,160,90,.14)', morning: 'rgba(255,230,170,.07)', afternoon: 'rgba(0,0,0,0)', evening: 'rgba(255,120,60,.17)', dusk: 'rgba(40,30,80,.3)', night: 'rgba(5,12,35,.62)' }[ph];
+  const tint = { dawn: 'rgba(220,160,120,.13)', morning: 'rgba(235,220,185,.06)', afternoon: 'rgba(0,0,0,0)', evening: 'rgba(190,120,80,.15)', dusk: 'rgba(58,47,72,.32)', night: 'rgba(8,12,26,.62)' }[ph];
   if (W.night) { const k = Math.min(1, (W.nightT = (W.nightT || 0) + 0.016)); cx.fillStyle = `rgba(5,12,35,${(S.moon === 'full' && !S.storm && !S.rain ? 0.48 : S.moon === 'new' ? 0.72 : 0.62) * k})`; } else cx.fillStyle = tint;
   cx.fillRect(cam.x, cam.y, cam.w, cam.h);
   if (W.night && !S.storm && !S.rain && !S.fog) { const mx = cam.x + cam.w - 48, my = cam.y + 92; const ph2 = S.moon || 'waxing'; if (ph2 !== 'new') { cx.fillStyle = 'rgba(245,240,220,.85)'; cx.beginPath(); cx.arc(mx, my, 11, 0, 6.28); cx.fill(); if (ph2 !== 'full') { cx.fillStyle = 'rgba(8,14,38,.9)'; cx.beginPath(); cx.arc(mx + (ph2 === 'waxing' ? -7 : 7), my, 10, 0, 6.28); cx.fill(); } } cx.fillStyle = 'rgba(255,255,255,.8)'; for (let i = 0; i < 24; i++) { const sx = cam.x + ((i * 173) % cam.w), sy = cam.y + ((i * 97) % (cam.h * 0.5)); const tw = 0.5 + Math.sin(t * 2 + i) * 0.4; cx.globalAlpha = tw; cx.fillRect(sx, sy, 1.5, 1.5); } cx.globalAlpha = 1;

@@ -30,6 +30,8 @@ add('A day at one camp', 'shore', 'At the shore', P, null, toShore);
 add('A day at one camp', 'dusk', 'Dusk', P, s => { s.hours = E.dayHours(s) - 0.6; s.phase = 2; });
 add('A day at one camp', 'night', 'Night by the fire', P, s => { s.hours = E.dayHours(s); s.phase = 3; s.fire = true; });
 add('A day at one camp', 'inside', 'Inside the cabin', P, s => { s.shelterType = 'cabin'; s.shelterLvl = 3; s.fire = true; s.fireInside = true; }, () => { window.__t.W().inside = true; });
+add('A day at one camp', 'snow', 'Deep winter, snow on the ground', P, s => { const sd = E.DATA.seasons.find(x => x.key === P).climate.snow; s.day = sd + 20; });
+add('A day at one camp', 'river', 'At the river and the ford', P, null, () => { const W = window.__t.W(); if (W.river) { W.player.x = W.river.ford; W.player.y = W.river.y1 + 40; } });
 add('A day at one camp', 'rain', 'Rain, with a full pack', P, s => { s.rain = true; s.pack = { firewood: 4, poles: 3 }; });
 add('Choices and mini-games', 'event', 'A choice to make', P, s => { s.event = { id: 'wolves', title: 'Wolves', text: 'Wolves howling close, after dark.', options: [{ label: 'Build the fire up and keep to camp', sub: 'Two hours, two days of wood. Nerves settle.' }, { label: 'Carry on', sub: '' }], optIds: [0, 1], phase: 0 }; });
 add('Choices and mini-games', 'mini-fish', 'Fishing: the cast', P, null, () => { window.__t.call('startFish', false); });

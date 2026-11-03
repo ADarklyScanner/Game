@@ -44,6 +44,17 @@ The aim: fit in among Steam survival games without copying them. Painted, muted 
 
 The wreck on the far side of each map is the first thing drawn with the painting helper (`PAINT.sprite`): written once as a small watercolour SVG, turned into an image the first time it is needed, and reused. Phases 2 to 5 do the same for the land, trees, camp and animals.
 
+## How the land is painted (phase 2)
+
+- **Plain canvas, not SVG filters,** so it is fast and works in every browser. A *wash* is an uneven blob, filled thin with its edge stroked a little stronger, the way pigment pools at the edge of real watercolour. *Dry brush* is broken parallel strokes.
+- **Ground:** the place's own palette (moss, darker moss, rust, lichen) laid in washes at three sizes over its base colour, with dry-brush streaks.
+- **Water:** the place's blue-greys, darker pigment along the waterline, a pale line where it laps, thin light streaks instead of white ovals. The river is darker at its banks.
+- **Paths:** a soft lighter band and scuffs, with no drawn edge.
+- **Stones and bedrock:** a wash with a lighter top wash, a soft shadow and one crack.
+- **Paper:** one seamless sheet of soft blotches and fine granulation, multiplied over every ground tile, continuous across tiles.
+- **Muting:** every colour of every place is pulled about a quarter of the way toward its own grey once, at load. Trees and decor sit in the palette at no cost per frame. The player's jacket and the fire stay bright enough to find.
+- **Light:** dawn, evening, dusk and night tints are taken from the palette (dusk is a muted purple, night a deep blue-black).
+
 ## What stays the same
 
 All game rules, odds and the engine. This is a change to how things are drawn and laid out, not to what happens. The 1,100-plus checks and the bots keep testing the rules unchanged.
@@ -62,7 +73,7 @@ Each phase ends with the full test run, the picture sheet updated, and a commit.
 |---|---|---|
 | 0 | Foundation (done Nov 3) | Typefaces bundled, place palettes, paper and grain textures, the painting helpers, the first picture sheet |
 | 1 | Top bar and tool roll (done Nov 3) | New numbers bar; jobs grouped by tool on the canvas roll; index-card job lists; messages in the new type |
-| 2 | The land | Painted ground, water, shore, rivers, rock, paths; light, weather and night tinting |
+| 2 | The land (done Nov 3) | Painted ground, water, shore, rivers, rock, paths; light, weather and night tinting |
 | 3 | Trees and plants | Every tree kind and age, bushes, moss, cut and used states |
 | 4 | Camp and shelters | Fire, every shelter type at every build stage and condition, drying rack, smoker, cache, woodshed, cairns, piles |
 | 5 | Animals, people, tracks | Player, animals, carcasses, blood trails, debris, landmarks |
