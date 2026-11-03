@@ -17,7 +17,9 @@ function makeBot(E, s, opts = {}) {
     if (s.mats.tinder < 2) pri.push('tinder'); // keep something to light a fire with
     /* no ferro rod: make a bow drill, and a stone blade to make it with if there is no knife or axe */
     if (!s.gear.includes('Ferro rod') && !(s.crafts.bowdrill >= 1)) { pri.push('craft_bowdrill'); if (!E.blade(s) && !E.chopper(s)) pri.push('craft_stoneblade', 'stones'); if (s.mats.cordage < 1) pri.push('cordage', 'bark'); }
+    else if (!E.blade(s) && s.day > 1) pri.push('craft_stoneblade', ...(s.day < 15 ? ['stones'] : [])); /* a knife of some kind carves hooks, cleans fish and makes a handline: knap one from flint when it turns up */
     if (!s.fire) pri.push('light_fire');
+    if (!E.hasRod(s) && !(s.crafts.handline >= 1) && s.day > 1) { pri.push('craft_handline'); if (s.mats.cordage < 3) pri.push('cordage', 'bark'); } /* no tackle: twist a handline early, food comes first */
     if (s.firewood < 6) pri.push('firewood');
     if (s.shelterLvl < 3) { pri.push('shelter'); const miss = (E.shelterMissing(s) || []).join(' '); const need = { stone: ['stones'], cordage: ['cordage', 'bark'], pole: ['cut_poles'], bough: ['boughs'], log: ['cut_logs'], moss: ['moss'], bark: ['bark'] }; for (const [w, acts] of Object.entries(need)) if (miss.includes(w)) pri.push(...acts); } /* gather what the chosen shelter still needs */
     if (s.carcass) pri.push('dress');

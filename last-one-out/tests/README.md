@@ -66,6 +66,6 @@ GAME_FILE=/path/to/copy.html node baseline.js
 ## Files
 
 - `load-game.js` pulls the data and engine out of `index.html`.
-- `bot.js` is the simple player used by the baseline and screen checks.
+- `bot.js` is the simple player used by the baseline, balance, screen checks and the gear simulation. It makes do with what it carries: the best roof its tools allow (a quick one first), a bow drill without a ferro rod, a hole in the ice without an axe, and it gathers only what its shelter and camp works still need.
 - `baseline-core.json` and `baseline-full.json` are the recorded references; `balance.json` holds the survival medians.
 - `fixtures/` holds saves from the version before the rival names changed, and the old names that must never reappear.

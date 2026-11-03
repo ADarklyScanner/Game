@@ -576,11 +576,11 @@ function wade(s, bridge) {
 const clayPots = s => (s.sys && s.sys.clayPots) || 0;
 /* where today's water came from, if anywhere. At the water's edge (a job there, or in the browser game simply walking down to it); a walk down
    from a camp within 150 m of the water, on any day you are up and about; water kept at camp (hauled, boiled or melted); tea or broth; rain
-   caught in a pot or a tarp. A frozen lake needs an axe for a hole, or a hole already chopped for fishing. raw: you drank it unboiled. */
+   caught in a pot or a tarp. A frozen lake needs a hole: cut with an axe or saw, or broken by hand today. raw: you drank it unboiled. */
 function waterToday(s) {
   const t = s.today || { done: [] }; const done = t.done || []; const c = season(s).climate;
   if (c.water === 'scarce') return { ok: (s.water || 0) > 0, raw: false, how: 'carried' };
-  const ice = !frozen(s) || !!t.iceHole || chopper(s);
+  const ice = !frozen(s) || cutsIce(s); /* an axe or saw cuts a hole, or one was broken by hand today */
   const edge = !!t.drank || done.some(id => { const w = ACTIONS[id] && ACTIONS[id].where; return w === 'water' || w === 'shore'; });
   const spot = (s.sys && s.sys.campSpot) || {}; const walk = done.length > 0 && !(spot.waterM > 150);
   const brewed = done.includes('needle_tea') || done.includes('bone_broth') || done.includes('melt_snow') || done.includes('boil');

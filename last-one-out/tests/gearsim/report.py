@@ -78,6 +78,21 @@ if full:
 <p>From {R.get("full10n", 0):,} runs of 10 random items in random places: days each item adds compared with the average item in the kit. This is the number that decides real loadouts.</p>
 {hbars([(i, full[i], f"{i} in a full kit: {fmt(full[i])} days versus the average item") for i in fo])}
 </section>''')
+# before and after: an earlier result saved as before.json (same simulation, older rules or bot)
+import os
+if os.path.exists('before.json'):
+    B = json.load(open('before.json')); bs = B['score']; bsolo = {i: B['solo'][i]['avg'] for i in B['items']}; bfull = B.get('full10', {})
+    avg = lambda a: sum(a) / len(a)
+    useful = lambda sc: sum(1 for v in sc.values() if v >= 1)
+    def gap(f):
+        if not f: return None
+        o = sorted(f.values(), reverse=True); return avg(o[:10]) - avg(o[10:])
+    g0, g1 = gap(bfull), gap(full)
+    rows = [[e(i), fmt(bs.get(i, 0)), fmt(score[i]), fmt(bsolo.get(i, 0)), fmt(solo[i])] for i in sorted(items, key=lambda i: -(score[i] - bs.get(i, 0)))]
+    secs.append(f'''<section><h2>Before and after the fixes</h2>
+<p>{e(B.get('label', 'The first run'))}. With no gear at all a run lasted {avg(B['base']):.1f} days before and {avg(R['base']):.1f} now. Items that add a day or more on the one number: {useful(bs)} before, {useful(score)} now.{f" In a full kit, the ten best items beat the other eighteen by {g0:.1f} days each before and {g1:.1f} now." if g0 is not None and g1 is not None else ""}</p>
+{table(['Item (biggest gain first)', 'One number before', 'Now', 'Alone before', 'Now'], rows)}
+</section>''')
 secs.append('<section><h2>All the numbers</h2>' + table(['#', 'Item', 'One number', 'Alone', 'In a full kit'], [[str(n + 1), e(i), fmt(score[i]), fmt(solo[i]), fmt(full.get(i, 0))] for n, i in enumerate(order)]) + '</section>')
 secs.append(f'''<section class="note"><h2>How it was run</h2>
 <p>The game's own rules and its test bot, which plays every job it can with what it carries. Same seeds for every kit in a place, so the differences come from the gear, not the luck. Runs stop at 60 days. Kits up to {R["maxk"]} items were all run; full 10-item kits were sampled at random. Game as of Nov 3, 2026 (water round and upkeep included).</p></section>''')

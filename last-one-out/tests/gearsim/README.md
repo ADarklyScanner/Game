@@ -7,4 +7,6 @@ Every item alone, every pair, every set of three and four, run in all 17 places 
     for p in 0 1 2 3; do PART=$p K=750 node kits.js kits$p.json & done; wait   # 3,000 random 10-item kits
     python3 analyse.py && python3 report.py   # comboresult.json, then gearreport.html
 
+Put an earlier `comboresult.json` next to it as `before.json` (with a `label`) and the report adds a before-and-after section.
+
 Results from Nov 3, 2026: https://claude.ai/artifact/C7t6VdPtTjBZZZudUdh8aP
