@@ -5,6 +5,7 @@ function makeBot(E, s, opts = {}) {
   const policy = () => {
     if (!s.shelterGoal || s.shelterGoal === s.shelterType) { const o = E.shelterOptions(s); if (o.length) E.chooseShelter(s, o[o.length - 1]); }
     const pri = [];
+    if (E.season(s).climate.water === 'scarce' && (s.water || 0) < 2) pri.push('water'); /* out where water is scarce: haul more before it runs out, as the game warns you to */
     if ((s.sys && s.sys.axeOff) || (E.haftOf ? E.haftOf(s) : 1) < 0.35) pri.push('fix_axe');
     if (s.axeEdge < 0.5) pri.push('sharpen');
     if (((s.bagHoles || 0) > 0 || (E.clothesOf ? E.clothesOf(s) : 1) < 0.6) && s.phase >= 2) pri.push('mend');

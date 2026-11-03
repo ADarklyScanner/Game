@@ -18,6 +18,7 @@ node crafts.js
 node finish.js
 node conseq.js
 node regress.js
+node lazy.js
 node balance.js
 node fuzz.js 20
 node exhaustive.js 4000

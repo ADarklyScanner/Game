@@ -106,7 +106,18 @@ Old saves from all 24 earlier versions load and play on, and save, reload and co
 | 77 | Loading only filled missing fields; a damaged one (null, a word where a number belongs, an unknown food or shelter) crashed the game screen | crash | Damaged fields are rebuilt. Of 3,428 single-field damages, none crash or break a number; the 40 that remove the version or the place are kept aside |
 | 78 | A broken number in health, weight or morale was saved as empty and came back as 0 | data loss | Never saved; a sane value is used instead |
 
+### Found by the lazy-player test (Nov 3, tests/lazy.js)
+
+| # | What was wrong | Kind | Fix |
+|---|---|---|---|
+| 85 | Where water is all around, the game drank for you even if you never got up: a player who only slept lasted 20 to 32 days with no water and no food, where a real body lasts about three | realism | You drink on any day you are up and doing something, from boiled or hauled water kept at camp, or (in the browser game) by reaching the water's edge. A day lying still with none to hand is a day without water |
+| 86 | Going without water cost the same each day, so in the dry places it took 10 days to kill you | realism | Thirsty on the first day, dizzy on the second, collapse on the third |
+| 87 | Giardia from untreated water was rolled every day, even on days you drank nothing | wrong rule | Only on days you drank untreated water |
+
 ### Test-side problems (not game bugs)
+
+- The test bot never hauled water in the dry places and lived off its starting supply. It now hauls water when it runs low, as the game tells a player to. Its median in the dry desert site went from 13 days (dying of thirst) to 35; the old number came from the bot, not the rules.
+- The rule checks skip through days without doing any jobs. The test loader now gives the character in them a drink each day; whole days played by the bots and the lazy test are left alone.
 
 - The shelter suite hung and one wildlife check failed. Their test players sat for weeks with no fire, quit, and the wait loops never ended. Those loops now stop when the run ends and keep the test player's morale up.
 
@@ -139,3 +150,5 @@ Nothing.
 ## Balance after all fixes
 
 The full test bot, 1,020 games, against the original game: median 56 → 56 days (0.0%), mean 56.4 → 54.9 (−2.7%). No place moved more than 10%.
+
+After the water fixes (Nov 3): median 56 → 56 days (0.0%), mean 56.4 → 56.1 (−0.5%). The dry desert site moved because the bot now hauls water (see above); the two lake sites that moved about 11% (US-S10, AU-S3) had moved before the water fixes.

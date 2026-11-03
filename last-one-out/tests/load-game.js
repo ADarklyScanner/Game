@@ -9,6 +9,9 @@ function loadGame(file = path.join(__dirname, '..', 'index.html')) {
   const ctx = { console, Math, JSON, Object, Array, Number, String, Set, Map, Infinity, NaN, isFinite, parseInt, parseFloat, Date };
   ctx.globalThis = ctx; ctx.window = ctx; vm.createContext(ctx);
   vm.runInContext(dataSrc, ctx); vm.runInContext(engineSrc, ctx);
+  /* the rule checks fast-forward days with E.endDay and no jobs at all; the character in them still drinks, as anyone would.
+     Whole days played through E.runDay (the bots, and tests/lazy.js) are left alone, so a day lying still is still a day without water. */
+  const end = ctx.Engine.endDay; ctx.Engine.endDay = function (s, ...rest) { if (s && s.today) s.today.drank = true; return end.call(this, s, ...rest); };
   return ctx.Engine;
 }
 module.exports = { loadGame };

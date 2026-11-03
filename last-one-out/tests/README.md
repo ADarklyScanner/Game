@@ -39,6 +39,7 @@ Run these before publishing any change. They test the real `../index.html`.
 | `node exhaustive.js [n]` | Builds n varied situations; asks every action, runs allowed ones, checks a refusal changes nothing, forces every event that could fire there and takes every choice, then plays the night. Rules are checked after each step. |
 | `node styles.js [n]` | Eight kinds of player (random, careless, fisher, hunter, forager, starved of gear, night owl, mover) in every place; rules checked after every action and night; same seed gives the same game; saves round-trip; save size limit. |
 | `node screens.js` | Opens every panel in every game phase at five screen sizes (320 px to desktop), presses the safe buttons, starts and abandons every mini-game, and checks every screen function ran. |
+| `node lazy.js` | Lazy players: a bot that only sleeps, with no kit and with a typical kit, in every place. Fails if any place lets it last longer than a real body could without water (about three days). |
 | `node campsite.js` | Choosing camp through the real page (a new run starts with no camp, bad spots are refused, older saves keep their camp) and the wreck on the far side of every map. |
 | `node sheet.js [dir]` | The picture sheet: forces each place and state, takes a phone-sized picture of each, and builds one page of them in `../design/sheet` (not kept in git). Fails only on page errors. |
 
