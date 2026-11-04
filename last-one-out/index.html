@@ -1278,7 +1278,7 @@ function doAction(s, id, lines, mod, opts) {
   const gain = (k, n, what) => { s.mats[k] += n; lines.push([`${what || 'Gathered'}: ${n} ${matName(k, n)} (${s.mats[k]} now).`, 'info']); };
   switch (id) {
     case 'fish': {
-      const p = fishOdds(s, X.water) * mod * (X.fumble ?? 1); const hadBait = s.mats.bait > 0; if (hadBait) s.mats.bait -= 1;
+      const p = X.landed ? 0.85 + Math.min(0.12, (X.landed - 1) * 0.8) /* it bit and you fought it in: a few still come off at the bank */ : X.nobite ? 0 : fishOdds(s, X.water) * mod * (X.fumble ?? 1); const hadBait = s.mats.bait > 0; if (hadBait) s.mats.bait -= 1;
       if (chance(s, p)) {
         const n = 1 + (chance(s, 0.25 + 0.2 * (s.skill.fish - 1)) ? 1 : 0) + (chance(s, 0.12 + 0.15 * (s.skill.fish - 1)) ? 1 : 0);
         let lost = 0;
@@ -1346,7 +1346,7 @@ function doAction(s, id, lines, mod, opts) {
       lines.push([`Set ${n} snares ${scouted ? 'right on the runs you found' : 'where it looked likely'} (${s.snares} out).`, 'info']); s.stats.sets = (s.stats.sets || 0) + 1; s.skill.trap = Math.min(1.6, s.skill.trap + 0.01);
       break;
     }
-    case 'deadfalls': { s.mats.stone -= 3; s.deadfalls = Math.min(12, s.deadfalls + 3); lines.push([`Carved triggers and set 3 deadfalls (${s.deadfalls} out).`, 'info']); injuryRisk(0.004, 'knife slipped into your thumb'); break; }
+    case 'deadfalls': { const nset = X.good === false ? 1 : 3; /* the stone would not balance: only one of the three would stand */ s.mats.stone -= nset; s.deadfalls = Math.min(12, s.deadfalls + nset); lines.push([nset < 3 ? `The stone kept falling off the trigger. Got 1 deadfall to stand (${s.deadfalls} out).` : `Carved triggers and set 3 deadfalls (${s.deadfalls} out).`, nset < 3 ? 'muted' : 'info']); injuryRisk(0.004, 'knife slipped into your thumb'); break; }
     case 'checktraps': {
       const got = s.trapsCatch.splice(0);
       if (got.length) { for (const f of got) addRaw(s, f, lines, 'Trap:'); s.morale += 2; s.skill.trap = Math.min(1.6, s.skill.trap + 0.04); if (got.includes('squirrel') && chance(s, 0.03)) injuryRisk(1, 'squirrel bite to the finger, through to the bone'); }
@@ -1415,6 +1415,7 @@ function doAction(s, id, lines, mod, opts) {
     case 'cordage': { const bark = s.mats.bark >= 3; if (bark) { s.mats.bark -= 3; } else { s.mats.hide -= 1; }
       const brittle = bark && temperature(s) < -5 && !(s.potWater >= 1) && !(s.rain || s.fog || s.snowfall); // dry fibre in hard frost cracks as it twists; soak it first
       if (brittle) { const n = 1 + (chance(s, 0.3) ? 1 : 0); lines.push(['The bark is frozen dry and cracks as you twist it. Half of it breaks into short ends. Soaked in a pot of water first, it would have held.', 'muted']); gain('cordage', n, 'Twisted'); s.skill.craft = Math.min(1.5, s.skill.craft + 0.02); break; }
+      if (X.good === false) { gain('cordage', 1, 'Twisted, unevenly'); lines.push(['You stopped part way. The rest of the fibre is a tangle of short ends.', 'muted']); break; } /* stopped part way */
       gain('cordage', 2, 'Twisted'); s.skill.craft = Math.min(1.5, s.skill.craft + 0.02); break; }
     case 'light_fire': {
       const ig = igniter(s); let p = fireOdds(s); if (X.ember != null) p = X.ember ? (ig === 'bowdrill' && tinderDamp(s) > 0.2 ? 0.03 : Math.min(0.98, p + 0.4)) : p * 0.3;
@@ -1538,7 +1539,8 @@ function doAction(s, id, lines, mod, opts) {
       break;
     }
     case 'dry': { s.wet = 0; s.morale += 2; if (s.sys && s.sys.sparesWet) { s.sys.sparesWet = false; lines.push(['The spare set dried by the fire too.', 'muted']); } if (!s.once_boot && chance(s, 0.004)) { s.once_boot = true; addCond(s, { name: 'Melted boot sole', days: 10, dmg: 0.3 }); s.morale -= 6; lines.push(['Left a boot too close to the coals. The sole has melted and curled. Wet feet from here on.', 'bad']); } else lines.push([pick1(s, ['Steamed yourself dry by the fire.', 'Turned the socks on a stick over the coals until they stopped steaming.', 'Dried out in front of the fire. The jacket smells of smoke and fish.']), 'info']); break; }
-    case 'sharpen': if (has(s, 'Sharpening stone')) { s.axeEdge = 1; lines.push(['Put a fresh edge on the axe.', 'info']); } else { s.axeEdge = Math.max(s.axeEdge, 0.75); lines.push(['Honed the axe on a flat river stone, wet. A working edge, not a fine one.', 'info']); } break;
+    case 'sharpen': { const target = has(s, 'Sharpening stone') ? 1 : 0.75; if (X.good === false) { s.axeEdge = Math.max(s.axeEdge, round1((s.axeEdge + target) / 2 * 10) / 10); lines.push(['A few strokes and you stopped. The edge is better, not right.', 'muted']); break; } /* stopped part way: half the gain */
+      if (has(s, 'Sharpening stone')) { s.axeEdge = 1; lines.push(['Put a fresh edge on the axe.', 'info']); } else { s.axeEdge = Math.max(s.axeEdge, 0.75); lines.push(['Honed the axe on a flat river stone, wet. A working edge, not a fine one.', 'info']); } break; }
     case 'fix_axe': { const sys = sysOf(s); const wrap = s.mats.hide >= 1; if (wrap) s.mats.hide -= 1; sys.wrapped = wrap; sys.haft = wrap ? 1 : 0.8; sys.axeOff = false; lines.push([wrap ? 'Carved a hardwood wedge, drove it into the eye and bound the neck in a strip of wet rawhide. It will shrink tight as it dries.' : 'Carved a new hardwood wedge and drove it into the eye. The head is tight again, for now.', 'good']); break; }
     case 'search': {
       const p = se.found.rate * Math.pow(0.82, s.stats.found);
@@ -2360,7 +2362,7 @@ function cueFor(lines) {
   if (lines.some(l => l[1] === 'warn')) return 'warn';
   return null;
 }
-function floatNum(i, text, cls) { const v = app.querySelectorAll('.vital')[i]; if (!v || reduced) return; const f = $(`<span class="float ${cls}">${esc(text)}</span>`); v.append(f); setTimeout(() => f.remove(), 1200); }
+function floatNum(i, text, cls) { const v = app.querySelectorAll('.vital')[i]; if (!v || reduced) return; const r = v.getBoundingClientRect(); const f = $(`<span class="float ${cls}" style="position:fixed;left:${Math.round(r.right - 8)}px;top:${Math.round(r.top + 6)}px;right:auto;transform:translateX(-100%)">${esc(text)}</span>`); document.body.append(f); setTimeout(() => f.remove(), 1200); } /* on the page, not inside the vital: the next HUD refresh would wipe it */
 function snap() { const st = E.status(S); return { kcal: st.storeKcal, h: S.health, m: S.morale, w: S.weight }; }
 function diffFloats(a) {
   const b = snap();
@@ -3315,7 +3317,8 @@ function interactionsHere() {
   if (ev) {
     if (ev.id === 'wound') return ev.options.map((o, i) => ({ label: o.label, sub: o.sub, fn: () => pick(i) }));
     if (ev.id === 'bear' && W.actor && dist(W.actor, W.camp) < 90 && near(W.camp, 190)) return ev.options.map((o, i) => ({ label: o.label, sub: o.sub, fn: () => pick(i) }));
-    if (ev.id === 'bear') return [{ label: 'Head back to camp', sub: `bear at camp · ${fmtDist(mFromPx(dist(W.player, W.camp)))}`, primary: true, fn: () => { input.target = { x: W.camp.x, y: W.camp.y + 80 }; lastActs = ''; } }, { label: 'Stay away and let it eat', sub: ev.options[1] ? ev.options[1].sub : '', fn: () => pick(1) }];
+    if (ev.id === 'bear' && !near(W.camp, 300)) out.push({ label: 'Head back to camp', sub: `bear at camp · ${fmtDist(mFromPx(dist(W.player, W.camp)))}`, fn: () => { input.target = { x: W.camp.x, y: W.camp.y + 80 }; lastActs = ''; } }); /* away from camp: carry on; the bear has the food while you are gone */
+    else if (ev.id === 'bear') return [{ label: 'Head back to camp', sub: `bear at camp · ${fmtDist(mFromPx(dist(W.player, W.camp)))}`, primary: true, fn: () => { input.target = { x: W.camp.x, y: W.camp.y + 80 }; lastActs = ''; } }, { label: 'Stay away and let it eat', sub: ev.options[1] ? ev.options[1].sub : '', fn: () => pick(1) }];
     if (ev.id === 'grouse' && W.actor && near(W.actor, 70)) { ev.options.forEach((o, i) => out.push({ label: o.label, sub: o.sub, fn: () => pick(i) })); return out; }
     if (ev.id === 'carcass' && W.carcassEv && near(W.carcassEv, 50)) return [{ label: 'Take the fat', sub: ev.options[0].sub, fn: () => pick(0) }];
     if (ev.id === 'storm' && atCamp()) out.push({ label: 'Brace the shelter', sub: E.hoursLeft(S) >= 3 ? 'Three hours. Holds tonight.' : E.hoursLeft(S) >= 1.5 ? `${+E.hoursLeft(S).toFixed(1)}h of light left. Just enough.` : 'Not enough light left to do it properly', fn: () => pick(0) });
@@ -3588,7 +3591,7 @@ function doAct(id, extra, mod, inside) {
   if (!S || S.status !== 'playing' || S.phase < 0 || (S.phase > 2 && !E.nightOk(S, id))) return;
   // a quick double tap on a phone must not run the same job twice
   const now = performance.now(); if (doAct.last && doAct.last.id === id && now - doAct.last.t < 400) return; doAct.last = { id, t: now };
-  if (S.event && S.event.id === 'bear') { banner([['Deal with the bear first.', 'warn']]); return; }
+  if (S.event && S.event.id === 'bear') { if (near(W.camp, 300)) { banner([['Deal with the bear first.', 'warn']]); return; } const L = E.choose(S, 1); banner([['While you were away, the bear got into the food.', 'warn'], ...L]); W.actor = null; } /* away from camp: you were not there to stop it */
   autoResolve();
   const before = snap(); const p = W.player;
   sfx.play({ fish: 'splash', hunt: 'bow', firewood: 'axe', cut_poles: 'axe', cut_logs: 'axe', shelter: 'axe', snares: 'stick', deadfalls: 'stick', light_fire: 'ignite' }[id] || 'tap');
@@ -3599,8 +3602,8 @@ function afterAct(id, lines, before) {
   const p = W.player; if (id === 'search' && W.ruin && near(W.ruin, 70)) W.ruinUsed = S.day;
   worldToast(lines.filter(l => l[1] !== 'warn').slice(0, 4), p.x, p.y);
   if (lines.some(l => l[1] === 'big')) W.fx.push({ kind: 'flash', age: 0, life: 0.6 });
-  if (id === 'hunt' && S.carcass && !W.carcassPos) { const a = mini && mini.animal; W.carcassPos = a ? { x: a.x, y: a.y } : { x: p.x + 50, y: p.y - 20 }; }
-  if (id === 'hunt' && S.wounded) { W.blood = []; const a = Math.random() * 6.28; let x = p.x, y = p.y; for (let i = 0; i < 6; i++) { x += Math.cos(a + Math.sin(i) * 0.6) * 55; y += Math.sin(a + Math.sin(i) * 0.6) * 55; x = Math.max(60, Math.min(MAP.w - 60, x)); y = Math.max(60, Math.min(MAP.h - 60, y)); W.blood.push({ x, y, seen: i < 2 }); } }
+  if (id === 'hunt' && S.carcass && !W.carcassPos) { const a = W.lastShot; W.carcassPos = a ? { x: a.x, y: a.y } : { x: p.x + 50, y: p.y - 20 }; } /* where the animal stood when the arrow hit */
+  if (id === 'hunt' && S.wounded) { W.blood = []; const ls = W.lastShot; const a = ls ? ls.a + (Math.random() - 0.5) * 0.8 : Math.random() * 6.28; let x = ls ? ls.x : p.x, y = ls ? ls.y : p.y; /* the trail starts where it was hit and runs away from you */ for (let i = 0; i < 6; i++) { x += Math.cos(a + Math.sin(i) * 0.6) * 55; y += Math.sin(a + Math.sin(i) * 0.6) * 55; x = Math.max(60, Math.min(MAP.w - 60, x)); y = Math.max(60, Math.min(MAP.h - 60, y)); W.blood.push({ x, y, seen: i < 2 }); } }
   if (id === 'track') { W.blood = []; if (S.carcass) W.carcassPos = { x: p.x + 40, y: p.y + 30 }; }
   if (id === 'light_fire' && S.fire) W.fx.push({ kind: 'glow', age: 0, life: 1 });
   S.hints = S.hints || {};
@@ -3635,35 +3638,35 @@ function endMini() { mini = null; miniUI(''); W.floatOn = null; W.player.cast = 
 // fishing: cast, wait for the float, set the hook, then fight it
 function startFish(run) {
   if (S.event && S.event.id !== 'fishrun') autoResolve();
-  const atPond = W.pond && near(W.pond, W.pond.r + 50) && !atShore();
+  const atPond = W.pond && near(W.pond, W.pond.r + 50) && (!atShore() || dist(W.player, W.pond) < W.pond.r + 30);
   const p = W.player; const ice = E.status(S).frozen; const trail = []; let cast = 0, state = 'cast', castDone = false, t = 0, dipAt = 0, dipT = 0, fightT = 0, tension = 0.5, hold = false, out = 0, good = 0;
   const fl = { x: p.x - 40, y: p.y, dip: 0 }; const pool = W.desert ? (poolNear(120) || W.pool) : atPond ? W.pond : null; if (!pool) fl.x = Math.min(fl.x, W.shoreX(fl.y) - 20); else { const a = Math.atan2(pool.y - p.y, pool.x - p.x); fl.x = pool.x - Math.cos(a) * 8; fl.y = pool.y - Math.sin(a) * 5; }
-  const finish = (mod, fight, fumble) => { if (!mini) return; const extra = { fight, fumble, water: atRiver() ? 'river' : atPond ? 'pond' : 'lake' }; endMini(); if (run) { const before = snap(); const lines = E.choose(S, 0); W.run = false; afterAct('fish', lines, before); } else doAct('fish', extra, mod); };
+  let bites = true; const finish = (mod, fight, fumble, landed, nobite) => { if (!mini) return; const extra = { fight, fumble, landed, nobite, water: atRiver() ? 'river' : atPond ? 'pond' : 'lake' }; endMini(); if (run) { const before = snap(); const lines = E.choose(S, 0); W.run = false; afterAct('fish', lines, before); } else doAct('fish', extra, mod); };
   const m = mini = { type: 'fish', float: fl, ice, deadline: W.t + 40,
     update(dt) {
       t += dt;
       if (state === 'cast') { if (hold) cast = Math.min(1, cast + dt * 0.8); }
-      else if (state === 'wait') { if (t > dipAt) { state = 'dip'; dipT = 0; } }
+      else if (state === 'wait') { if (bites && t > dipAt) { state = 'dip'; dipT = 0; } else if (!bites && t > 9) { state = 'done'; miniUI('<div class="mtext">Nothing is biting. You reel in an empty hook.</div>'); setTimeout(() => finish(1, undefined, 1, undefined, true), 700); } }
       else if (state === 'dip') { dipT += dt; fl.dip = Math.sin(dipT / 0.6 * Math.PI) * 7; if (dipT > 0.6) { state = 'missed'; miniUI('<div class="mtext">Missed it. That was the best bite of the session.</div>'); setTimeout(() => finish(1, undefined, 0.6), 700); } }
       else if (state === 'fight') { fightT += dt; tension += (hold ? 0.9 : -0.7) * dt; tension = Math.max(0, Math.min(1, tension)); if (tension > 0.4 && tension < 0.75) good += dt; else out += dt;
         trail.push(tension); if (trail.length > 20) trail.shift(); const inBand = tension > 0.4 && tension < 0.75;
         miniUI(`<div class="mbar"><i style="left:40%;width:35%;box-shadow:inset 3px 0 4px -1px rgba(210,255,200,.9),inset -3px 0 4px -1px rgba(210,255,200,.9)"></i>${trail.map((v, i) => `<b style="left:${v * 100}%;width:3px;opacity:${((i + 1) / trail.length * 0.4).toFixed(2)}"></b>`).join('')}<b style="left:${tension * 100}%;${inBand ? '' : 'background:#ffb08a;'}"></b></div><div class="mtext">${tension > 0.88 ? 'Too hard. It will snap.' : tension < 0.2 ? 'Slack. It is shaking the hook.' : 'Hold to keep tension. Keep it in the band.'}</div>`);
         if (tension >= 1) { miniUI('<div class="mtext">Line snapped.</div>'); state = 'done'; setTimeout(() => finish(1, 'snap'), 600); }
         else if (tension <= 0) { miniUI('<div class="mtext">Went slack. It threw the hook.</div>'); state = 'done'; setTimeout(() => finish(1, 'slack'), 600); }
-        else if (fightT > 4) { state = 'done'; miniUI(''); finish(1.2 + Math.min(0.15, good / 20)); } }
+        else if (fightT > 4) { state = 'done'; miniUI(''); finish(1.2 + Math.min(0.15, good / 20), undefined, undefined, 1 + Math.min(0.15, good / 20)); } }
     },
     acts: [{ label: 'Cast', sub: 'hold, then let go', primary: true, fn: () => {} }, { label: 'Reel in', sub: 'not now, no time spent', fn: () => { if (mini && state === 'cast') endMini(); } }],
     cancel: () => finish(1, undefined, state === 'cast' ? 0.5 : 1) };
   // cast button is a hold: we drive it from pointer events on the act button
-  m.acts[0].down = () => { hold = true; }; m.acts[0].up = () => { if (castDone) return; castDone = true; hold = false; m.acts.length = 1; lastActs = ''; const d = 40 + cast * 90; if (!W.desert && !atPond) { fl.x = Math.min(p.x - d, W.shoreX(fl.y) - 20); } state = 'wait'; t = 0; dipAt = 1 + Math.random() * 2.5 - cast * 0.5; W.floatOn = fl; p.cast = true; sfx.play('splash'); m.acts = [{ label: 'Set the hook', sub: ice ? 'when the line twitches' : 'when the float dips', primary: true, fn: () => { if (state === 'dip') { state = 'fight'; fightT = 0; tension = 0.5; sfx.play('tap'); m.acts = [{ label: 'Hold the rod', sub: 'tension', primary: true, down: () => { hold = true; }, up: () => { hold = false; } }]; lastActs = ''; } else if (state === 'wait') { state = 'spooked'; miniUI('<div class="mtext">Too early. Spooked it.</div>'); setTimeout(() => finish(1, undefined, 0.6), 700); } } },
-    { label: 'Reel in', sub: 'give up on this cast', fn: () => { if (state !== 'wait' && state !== 'dip') return; state = 'done'; miniUI('<div class="mtext">Reeled in. Maybe something follows the bait in; maybe not.</div>'); setTimeout(() => finish(1, undefined, 0.4), 500); } }]; lastActs = ''; };
+  m.acts[0].down = () => { hold = true; }; m.acts[0].up = () => { if (castDone) return; castDone = true; hold = false; m.acts.length = 1; lastActs = ''; const d = 40 + cast * 90; if (!W.desert && !atPond) { fl.x = Math.min(p.x - d, W.shoreX(fl.y) - 20); } state = 'wait'; t = 0; dipAt = 1 + Math.random() * 2.5 - cast * 0.5; bites = Math.random() < Math.min(0.95, E.fishOdds(S, atRiver() ? 'river' : atPond ? 'pond' : 'lake') * (0.9 + 0.3 * cast)); /* the game's own odds decide whether anything takes the bait; a long cast reaches deeper water */ W.floatOn = fl; p.cast = true; sfx.play('splash'); m.acts = [{ label: 'Set the hook', sub: ice ? 'when the line twitches' : 'when the float dips', primary: true, fn: () => { if (state === 'dip') { state = 'fight'; fightT = 0; tension = 0.5; sfx.play('tap'); m.acts = [{ label: 'Hold the rod', sub: 'tension', primary: true, down: () => { hold = true; }, up: () => { hold = false; } }]; lastActs = ''; } else if (state === 'wait') { state = 'spooked'; miniUI('<div class="mtext">Too early. Spooked it.</div>'); setTimeout(() => finish(1, undefined, 0.6), 700); } } },
+    { label: 'Reel in', sub: 'give up on this cast', fn: () => { if (state !== 'wait' && state !== 'dip') return; state = 'done'; miniUI('<div class="mtext">Reeled in. Maybe something follows the bait in; maybe not.</div>'); setTimeout(() => finish(1, undefined, 0.4, undefined, !bites), 500); } }]; lastActs = ''; };
   miniUI(W.desert ? '<div class="mtext">Cast into the pool. Catfish sit on the bottom.</div>' : atPond ? '<div class="mtext">Small water, small fish. Drop the bait by the beaver lodge.</div>' : atRiver() ? '<div class="mtext">Cast upstream and let it drift through the pool below the riffle.</div>' : '<div class="mtext">Hold Cast to throw further out. Deeper water, better odds.</div>'); p.dir = pool ? Math.atan2(pool.y - p.y, pool.x - p.x) : Math.PI; lastActs = ''; refreshActs();
 }
 // hunting: get close without spooking it, draw, release in the window
 function startHunt(animal) {
   autoResolve(); const p = W.player; let t = 0, drawn = false, dt0 = 0, spooked = false, tired = 0;
   const finish = (hit) => { if (!mini) return; endMini(); const extra = { hit, spooked, target: animal ? animal.sp : undefined, scent: animal ? scentOf(animal) : undefined, size: animal ? animal.size : undefined }; const mod = hit === 'good' ? 1.25 : hit === 'poor' ? 1.0 : hit === 'miss' ? 0.75 : 1;
-    sfx.play('bow'); if (animal && !spooked) { if (hit !== 'none') { /* engine decides */ } } doAct('hunt', extra, mod); if (animal) { const l = S.today.lines.slice(-3).map(x => x[0]).join(' '); if (/^Shot|Took down/.test(l)) animal.dead = true; else { animal.fled = true; animal.fleeT = 2.5; animal.tx = animal.x + (animal.x - p.x) * 4; animal.ty = animal.y + (animal.y - p.y) * 4; } } };
+    sfx.play('bow'); W.lastShot = animal ? { x: animal.x, y: animal.y, a: Math.atan2(animal.y - p.y, animal.x - p.x) } : null; const had = S.carcass; doAct('hunt', extra, mod); if (animal) { if (S.carcass && S.carcass !== had) animal.dead = true; else { animal.fled = true; animal.fleeT = 2.5; animal.tx = animal.x + (animal.x - p.x) * 4; animal.ty = animal.y + (animal.y - p.y) * 4; } } };
   mini = { type: 'hunt', animal, deadline: W.t + 25, get pos() { return (Math.sin(dt0 * 2.2 * Math.PI) + 1) / 2; }, get wobble() { return Math.min(0.35, dt0 * 0.05 + tired + (S.health < 50 ? 0.1 : 0)); },
     update(dt) { t += dt; if (drawn) { dt0 += dt; if (dt0 > 6) finish('miss'); } if (animal && (animal.fled || animal.dead)) { spooked = true; finish('none'); } },
     spook() { spooked = true; },
@@ -3686,7 +3689,7 @@ function startTrack() {
 // chopping: swing on the beat
 function startChop(tree, id) {
   autoResolve(); let n = 0, good = 0, t = 0; const p = W.player; p.dir = Math.atan2(tree.y - p.y, tree.x - p.x); const need = id === 'cut_logs' ? (tree.kind === 'log' ? 4 : 6) : tree.age === 'sapling' ? 3 : 4;
-  const finish = () => { if (!mini) return; endMini(); tree.used[id] = true; if (id === 'cut_poles') tree.used.poles = true; /* the button checks the part, not the job */ if (id === 'firewood' || id === 'cut_logs') { for (const u of ['poles', 'logs', 'firewood']) tree.used[u] = true; if (tree.age === 'sapling' || tree.kind === 'log') tree.gone = true; else tree.cut = true; if (!S.cutTrees) S.cutTrees = []; if (!S.cutTrees.includes(tree.k)) S.cutTrees.push(tree.k); } if (id === 'cut_poles') { if (tree.age === 'sapling') { for (const u of ['poles', 'firewood', 'logs', 'boughs', 'bark', 'tinder']) tree.used[u] = true; tree.gone = true; if (!S.cutTrees) S.cutTrees = []; if (!S.cutTrees.includes(tree.k)) S.cutTrees.push(tree.k); } else sharedParts(tree, 'cut_poles'); } persistTree(tree); doAct(id, { good: good >= need - 1, tree: { kind: tree.kind, age: tree.age, cones: tree.cones, boughsLeft: !tree.used.boughs || id === 'cut_poles' } }); };
+  const finish = () => { if (!mini) return; endMini(); tree.used[id] = true; if (id === 'cut_poles') tree.used.poles = true; /* the button checks the part, not the job */ if (id === 'cut_logs' || (id === 'firewood' && (tree.kind === 'snag' || tree.kind === 'log' || tree.age === 'sapling'))) { /* felling (or using up a dead snag or a log); firewood from a living tree is its lower limbs, and the tree stays */ for (const u of ['poles', 'logs', 'firewood']) tree.used[u] = true; if (tree.age === 'sapling' || tree.kind === 'log') tree.gone = true; else tree.cut = true; if (!S.cutTrees) S.cutTrees = []; if (!S.cutTrees.includes(tree.k)) S.cutTrees.push(tree.k); } if (id === 'cut_poles') { if (tree.age === 'sapling') { for (const u of ['poles', 'firewood', 'logs', 'boughs', 'bark', 'tinder']) tree.used[u] = true; tree.gone = true; if (!S.cutTrees) S.cutTrees = []; if (!S.cutTrees.includes(tree.k)) S.cutTrees.push(tree.k); } else sharedParts(tree, 'cut_poles'); } persistTree(tree); doAct(id, { good: good >= need - 1, tree: { kind: tree.kind, age: tree.age, cones: tree.cones, boughsLeft: !tree.used.boughs || id === 'cut_poles' } }); };
   mini = { type: 'chop', tree, deadline: W.t + 30, get pos() { return (Math.sin(t * 1.4 * Math.PI) + 1) / 2; }, update(dt) { t += dt; },
     acts: [{ label: E.chopper(S) || E.cutter(S) ? 'Swing' : 'Haul', sub: `0 of ${need}`, primary: true, fn: () => { n++; if (mini.acts.length > 1) { mini.acts.length = 1; lastActs = ''; } const hit = Math.abs(mini.pos - 0.5) < 0.14; if (hit) good++; tree.shake = 0.25; sfx.play('axe'); buzz(hit ? 20 : 8); W.fx.push({ kind: 'chip', x: tree.x, y: tree.y, age: 0, life: 0.5 }); mini.acts[0].sub = `${n} of ${need}${hit ? ' · clean hit' : ''}`; lastActs = ''; if (n >= need) finish(); } }], cancel: finish };
   mini.acts.push({ label: 'Step back', sub: 'leave the tree for now', fn: () => { if (mini && n === 0) endMini(); } }); /* back out before the first swing */
@@ -3694,7 +3697,7 @@ function startChop(tree, id) {
 }
 // gathering: tap the things on the ground around you
 // what was left lying: drawn at its source until you come back for it
-function leftoverRefresh() { W.leftovers = []; const P = S.partial || {}, PK = S.partialKind || {}; for (const key in P) { let src = null; if (key[0] === 'b') src = W.bushes.find(b => 'b' + b.k === key); else if (key[0] === 's') src = W.beds.find(b => 's' + b.k === key); else if (key[0] === 'm') src = W.mossSpots[+key.slice(1)]; else if (key[0] === 't') { const k = +key.slice(1).split(':')[0]; src = W.trees.find(t => t.k === k); } else if (key.startsWith('pc')) src = W.pondCat; if (!src) continue; const n = Math.min(3, P[key]); for (let i = 0; i < n; i++) W.leftovers.push({ x: src.x + 14 + i * 7, y: src.y + 14 + (i % 2) * 4, kind: PK[key] || 'leaf', got: false }); } }
+function leftoverRefresh() { W.leftovers = []; const P = S.partial || {}, PK = S.partialKind || {}; for (const key in P) { let src = null; if (key[0] === 'b') src = W.bushes.find(b => 'b' + b.k === key); else if (key[0] === 's') src = W.beds.find(b => 's' + b.k === key); else if (key[0] === 'm') src = W.mossSpots[+key.slice(1)]; else if (key[0] === 't') { const [k0, part] = key.slice(1).split(':'); src = W.trees.find(t => t.k === +k0); if (src && (src.gone || src.cut || (src.used && src.used[part]))) { delete P[key]; delete PK[key]; continue; } } else if (key.startsWith('pc')) src = W.pondCat; if (!src) continue; const n = Math.min(3, P[key]); for (let i = 0; i < n; i++) W.leftovers.push({ x: src.x + 14 + i * 7, y: src.y + 14 + (i % 2) * 4, kind: PK[key] || 'leaf', got: false }); } }
 // where a gathering job takes from, so what you leave stays there for next time
 function srcKey(at, id) { if (!at) return null; if (W.bushes.includes(at)) return 'b' + at.k; if (W.beds.includes(at)) return 's' + at.k; if (at === W.pondCat) return 'pc' + (at.cat || 0); const mi = W.mossSpots.indexOf(at); if (mi >= 0) return 'm' + mi; if (at.used && typeof at.used === 'object' && at.k != null) return 't' + at.k + ':' + id; return null; }
 const COLLECT_NOUN = { worm: 'worms', shell: 'shellfish', weed: 'seaweed', stone: 'stones', bough: 'boughs', bark: 'bark strips', tinder: 'curls of dry bark', grub: 'grubs', moss: 'clumps of moss', berry: 'handfuls of berries', leaf: 'handfuls of greens', root: 'roots', hip: 'handfuls of hips', seed: 'seed heads', clay: 'lumps of clay', cone: 'cones', nettle: 'nettle tops' };
@@ -3713,7 +3716,7 @@ function startCollect(id, kind, at) {
     if (!got) { worldToast([[how === 'walk' ? `Walked off. The ${noun} are still there.` : `Left them. The ${noun} are still there.`, 'muted']], p.x, p.y); return; }
     if (left > 0) setTimeout(() => worldToast([[`Left ${left} ${noun} ${how === 'walk' ? 'behind when you walked off' : 'where they lie'}. They will keep till you come back.`, 'muted']], p.x, p.y - 18), 900);
     const ex = { picked: got, got, total: full, tree, ripe };
-    if (left <= 0) { if (at) { if (at.used && typeof at.used === 'object') { at.used[id] = true; sharedParts(at, id); persistTree(at); } else if ('used' in at) { at.used = true; if (at === W.pondCat) { at.cat = (at.cat || 0) + 1; if (at.cat >= 3) markRegrow('pc', 'cattail'); else at.used = false; } else if (W.beds.includes(at)) markRegrow('s' + at.k, 'shellfish'); else if (W.bushes.includes(at)) markRegrow('b' + at.k, at.kind); else { const mi = W.mossSpots.indexOf(at); if (mi >= 0) markRegrow('m' + mi, 'moss'); } } if (id === 'insects') { at.flipped = true; markRegrow('g' + at.k, 'insects'); } } }
+    if (left <= 0) { if (at) { if (at.used && typeof at.used === 'object') { at.used[id] = true; sharedParts(at, id); persistTree(at); } else if ('used' in at) { at.used = true; if (at === W.pondCat) { at.cat = (at.cat || 0) + 1; if (at.cat >= 3) markRegrow('pc', 'cattail'); else at.used = false; } else if (W.beds.includes(at)) markRegrow('s' + at.k, 'shellfish'); else if (W.bushes.includes(at)) { markRegrow('b' + at.k, at.kind); if (at.kind === 'berries' && S.berrySeason && S.day + 5 <= E.bushRipeDay(S, at.q || 0) + S.berrySeason.hold) S.regrow['b' + at.k] = S.day + 5; /* more ripen behind the ones you took */ } else { const mi = W.mossSpots.indexOf(at); if (mi >= 0) markRegrow('m' + mi, 'moss'); } } if (id === 'insects') { at.flipped = true; markRegrow('g' + at.k, 'insects'); } } }
     doAct(id, ex); };
   W.collect = items;
   mini = { type: 'collect', free: true, deadline: W.t + 40, update() { if (dist(W.player, base) > 110) finish('walk'); }, tap(pt) { const it = items.find(x => !x.got && dist(x, pt) < 22); if (it) { it.got = true; picked++; sfx.play('tap'); buzz(8); mini.acts[0].sub = `${picked} of ${n} picked up`; lastActs = ''; if (picked >= n) finish('all'); return true; } return false; },
@@ -3824,12 +3827,12 @@ function startDress() {
 // cordage: reverse wrap, twist one strand away then fold the other over. The order is the whole trick.
 function startCordage() {
   autoResolve(); let good = 0, next = 'Twist', slips = 0, last = ''; const need = 6;
-  const finish = () => { if (!mini) return; endMini(); doAct('cordage'); };
+  const finish = (ok = true) => { if (!mini) return; endMini(); doAct('cordage', ok ? {} : { good: false }); }; const quit = () => { if (mini) endMini(); };
   const svg = pad(`<g id="rope"></g>`, 300, 60); const draw = () => { if (!svg) return; let h = ''; for (let i = 0; i < good; i++) { const x0 = 30 + i * 40; const wrap = `<path d="M ${x0} 30 c 10 -14, 30 -14, 40 0" stroke="#c5b595" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M ${x0} 30 c 10 14, 30 14, 40 0" stroke="#a49474" stroke-width="7" fill="none" stroke-linecap="round"/>`;
       /* the wrap just made moves: a twist rolls the two strands over each other, a fold drops the second one across */
       h += i === good - 1 && last === 'Twist' ? `<g>${wrap}<animateTransform attributeName="transform" type="matrix" values="1 0 0 1 0 0;1 0 0 -1 0 60;1 0 0 1 0 0" dur=".45s" repeatCount="1"/></g>` : i === good - 1 && last === 'Fold' ? `<g>${wrap}<animateTransform attributeName="transform" type="translate" values="0 -14;0 0" dur=".3s" repeatCount="1"/></g>` : wrap; } h += `<path d="M ${30 + good * 40} 24 l 40 0 M ${30 + good * 40} 36 l 40 0" stroke="#c5b595" stroke-width="6" stroke-linecap="round" opacity=".5"/>`; svg.querySelector('#rope').innerHTML = h; };
-  const press = (what) => { if (what === next) { good++; last = what; next = next === 'Twist' ? 'Fold' : 'Twist'; sfx.play('tap'); draw(); padText(`${good} of ${need} wraps. Now ${next.toLowerCase()}.`); if (good >= need) finish(); } else { slips++; good = Math.max(0, good - 1); next = 'Twist'; sfx.play('bad'); buzz(20); draw(); padText('It unwound. Twist away first, then fold over.'); } if (mini) mini.acts.forEach(a => { a.primary = a.label === next; }); lastActs = ''; };
-  mini = { type: 'cord', deadline: W.t + 40, update() {}, acts: [{ label: 'Twist', sub: 'strand away', primary: true, fn: () => press('Twist') }, { label: 'Fold', sub: 'other over', fn: () => press('Fold') }], cancel: finish };
+  const press = (what) => { if (mini) mini.acts = mini.acts.filter(a => a.label !== 'Not now'); if (what === next) { good++; last = what; next = next === 'Twist' ? 'Fold' : 'Twist'; sfx.play('tap'); draw(); padText(`${good} of ${need} wraps. Now ${next.toLowerCase()}.`); if (good >= need) finish(); } else { slips++; good = Math.max(0, good - 1); next = 'Twist'; sfx.play('bad'); buzz(20); draw(); padText('It unwound. Twist away first, then fold over.'); } if (mini) mini.acts.forEach(a => { a.primary = a.label === next; }); lastActs = ''; };
+  mini = { type: 'cord', deadline: W.t + 40, update() {}, acts: [{ label: 'Twist', sub: 'strand away', primary: true, fn: () => press('Twist') }, { label: 'Fold', sub: 'other over', fn: () => press('Fold') }, { label: 'Not now', sub: 'no time spent', fn: quit }], cancel: () => good === 0 ? quit() : finish(false) /* walked away part way: half a job */ };
   draw(); padText('Twist a strand away from you, then fold the other over it. Alternate.'); lastActs = ''; refreshActs();
 }
 // fire. Ferro: a fast downward swipe throws sparks; then blow on the ember just long enough. Bow drill: saw the pad back and forth.
@@ -3862,8 +3865,9 @@ function startLash(id, joints, text, shape) {
   const pts = (rack ? [[70, 30], [230, 30], [70, 55], [230, 55], [150, 30]] : [[40, 80], [150, 30], [260, 80], [95, 55], [205, 55], [150, 80]]).slice(0, joints); let done = 0; const got = new Set();
   const frame = rack ? 'M 70 92 L 70 18 M 230 92 L 230 18 M 60 30 L 240 30 M 60 55 L 240 55' : 'M 40 80 L 150 30 L 260 80 M 40 80 L 260 80 M 95 55 L 95 80 M 205 55 L 205 80 M 150 30 L 150 80';
   const svg = pad(`<path d="${frame}" stroke="#9b8b6c" stroke-width="5" stroke-linecap="round" fill="none"/>${rack ? '<path d="M 100 30 L 100 46 M 125 30 L 125 44 M 175 30 L 175 47 M 200 30 L 200 43 M 110 55 L 110 70 M 190 55 L 190 69" stroke="#8c4f43" stroke-width="4" stroke-linecap="round"/>' : ''}${pts.map((p, i) => `<circle class="joint" data-i="${i}" cx="${p[0]}" cy="${p[1]}" r="11" fill="rgba(255,255,255,.15)" stroke="#fff" stroke-width="1.5"/>`).join('')}`, 300, 100);
-  if (svg) svg.onpointerdown = (e) => { const p = svg.toLocal(e); pts.forEach((q, i) => { if (!got.has(i) && Math.hypot(q[0] - p.x, q[1] - p.y) < 18) { got.add(i); done++; sfx.play('stick'); buzz(10); const c = svg.querySelector(`.joint[data-i="${i}"]`); c.setAttribute('fill', '#c5b595'); c.setAttribute('r', '8'); padText(`${done} of ${pts.length} lashed.`); if (done >= pts.length) { sfx.play('good'); setTimeout(() => finish(true), 300); } } }); };
-  mini = { type: 'lash', deadline: W.t + 40, update() {}, acts: [{ label: 'Finish now', sub: 'a rushed job', fn: () => finish(false) }], cancel: () => finish(false) /* time ran out: a rushed job, even if every point was tapped */ };
+  if (svg) svg.onpointerdown = (e) => { const p = svg.toLocal(e); pts.forEach((q, i) => { if (!got.has(i) && Math.hypot(q[0] - p.x, q[1] - p.y) < 18) { got.add(i); done++; sfx.play('stick'); buzz(10); const c = svg.querySelector(`.joint[data-i="${i}"]`); c.setAttribute('fill', '#c5b595'); c.setAttribute('r', '8'); padText(`${done} of ${pts.length} lashed.`); if (done === 1 && mini) { mini.acts = [{ label: 'Finish now', sub: 'a rushed job', fn: () => finish(false) }]; lastActs = ''; } if (done >= pts.length) { sfx.play('good'); setTimeout(() => finish(true), 300); } } }); };
+  const quit = () => { if (mini) endMini(); };
+  mini = { type: 'lash', deadline: W.t + 40, update() {}, acts: [{ label: 'Not now', sub: 'no time spent', fn: quit }], cancel: () => done === 0 ? quit() : finish(false) /* time ran out: nothing done is nothing built; part done is a rushed job, even if every point was tapped */ };
   padText(text); lastActs = ''; refreshActs();
 }
 function startBuild() { const g = S.shelterGoal; const n = { tarp: 4, leanto: 5, hut: 6, rock: 6, cabin: 6 }[g] || 5; startLash('shelter', n, g === 'rock' ? 'Tap each stone course to seat it against the rock.' : g === 'cabin' ? 'Tap each corner notch to seat the log.' : 'Tap each joint to lash it. Every one, or it comes down in the first blow.'); }
@@ -3871,21 +3875,21 @@ function startRepair() { startLash('repair', 3, 'Re-lash the loose joints and pa
 // snares: drag to size the loop (fist-wide) and set its height (four fingers). Deadfalls: hold the stone balanced on the trigger.
 function startSnare(track, deadfall) {
   autoResolve(); const id = deadfall ? 'deadfalls' : 'snares';
-  const finish = (good) => { if (!mini) return; endMini(); track.set = true; track.deadfall = !!deadfall; doAct(id, { good }); };
+  const finish = (good) => { if (!mini) return; endMini(); track.set = true; track.deadfall = !!deadfall; track.poor = !good; doAct(id, { good }); }; const quit = () => { if (mini) endMini(); }; let touched = false;
   if (!deadfall) {
     let w = 40, h = 30, drag = null;
     const svg = pad(`<line x1="20" y1="88" x2="280" y2="88" stroke="#685b4a" stroke-width="3"/><path d="M 60 88 L 60 20 M 60 34 L 50 24 M 60 34 L 70 24" stroke="#85745b" stroke-width="4" stroke-linecap="round" fill="none"/><ellipse id="ghost" cx="150" cy="60" rx="14" ry="17" fill="none" stroke="rgba(255,255,255,.25)" stroke-dasharray="3 3"/><line id="lead" x1="60" y1="34" x2="150" y2="60" stroke="#e6e0d4" stroke-width="1.2"/><ellipse id="loop" cx="150" cy="58" rx="20" ry="24" fill="none" stroke="#e6e0d4" stroke-width="2"/>`, 300, 100);
     const draw = () => { if (!svg) return; const l = svg.querySelector('#loop'); l.setAttribute('rx', w / 2); l.setAttribute('ry', w / 2 * 1.2); l.setAttribute('cy', 88 - h - w / 2 * 1.2); svg.querySelector('#lead').setAttribute('y2', 88 - h - w / 2 * 1.2); };
-    if (svg) { svg.onpointerdown = (e) => { drag = svg.toLocal(e); svg.setPointerCapture(e.pointerId); }; svg.onpointermove = (e) => { if (!drag) return; const p = svg.toLocal(e); w = Math.max(10, Math.min(80, w + (p.x - drag.x))); h = Math.max(0, Math.min(50, h - (p.y - drag.y))); drag = p; draw(); const okW = w > 24 && w < 36, okH = h > 9 && h < 19; padText(okW && okH ? 'That looks right. Set it.' : !okW ? (w <= 24 ? 'Loop is too tight.' : 'Loop is too wide; it will step through.') : (h <= 9 ? 'Too low. It will push under.' : 'Too high. It will go under it.')); }; svg.onpointerup = () => { drag = null; }; }
+    if (svg) { svg.onpointerdown = (e) => { drag = svg.toLocal(e); svg.setPointerCapture(e.pointerId); }; svg.onpointermove = (e) => { if (!drag) return; touched = true; const p = svg.toLocal(e); w = Math.max(10, Math.min(80, w + (p.x - drag.x))); h = Math.max(0, Math.min(50, h - (p.y - drag.y))); drag = p; draw(); const okW = w > 24 && w < 36, okH = h > 9 && h < 19; padText(okW && okH ? 'That looks right. Set it.' : !okW ? (w <= 24 ? 'Loop is too tight.' : 'Loop is too wide; it will step through.') : (h <= 9 ? 'Too low. It will push under.' : 'Too high. It will go under it.')); }; svg.onpointerup = () => { drag = null; }; }
     draw();
-    mini = { type: 'snare', deadline: W.t + 40, update() {}, acts: [{ label: 'Set it', sub: '', primary: true, fn: () => finish(w > 24 && w < 36 && h > 9 && h < 19) }], cancel: () => finish(false) };
+    mini = { type: 'snare', deadline: W.t + 40, update() {}, acts: [{ label: 'Set it', sub: '', primary: true, fn: () => finish(w > 24 && w < 36 && h > 9 && h < 19) }, { label: 'Not now', sub: 'nothing used', fn: () => { if (!touched) quit(); else finish(false); } }], cancel: () => touched ? finish(false) : quit() };
     padText('Drag sideways to size the loop, up and down for height. Fist wide, four fingers up.');
   } else {
     let tilt = 0, held = 0, t = 0, push = 0, fell = false;
     const svg = pad(`<line x1="20" y1="90" x2="280" y2="90" stroke="#685b4a" stroke-width="3"/><g id="stone"><path d="M 90 60 L 120 30 L 200 26 L 230 56 L 210 70 L 110 72 Z" fill="#8a8d86"/><path d="M 120 30 L 200 26 L 196 40 L 124 44 Z" fill="#a6a9a2"/></g><path id="stick" d="M 150 90 L 150 62" stroke="#c1a27d" stroke-width="4" stroke-linecap="round"/><rect x="20" y="94" width="260" height="4" rx="2" fill="rgba(0,0,0,.5)"/><rect id="hold" x="20" y="94" width="0" height="4" rx="2" fill="#a8d9a4"/>`, 300, 100);
     const finishGood = () => { sfx.play('good'); setTimeout(() => finish(true), 300); };
     mini = { type: 'snare', deadline: W.t + 40, update(dt) { if (fell) return; t += dt; tilt += (Math.sin(t * 1.7) * 0.5 + Math.sin(t * 3.1) * 0.35) * dt * 0.9 + push * dt * 2.2; push *= Math.pow(0.08, dt); if (Math.abs(tilt) > 1) { fell = true; padText('The stone fell. Reset it.'); sfx.play('bad'); setTimeout(() => finish(false), 500); return; } held = Math.abs(tilt) < 0.35 ? held + dt : Math.max(0, held - dt * 0.5); if (svg) { svg.querySelector('#stone').setAttribute('transform', `rotate(${tilt * 28} 150 70)`); svg.querySelector('#hold').setAttribute('width', 260 * Math.min(1, held / 3)); } padText(Math.abs(tilt) < 0.35 ? 'Steady. Hold it there.' : tilt > 0 ? 'Leaning right. Nudge it left.' : 'Leaning left. Nudge it right.'); if (held >= 3) { fell = true; finishGood(); } },
-      acts: [{ label: 'Nudge left', sub: '', fn: () => { push -= 0.35; sfx.play('tap'); } }, { label: 'Nudge right', sub: '', fn: () => { push += 0.35; sfx.play('tap'); } }], cancel: () => finish(false) };
+      acts: [{ label: 'Nudge left', sub: '', fn: () => { touched = true; push -= 0.35; sfx.play('tap'); } }, { label: 'Nudge right', sub: '', fn: () => { touched = true; push += 0.35; sfx.play('tap'); } }, { label: 'Not now', sub: 'nothing used', fn: () => { if (!touched && !fell) { fell = true; quit(); } } }], cancel: () => finish(false) };
     padText('Balance the stone on the trigger stick for three seconds.');
   }
   lastActs = ''; refreshActs();
@@ -3910,34 +3914,34 @@ function startTrapline() {
 // sharpening: long strokes along the stone
 function startSharpen() {
   autoResolve(); let lastX = null, dist_ = 0, strokes = 0, dir = 0;
-  const finish = () => { if (!mini) return; endMini(); doAct('sharpen'); };
+  const finish = (ok = true) => { if (!mini) return; endMini(); doAct('sharpen', ok ? {} : { good: false }); }; const quit = () => { if (mini) endMini(); };
   const svg = pad(`<rect x="40" y="55" width="220" height="22" rx="4" fill="#6a6a67"/><rect x="40" y="55" width="220" height="6" rx="3" fill="#8a8a87"/><g id="axe"><rect x="130" y="20" width="60" height="10" rx="2" fill="#846b4e"/><path d="M 186 14 L 206 10 L 208 40 L 186 36 Z" fill="#8a8d86"/><path d="M 206 10 L 208 40 L 212 38 L 210 12 Z" fill="#d0d3cc"/></g>`, 300, 90);
   if (svg) { svg.onpointerdown = (e) => { lastX = svg.toLocal(e).x; svg.setPointerCapture(e.pointerId); }; svg.onpointermove = (e) => { if (lastX == null) return; const x = svg.toLocal(e).x; const dx = x - lastX; if (Math.abs(dx) > 1) { const nd = Math.sign(dx); if (nd !== dir && dist_ > 90) { strokes++; dist_ = 0; sfx.play('stick'); padText(`${strokes} of 6 strokes.`); if (strokes >= 6) { sfx.play('good'); setTimeout(finish, 300); } } dir = nd; dist_ += Math.abs(dx); lastX = x; svg.querySelector('#axe').setAttribute('transform', `translate(${Math.max(-90, Math.min(70, x - 160))} 20)`); } }; svg.onpointerup = () => { lastX = null; }; }
-  mini = { type: 'cord', deadline: W.t + 40, update() {}, acts: [{ label: 'Good enough', sub: '', fn: finish }], cancel: finish };
+  mini = { type: 'cord', deadline: W.t + 40, update() {}, acts: [{ label: 'Stop here', sub: 'no strokes, no time spent', fn: () => strokes === 0 ? quit() : finish(strokes >= 6) }], cancel: () => strokes === 0 ? quit() : finish(strokes >= 6) };
   padText('Long strokes along the stone, edge first. Six of them.'); lastActs = ''; refreshActs();
 }
 // ------------------------------------------------------------ hands-on crafting: the newer crafts, done by hand
 // alternate two moves in rhythm (twist / wet, coil / smooth, stitch / pull). A slip or two is fine; more is a sloppy job
 function startSteps(id, o) {
   autoResolve(); let good = 0, slips = 0, next = o.steps[0]; const need = o.need || 6;
-  const finish = (quit) => { if (!mini) return; endMini(); doAct(id, Object.assign({ good: !quit && slips <= 1 }, o.extra || {}), 1, o.inside); };
+  const finish = (rushed) => { if (!mini) return; endMini(); doAct(id, Object.assign({ good: !rushed && slips <= 1 }, o.extra || {}), 1, o.inside); }; const quit = () => { if (mini) endMini(); };
   const svg = pad(`<g id="stp"></g>`, 300, 70);
   const draw = () => { if (!svg) return; let h = ''; for (let i = 0; i < need; i++) h += `<circle cx="${30 + i * (240 / (need - 1))}" cy="35" r="${i < good ? 9 : 6}" fill="${i < good ? (o.col || '#c5b595') : 'rgba(255,255,255,.18)'}"/>`; svg.querySelector('#stp').innerHTML = h; };
-  const press = (what) => { if (what === next) { good++; next = o.steps[good % o.steps.length]; sfx.play('tap'); draw(); padText(`${good} of ${need}. Now ${next.toLowerCase()}.`); if (good >= need) { sfx.play('good'); setTimeout(() => finish(false), 250); } } else { slips++; good = Math.max(0, good - 1); next = o.steps[good % o.steps.length]; sfx.play('bad'); buzz(20); draw(); padText((o.slip || 'Out of rhythm.') + ' Lost a step.'); } if (mini) mini.acts.forEach(a => { a.primary = a.label === next; }); lastActs = ''; };
-  mini = { type: 'craft', deadline: W.t + 45, update() {}, acts: o.steps.map((st, i) => ({ label: st, sub: o.subs ? o.subs[i] : '', primary: i === 0, fn: () => press(st) })), cancel: () => finish(true) };
+  const press = (what) => { if (mini) mini.acts = mini.acts.filter(a => a.label !== 'Not now'); if (what === next) { good++; next = o.steps[good % o.steps.length]; sfx.play('tap'); draw(); padText(`${good} of ${need}. Now ${next.toLowerCase()}.`); if (good >= need) { sfx.play('good'); setTimeout(() => finish(false), 250); } } else { slips++; good = Math.max(0, good - 1); next = o.steps[good % o.steps.length]; sfx.play('bad'); buzz(20); draw(); padText((o.slip || 'Out of rhythm.') + ' Lost a step.'); } if (mini) mini.acts.forEach(a => { a.primary = a.label === next; }); lastActs = ''; };
+  mini = { type: 'craft', deadline: W.t + 45, update() {}, acts: [...o.steps.map((st, i) => ({ label: st, sub: o.subs ? o.subs[i] : '', primary: i === 0, fn: () => press(st) })), { label: 'Not now', sub: 'no time spent', fn: quit }], cancel: () => good === 0 && slips === 0 ? quit() : finish(true) };
   draw(); padText(o.intro); lastActs = ''; refreshActs();
 }
 // long strokes back and forth across the pad (scraping a hide, working clay into seams). Too fast and it goes wrong
 function startStrokes(id, o) {
   autoResolve(); let lastX = null, lastT = 0, run = 0, strokes = 0, dir = 0, rough = 0, roughNow = false; const need = o.need || 6;
-  const finish = (quit) => { if (!mini) return; endMini(); doAct(id, { good: !quit && rough <= 1 }, 1, o.inside); };
+  const finish = (rushed) => { if (!mini) return; endMini(); doAct(id, { good: !rushed && rough <= 1 }, 1, o.inside); }; const quit = () => { if (mini) endMini(); };
   const svg = pad(`${o.art}<circle id="tool" cx="150" cy="${o.y || 45}" r="7" fill="#fff" opacity=".85"/>`, 300, 90);
   if (svg) { svg.onpointerdown = (e) => { lastX = svg.toLocal(e).x; lastT = performance.now(); svg.setPointerCapture(e.pointerId); };
     svg.onpointermove = (e) => { if (lastX == null) return; const x = svg.toLocal(e).x; const dx = x - lastX; const now = performance.now(); const v = Math.abs(dx) / Math.max(8, now - lastT) * 1000; lastT = now;
       if (Math.abs(dx) > 1) { const nd = Math.sign(dx); if (v > 1400 && !roughNow) { roughNow = true; rough++; sfx.play('bad'); buzz(15); padText(o.rough || 'Too hard. Slow, even strokes.'); }
-        if (nd !== dir && run > 90) { strokes++; run = 0; roughNow = false; sfx.play('stick'); padText(`${strokes} of ${need}.`); if (strokes >= need) { sfx.play('good'); setTimeout(() => finish(false), 300); } } dir = nd; run += Math.abs(dx); lastX = x; svg.querySelector('#tool').setAttribute('cx', Math.max(20, Math.min(280, x))); } };
+        if (nd !== dir && run > 90) { strokes++; run = 0; roughNow = false; sfx.play('stick'); padText(`${strokes} of ${need}.`); if (strokes === 1 && mini) { mini.acts = [{ label: 'Good enough', sub: '', fn: () => finish(strokes < need) }]; lastActs = ''; } if (strokes >= need) { sfx.play('good'); setTimeout(() => finish(false), 300); } } dir = nd; run += Math.abs(dx); lastX = x; svg.querySelector('#tool').setAttribute('cx', Math.max(20, Math.min(280, x))); } };
     svg.onpointerup = () => { lastX = null; }; }
-  mini = { type: 'craft', deadline: W.t + 45, update() {}, acts: [{ label: 'Good enough', sub: '', fn: () => finish(strokes < need) }], cancel: () => finish(true) };
+  mini = { type: 'craft', deadline: W.t + 45, update() {}, acts: [{ label: 'Not now', sub: 'no time spent', fn: quit }], cancel: () => strokes === 0 ? quit() : finish(true) };
   padText(o.intro); lastActs = ''; refreshActs();
 }
 // tap each point: lashing, setting stones, laying boughs. Every one counts
@@ -3945,8 +3949,9 @@ function startTaps(id, pts, art, text, o = {}) {
   autoResolve(); let done = 0; const got = new Set();
   const finish = (good) => { if (!mini) return; endMini(); doAct(id, Object.assign({ good }, o.extra || {}), 1, o.inside); };
   const svg = pad(`${art}${pts.map((p, i) => `<circle class="tp" data-i="${i}" cx="${p[0]}" cy="${p[1]}" r="11" fill="rgba(255,255,255,.15)" stroke="#fff" stroke-width="1.5"/>`).join('')}`, 300, o.h || 100);
-  if (svg) svg.onpointerdown = (e) => { const q = svg.toLocal(e); pts.forEach((p, i) => { if (!got.has(i) && Math.hypot(p[0] - q.x, p[1] - q.y) < 18) { got.add(i); done++; sfx.play('stick'); buzz(10); const c = svg.querySelector(`.tp[data-i="${i}"]`); c.setAttribute('fill', o.col || '#c5b595'); c.setAttribute('r', '8'); padText(`${done} of ${pts.length}.`); if (done >= pts.length) { sfx.play('good'); setTimeout(() => finish(true), 300); } } }); };
-  mini = { type: 'craft', deadline: W.t + 40, update() {}, acts: [{ label: 'Finish now', sub: 'a rushed job', fn: () => finish(false) }], cancel: () => finish(false) /* time ran out: a rushed job, even if every point was tapped */ };
+  if (svg) svg.onpointerdown = (e) => { const q = svg.toLocal(e); pts.forEach((p, i) => { if (!got.has(i) && Math.hypot(p[0] - q.x, p[1] - q.y) < 18) { got.add(i); done++; sfx.play('stick'); buzz(10); const c = svg.querySelector(`.tp[data-i="${i}"]`); c.setAttribute('fill', o.col || '#c5b595'); c.setAttribute('r', '8'); padText(`${done} of ${pts.length}.`); if (done === 1 && mini) { mini.acts = [{ label: 'Finish now', sub: 'a rushed job', fn: () => finish(false) }]; lastActs = ''; } if (done >= pts.length) { sfx.play('good'); setTimeout(() => finish(true), 300); } } }); };
+  const quit = () => { if (mini) endMini(); };
+  mini = { type: 'craft', deadline: W.t + 40, update() {}, acts: [{ label: 'Not now', sub: 'no time spent', fn: quit }], cancel: () => done === 0 ? quit() : finish(false) /* nothing done is nothing built; part done is a rushed job */ };
   padText(text); lastActs = ''; refreshActs();
 }
 // tillering: shave the stiffer limb until both bend the same. Take too much and the bow goes weak
@@ -4137,10 +4142,11 @@ function scatterRows(tile, layer, perHome, margin, fn) {
     for (let i = 0; i < n; i++) { const r = rngFrom(hash32(i * 977 + 5, cy * 31 + layer, salt)); const y = (cy + r()) * TILE; if (y < tile.y0 - margin || y > tile.y0 + TILE + margin) continue; fn(y, r); }
   }
 }
-function groundKey() { const st = E.status(S); return (st.snowy ? 'S' : 'G') + (st.frozen ? 'I' : 'W') + (S.day >= (vis().fallDay || 40) ? 'F' : '') + (st.lowTide ? 'L' : 'H'); }
+function groundKey() { const st = E.status(S); return (st.snowy ? 'S' : 'G') + (st.frozen ? 'I' : 'W') + (S.day >= (vis().fallDay || 40) ? 'F' : ''); } /* the tide is kept apart: it only touches the tiles along the shore */
 function getTile(tx, ty) { const k = ty * 1000 + tx; let t = W.tiles.get(k); if (t) { W.tiles.delete(k); W.tiles.set(k, t); return t; } t = paintTile(tx, ty); W.tiles.set(k, t); if (W.tiles.size > 64) W.tiles.delete(W.tiles.keys().next().value); return t; }
 function drawGround(cam) {
   const key = groundKey(); if (W.gKey !== key || !W.tiles) { W.gKey = key; W.groundKey = key; W.tiles = new Map(); }
+  { const lt = !!E.status(S).lowTide; if (W.tideKey !== lt) { if (W.tideKey != null && W.tiles && !W.desert) for (const k of [...W.tiles.keys()]) { const tx = k % 1000; if (tx * TILE < W.shoreMax + 200) W.tiles.delete(k); } W.tideKey = lt; } }
   const nx = Math.ceil(MAP.w / TILE), ny = Math.ceil(MAP.h / TILE);
   const x0 = Math.max(0, Math.floor(cam.x / TILE)), x1 = Math.min(nx - 1, Math.floor((cam.x + cam.w) / TILE)), y0 = Math.max(0, Math.floor(cam.y / TILE)), y1 = Math.min(ny - 1, Math.floor((cam.y + cam.h) / TILE));
   for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) cx.drawImage(getTile(tx, ty), tx * TILE, ty * TILE);
@@ -4385,7 +4391,7 @@ function draw() {
   if (!W.night && !needCamp) { if (S.carcass && W.carcassPos && !W.carrying && dist(W.player, W.carcassPos) > 50) arrowTo(W.carcassPos, 'rgba(255,200,120,.9)'); else if (S.wounded && W.blood.length) { const b = W.blood.find(x => !x.seen); if (b && dist(W.player, b) > 40) arrowTo(b, 'rgba(255,120,110,.9)'); } else if (S.raw.length && !atCamp() && !mini) arrowTo(W.camp, 'rgba(255,255,255,.5)'); }
   if (needCamp) { const a = Math.atan2(W.camp.y - W.player.y, W.camp.x - W.player.x); const x = W.player.x + Math.cos(a) * 60, y = W.player.y + Math.sin(a) * 60; cx.save(); cx.translate(x, y); cx.rotate(a); cx.fillStyle = 'rgba(255,255,255,.85)'; cx.beginPath(); cx.moveTo(10, 0); cx.lineTo(-6, -7); cx.lineTo(-2, 0); cx.lineTo(-6, 7); cx.closePath(); cx.fill(); cx.restore(); }
   // timing windows
-  if (mini && (mini.type === 'hunt' && mini.acts[0].label === 'Release' || mini.type === 'chop' || mini.type === 'snare')) { const p = W.player; const x = p.x - 40, y = p.y - 46; const win = mini.type === 'hunt' ? Math.max(0.05, 0.12 - mini.wobble * 0.15) : mini.type === 'chop' ? 0.14 : 0.15; cx.fillStyle = 'rgba(0,0,0,.6)'; cx.beginPath(); cx.roundRect(x - 2, y - 2, 84, 14, 7); cx.fill(); cx.fillStyle = 'rgba(140,220,130,.85)'; cx.beginPath(); cx.roundRect(x + 80 * (0.5 - win), y, 80 * win * 2, 10, 4); cx.fill(); cx.fillStyle = '#fff'; cx.beginPath(); cx.roundRect(x + mini.pos * 78 - 0.5, y - 3, 3.5, 16, 2); cx.fill(); }
+  if (mini && (mini.type === 'hunt' && mini.acts[0].label === 'Release' || mini.type === 'chop') && Number.isFinite(mini.pos)) { const p = W.player; const x = p.x - 40, y = p.y - 46; const win = mini.type === 'hunt' ? Math.max(0.05, 0.12 - mini.wobble * 0.15) : mini.type === 'chop' ? 0.14 : 0.15; cx.fillStyle = 'rgba(0,0,0,.6)'; cx.beginPath(); cx.roundRect(x - 2, y - 2, 84, 14, 7); cx.fill(); cx.fillStyle = 'rgba(140,220,130,.85)'; cx.beginPath(); cx.roundRect(x + 80 * (0.5 - win), y, 80 * win * 2, 10, 4); cx.fill(); cx.fillStyle = '#fff'; cx.beginPath(); cx.roundRect(x + mini.pos * 78 - 0.5, y - 3, 3.5, 16, 2); cx.fill(); }
   for (const a of W.animals) if (!a.dead && !a.fled && a.alert > 0.1 && dist(a, W.player) < 220) { const w = (SPECIES[a.sp] || { w: 12 }).w * animalK(a.sp); cx.fillStyle = 'rgba(0,0,0,.5)'; cx.beginPath(); cx.roundRect(a.x - 12, a.y - w - 16, 24, 4, 2); cx.fill(); cx.fillStyle = a.alert > 0.7 ? '#ff8a7a' : '#f0c060'; cx.beginPath(); cx.roundRect(a.x - 12, a.y - w - 16, 24 * Math.min(1, a.alert), 4, 2); cx.fill(); }
   if (input.joy) { cx.setTransform(dpr, 0, 0, dpr, 0, 0); const r = cv.getBoundingClientRect(); const sx = input.joy.sx - r.left, sy = input.joy.sy - r.top; cx.strokeStyle = 'rgba(255,255,255,.5)'; cx.lineWidth = 2; cx.beginPath(); cx.arc(sx, sy, 34, 0, 6.28); cx.stroke(); cx.fillStyle = 'rgba(255,255,255,.7)'; cx.beginPath(); cx.arc(sx + input.vec.x * 34, sy + input.vec.y * 34, 12, 0, 6.28); cx.fill(); }
 }
@@ -5258,7 +5264,7 @@ function cairnArt(v, snow) {
   return CA.art(-12, -22, 12, 6, s);
 }
 /* is this painting made yet? starts it if not */
-function paintReady(key, make) { let c = PAINT.cache.get(key); if (!c) { const a = make(); PAINT.sprite(key, a.w, a.h, a.svg, 2); c = PAINT.cache.get(key); c.ax = a.ax; c.ay = a.ay; c.w = a.w; c.h = a.h; } return !!c.ready; }
+function paintReady(key, make) { let c = PAINT.cache.get(key); if (!c) { try { const a = make(); PAINT.sprite(key, a.w, a.h, a.svg, 2); c = PAINT.cache.get(key); c.ax = a.ax; c.ay = a.ay; c.w = a.w; c.h = a.h; } catch (e) { c = { ready: false, broken: true }; PAINT.cache.set(key, c); if (!paintReady.warned) { paintReady.warned = true; console.warn('painting failed, using the plain drawing:', key, e); } } } return !!c.ready; } /* a broken painting never blacks out the frame */
 function smokeAt(x, y, col, n, spd, grow) { cx.fillStyle = col; for (let i = 0; i < n; i++) { const k = (W.t * spd + i / n) % 1; cx.beginPath(); cx.arc(x + Math.sin(k * 5 + i) * 4, y - k * 30, 3 + k * grow, 0, 6.28); cx.fill(); } }
 /* everything the camp shows right now, in drawing order: paintings, and the few things that move */
 function campSteps(c, t) {
@@ -6063,8 +6069,8 @@ function renderEnd() {
   // ties go to you, except against the winner: going home on their last day is not a win
   cast.sort((a, b) => b.days - a.days || (a.me ? (b.place === 1 ? 1 : -1) : b.me ? (a.place === 1 ? -1 : 1) : 0));
   const place = won ? 1 : cast.findIndex(c => c.me) + 1;
-  const rec = recordRun(S, place); save();
-  if (!renderEnd.played) { renderEnd.played = S.seed; sfx.stopAll(); sfx.play(won ? 'win' : 'lose'); buzz(won ? [60, 40, 60, 40, 120] : 50); }
+  const firstEnd = !S.recorded; const rec = recordRun(S, place); save();
+  if (!renderEnd.played && firstEnd) { renderEnd.played = S.seed; sfx.stopAll(); sfx.play(won ? 'win' : 'lose'); buzz(won ? [60, 40, 60, 40, 120] : 50); }
   const loss = Math.round((1 - S.weight / S.weight0) * 100);
   const caught = Object.entries(S.stats.caught).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, n]) => `${n} ${E.low(D.foods[k].name)}`).join(', ');
   const end = $(`<section class="end" style="display:flex;flex-direction:column;gap:12px">
@@ -6159,13 +6165,14 @@ function repairSave(g) {
   return g;
 }
 /* after filling gaps: a field whose kind differs from a new game's (a word where a number belongs, a list where a record belongs) takes the new game's value */
-const SYS_NUMS = ['clothes', 'tinderDamp', 'starved', 'snowLoad', 'seal', 'haft', 'goodSnares', 'fit', 'bed', 'soot', 'chill', 'smoking', 'crooked', 'tiller', 'taint', 'hands', 'fouling', 'spray', 'skyReads', 'bagHoles'];
+const SYS_NUMS = ['clothes', 'tinderDamp', 'starved', 'snowLoad', 'seal', 'haft', 'goodSnares', 'fit', 'bed', 'soot', 'chill', 'smoking', 'crooked', 'tiller', 'taint', 'hands', 'fouling', 'spray', 'skyReads'];
 function conformSave(dst, src, nested) {
   for (const k in src) { const a = dst[k], b = src[k];
     if (typeof b === 'number') { if (a === null || typeof a === 'number' && !isFinite(a) || (a !== undefined && typeof a !== 'number')) dst[k] = typeof a === 'string' && a.trim() !== '' && isFinite(+a) ? +a : b; }
     else if (Array.isArray(b)) { if ((a === null && nested) || (a !== null && a !== undefined && !Array.isArray(a))) dst[k] = b; }
     else if (typeof b === 'string') { if (typeof a !== 'string') dst[k] = b; }
     else if (b && typeof b === 'object') { if ((a === null && nested) || (a !== null && (typeof a !== 'object' || Array.isArray(a)))) dst[k] = b; else if (a) conformSave(a, b, true); } }
+  if (dst.bagHoles !== undefined && !(typeof dst.bagHoles === 'number' && isFinite(dst.bagHoles))) dst.bagHoles = isFinite(+dst.bagHoles) ? +dst.bagHoles : 0; /* top-level, not in sys */
   if (dst.sys && typeof dst.sys === 'object') for (const k of SYS_NUMS) { const v = dst.sys[k]; if (v !== undefined && (typeof v !== 'number' || !isFinite(v))) { if (typeof v === 'string' && v.trim() !== '' && isFinite(+v)) dst.sys[k] = +v; else delete dst.sys[k]; } }
 }
 function start(hot) {

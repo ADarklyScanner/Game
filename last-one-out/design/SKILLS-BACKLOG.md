@@ -1,0 +1,49 @@
+# Skills backlog (from the deeper pass, Nov 4)
+
+The user's 13-domain review of real survival skills, about 130 items, with 14 judged worth building plus 10 higher-impact ones. This file keeps the list and what the game already has, so nothing is built twice.
+
+Design posture from the review: **fire is a tool, not a status** (it hardens points, bends shafts, chars tinder, preserves, signals, sterilises), and **water has many methods** (rain, dew, ice, snow, seep, spring, catchment, still), where the game has close to one.
+
+## The 14 Builds, against what exists
+
+| # | Domain | Item | Already in the game | Still to build |
+|---|---|---|---|---|
+| 1 | Fire | Fire lays (star fire for banking) | One fire; banking overnight exists as wood use | A lay choice when it is below freezing; the star fire banks with less wood |
+| 2 | Fire | Char cloth | Nothing | Craft: a scrap of cloth charred in a tin, near-sure ignition |
+| 3 | Fire | Fire hardening | The digging stick needs a fire to harden its point | A general job: harden stakes, spears and points |
+| 4 | Fire | Fire-bent shafts | Arrows are warmed and bent (Warm / Bend), and a bad job leaves them crooked | Done; check the fire is required |
+| 5 | Water | Dew collection | Nothing | A dawn job after a clear night: cloth through wet grass, about half a pot |
+| 6 | Water | Ice vs snow | Melt snow exists ("a little wood") | Melting ice at half the wood; snow made properly expensive |
+| 7 | Water | Rain catchment | Rain counts as water if you have a pot, tarp or ground sheet | An explicit job that fills the pots |
+| 8 | Shelter | Snow cave | Nothing (no snow shelter at all) | Dig into a drift: no materials, warm, collapse and air risks |
+| 9 | Shelter | Shelter orientation | Wind direction exists (windDir) | Choose which way the door faces; wind through the door costs warmth |
+| 10 | Hunting | Scout expansion | Scout exists: one line, helps snares | Say what was found: which animal, how fresh, which way |
+| 11 | Hunting | Kill processing pressure | Ravens take from a carcass left out; bears come to meat | Make the clock on an ungutted kill visible |
+| 12 | Plants | Specific plants | "Greens" with one look-alike | Six named greens; inspect names them |
+| 13 | Plants | Specific mushrooms | Mushrooms with a look-alike description | Named kinds, with the false and true morel as the real test (fictional detail, not a guide) |
+| 14 | Plants | Tree species rewards | Species change the look and some yields | Ash for bows, willow for cordage, birch for bark: small quality changes |
+
+## Higher-impact items
+
+| Item | Already in the game | Still to build |
+|---|---|---|
+| Dehydration staging | Yes: thirsty, then dizzy, then shutting down over three days; thirst slows every job | Done (could show the stage on the HUD) |
+| Arterial bleeding | One wound condition | A "bleeding badly" stage that must be stopped within hours |
+| Tinea / foot care | Wet feet exist (wet streaks) | Wet feet too many days: tinea; a daily foot-care job |
+| Whistle | Nothing | A signal job (needs the rescue side first) |
+| Pacing | One walking speed | Fast / steady / slow: time against energy |
+| Ritual | The habit system (what kept you going) | Name a small daily ritual that grows its morale when kept |
+| Storm prep | The storm event: brace the shelter | Two more options: pull the wood in, secure the loads |
+| Terrain association | Climb gives bearings; the map exists | Fix your position from landmarks on the map |
+| Rawhide | Hides and leather exist | Rawhide as the step between |
+
+## Build order
+
+1. Water methods (5, 6, 7): the biggest gap, and they tie straight into the water rule.
+2. Fire as a tool (1, 2, 3).
+3. Named plants and mushrooms (12, 13), then tree species (14).
+4. Scout and the kill clock (10, 11).
+5. Snow cave and door orientation (8, 9), with the shelter work in the mini-game brief.
+6. The higher-impact list, one at a time.
+
+Each one ships with a rule check, a balance run (5% limit, same bot on both) and the gear simulation where it touches an item.

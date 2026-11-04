@@ -62,6 +62,11 @@ const nights = (mk, n, f) => { let hit = 0; for (let i = 0; i < n; i++) { const 
   const big = Object.keys(E.DATA.foods).find(k => E.DATA.foods[k].big); let downs = 0; for (let i = 0; i < 200; i++) { const t = camp('US-S6', 400 + i, ['Slingshot']); E.act(t, 'hunt', { extra: { target: big, hit: 'good', scent: 'up' } }); if (t.carcass && t.carcass.big) downs++; }
   check('a slingshot almost never drops big game', downs <= 10, downs);
 }
+{ // half a job gives half a result
+  const d = camp('US-S6', 31); d.mats.stone = 6; const n0 = d.deadfalls; E.act(d, 'deadfalls', { extra: { good: false } }); check('a deadfall whose stone kept falling sets one, not three', d.deadfalls - n0 === 1, d.deadfalls - n0);
+  const c = camp('US-S6', 32); c.mats.bark = 6; const k0 = c.mats.cordage; E.act(c, 'cordage', { extra: { good: false } }); check('cordage stopped part way gives one length', c.mats.cordage - k0 === 1, c.mats.cordage - k0);
+  const a = camp('US-S6', 33); a.axeEdge = 0.3; a.mats.stone = 2; E.act(a, 'sharpen', { extra: { good: false } }); check('sharpening stopped part way gives half the edge', a.axeEdge > 0.3 && a.axeEdge < 0.75, a.axeEdge);
+}
 { // something alive in a snare is a real choice
   check('the snare event exists', !!E.EVENTS.snarepred && E.EVENTS.snarepred.options.length === 3);
 }

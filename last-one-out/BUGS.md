@@ -155,6 +155,34 @@ Real contestants rarely take these, so they stay modest, but each now has a job 
 | 105 | A shot at an animal you had walked up to on the map cost the full three and a half hours of a blind hunt, on top of the walking | About an hour and a quarter: the last of the stalk and the shot |
 | 106 | A slingshot could bring down a moose | It stings big game; it almost never drops it |
 
+### Found in the mini-game review (Nov 4, from the user's code read)
+
+| # | Bug | Fix |
+|---|---|---|
+| 107 | After a cast you could not reel in; only a bite, a miss or the 40 s deadline ended it | Reel in at any time while waiting; the cast's time is spent |
+| 108 | The net's cold bar filled with no warning | "Your hands are going numb. Get out." past 70%, and the bar turns red |
+| 109 | A drawn bow could only be released or timed out | Let it down and draw again; it costs 2 s and the next draw shakes more |
+| 110 | A slip in a rhythm craft cost nothing | A slip costs a step |
+| 111 | A lash or tap craft that ran out of time counted as done well if every point was tapped | Running out of time is a rushed job; with nothing done, nothing is built and no time is spent |
+| 112 | Walking away from sharpening, cordage, the tap, step and stroke crafts still did the whole job | Nothing done: nothing happens. Part done: half a result (half the edge, one length of cord, a rushed build) |
+| 113 | Six hands-on jobs had no way to back out | "Not now" before you start, at no cost |
+| 114 | A deadfall whose stone kept falling still set three | It sets one |
+| 115 | A bear at camp blocked every job everywhere | Away from camp you carry on; the bear has the food while you are gone |
+| 116 | A fish fought perfectly to the bank was rolled again at the base odds, and the float bit on every cast whatever the odds | The game's odds decide the bite at the cast (nothing biting is said); a fish fought in is landed about nine times in ten |
+| 117 | A kill was detected by reading the last log lines; the carcass and the blood trail were placed by the player, not the animal | Read from the state; both start where the animal stood, and the trail runs away from you |
+| 118 | Cutting firewood from a living tree felled it | It takes the lower limbs; the tree stays. Snags, logs and saplings are still used up, and "cut logs" fells |
+| 119 | The snare drew a timing frame with no marker | Only the bow and the axe show the sweep |
+| 120 | A broken painting could black out the frame | It falls back to the plain drawing |
+| 121 | Every tide change repainted the whole ground | Only the tiles along the shore |
+| 122 | The +/- numbers by the vitals vanished when the HUD refreshed | They sit on the page, not inside the vital |
+| 123 | The end-screen stinger replayed on every reload | Once per run |
+| 124 | The save check guarded bagHoles in the wrong place | Guarded where it lives |
+| 125 | Standing at the pond near the shore fished the lake | Fishes the pond |
+| 126 | A berry bush picked clean in its ripe spell never came back | A smaller second flush five days on, while still in season |
+| 127 | Leftovers of a tree part used up through a shared part (birch tinder takes its bark) stayed on the ground, unpickable | Cleared |
+
+Checked and left as they are: a wrong-sized snare is still set (it catches less, by design since Nov 2); an unreadable save is only kept when one exists, so no false banner; the body-state filter is only set when it changes. Still open: the fish trap is not on the map, so the trapline walk cannot include it yet; fishing and hunting still use the text pad rather than a painted one; the inside view is unpainted.
+
 ### Test-side problems (not game bugs)
 
 - The test bot could not make do without gear. With no axe or saw it still aimed for a log cabin and never built anything; with no ferro rod it never made a bow drill; it gathered every material forever instead of what the shelter still needed, and stopped gathering once the shelter was up (so no drying rack or smoker). It now builds the best roof it has the tools for (a quick one first), makes a bow drill (and a stone blade for it), gathers what its shelter and camp works lack, breaks ice for water, and lifts the gill net once a day when the floats show a catch. The no-gear average went from 22 to 39 days. Because the bot changed, the balance reference was re-recorded with the new bot on the original game (median 62, mean 61.7); the current game is at 62 and 60.8 (−1.5%).
