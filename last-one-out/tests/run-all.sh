@@ -28,4 +28,5 @@ node ui-check.js
 node handson.js
 node screens.js
 node campsite.js
+node budget.js
 echo "Everything passed."

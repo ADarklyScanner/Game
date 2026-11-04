@@ -77,6 +77,8 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: .01e
 .item[aria-pressed="true"] small { color: inherit; opacity: .8; }
 .item span { font-weight: 700; font-size: 14px; }
 .item small { color: var(--muted); font-size: 11.5px; line-height: 1.3; }
+.rules { display: flex; gap: 6px; flex-wrap: wrap; margin: 2px 0 6px; } .rule { border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 999px; padding: 5px 12px; font-size: 13px; cursor: pointer; } .rule[aria-pressed="true"] { background: var(--ember); color: var(--ember-ink); border-color: var(--ember); }
+.item.over { opacity: .45; } .item .cost { font-weight: 700; }
 .linkbtn { background: none; border: 0; color: var(--ember); padding: 0; cursor: pointer; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
 details { border-top: 1px solid var(--line); padding-top: 8px; }
 summary { cursor: pointer; color: var(--muted); font-size: 13px; }
@@ -432,7 +434,7 @@ function newGame(seasonKey, gear, opts = {}) {
     stores: [], raw: [], carcass: null, carry: null, meters: {}, skill: { fish: 1, hunt: 1, trap: 1, forage: 1, fire: 1, craft: 1 },
     wet: 0, boiled: 0, water: 0, ration: 'full', conditions: [], recent: [], history: [], log: [],
     stats: { kcal: 0, caught: {}, found: 0, bigGame: [], jobs: 0, hooksLost: 0, lost: [], walked: 0 },
-    opts: { showRemaining: !!opts.showRemaining }, daily: opts.daily || null,
+    opts: { showRemaining: !!opts.showRemaining, ...(opts.budget ? { budget: BUDGET } : {}) }, daily: opts.daily || null,
     salt: gear.includes('Salt') ? 60 : 0, lastMed: 0, cook: 'roast', letter: true, letterDay: -9,
     hours: 0, phase: -1, today: { burn: 0, done: [], lines: [], event: false, night: [] }, event: null, braced: false, lastAction: '',
     sys: { schema: 1, rackRoof: false, smoking: 0 }, // newer systems keep their state here, so older saves stay untouched
@@ -2233,7 +2235,15 @@ function status(s) {
   return { lossFrac: lf, medLimit: medicalLimit(s), weather: weatherName(s), snowshoes: s.crafts.snowshoes >= 1, windChill: Math.round(temperature(s) - (s.storm ? 6 : s.wind ? 4 : 0)), moon: s.moon, aurora: !!s.aurora, windows: activeWindows(s), shelterCond: s.shelterCond ?? 1, shelterType: s.shelterType, canInside: canWorkInside(s), shelter: shelterName(s), shelterLevel: s.shelterLvl, temp: Math.round(temperature(s)), frozen: frozen(s), snowy: snowy(s), remaining: s.rivals.filter(r => !r.out).length, storeKcal: Math.round(storeKcal(s)), rawKcal: Math.round(rawKcal(s)), hoursLeft: hoursLeft(s), dayHours: dayHours(s), lowTide: lowTide(s), igniter: igniter(s) };
 }
 
-const API = { waterToday, note, sunny, sprayLeft, fallChance, climbAnchor, stalkNoise, fouling, latrineOk, raftOf, raftOk, flintOf, hasBow, bowPower, driftChance, bearings, wade, clothesOf, tomorrow, skyAcc, thinIce, potLike, clayPots, greenPots, bedWarmth, snowLoadOf, bedOf, lampOk, nightOk, haftOf, tinderDamp, fireOdds, sealOf, hasHearth, isDry, onStation, RACK_CAP, DRY_AT, dryDaysLeft, sysOf, cacheSign, low, matName, BIOMES, biomeOf, treeKind, realMedianOf: se => { const d = se.rivals.filter(r => r.days != null).map(r => r.days).sort((a, b) => a - b); return d[d.length >> 1]; }, WEIGHT, loadOf, carryCap, moveCampCost, moveCamp, collectSize, berryRipe, bushRipeDay, stockOf, stockWord, billFor, nightOk, NIGHT_OK, treeYield, treeNames, fishPool, sizeOf, SHELTERS, shelterOptions, chooseShelter, dropPlan, makeCamp, foundWreck, shelterName, canWorkInside, travel, activeWindows, windowOn, timeMult, weatherName, dayFrac, midday, setTune, DATA, C, MATS, ACTIONS, EVENTS, newGame, runDay, beginDay, act, endDay, choose, carryLoad, available, tapOut, placing, status, season, storeKcal, temperature, shelterLevel, SHELTER_NAMES, shelterBill, shelterMissing, matList, fishOdds, huntOdds, bowDrillOdds, dayHours, hoursLeft, phaseOf, lowTide, igniter, blade, cutter, chopper, hasRod, digger };
+/* the gear budget (an optional rule): each item costs about a point for every 0.65 days it adds in a full kit (tests/gearsim/budgetkits.js and the
+   10-item kits, fitted together, Nov 4). The gill net would be worth 15 and is capped at 12. Costed by hand: the bow (the test bot cannot stalk) and the
+   ferro rod (it spares a human the bow-drill hands-on piece, which the bot does not feel). */
+const GEAR_COST = { 'Gillnet': 12, 'Fishing gear': 4, 'Axe': 4, 'Sleeping bag': 4, 'Saw': 3, 'Blanket': 3, 'Bivy bag': 3, 'Knife': 3, 'Bow and arrows': 3,
+  'Paracord': 2, 'Sharpening stone': 2, 'Hammock': 2, 'Pot': 2, 'Ground sheet': 2, 'Ferro rod': 2,
+  'Rations': 1, 'Multitool': 1, 'Soap': 1, 'Scotch eyed auger': 1, 'Trapping wire': 1, 'Shovel': 1, 'Salt': 1, 'Tarp': 1, 'Frying pan': 1, 'Wire': 1, 'Canteen': 1, 'Rope': 1, 'Slingshot': 1 };
+const BUDGET = 20;
+const gearCost = id => GEAR_COST[id] ?? 2; const kitCost = gear => gear.reduce((a, g) => a + gearCost(g), 0);
+const API = { GEAR_COST, BUDGET, gearCost, kitCost, waterToday, note, sunny, sprayLeft, fallChance, climbAnchor, stalkNoise, fouling, latrineOk, raftOf, raftOk, flintOf, hasBow, bowPower, driftChance, bearings, wade, clothesOf, tomorrow, skyAcc, thinIce, potLike, clayPots, greenPots, bedWarmth, snowLoadOf, bedOf, lampOk, nightOk, haftOf, tinderDamp, fireOdds, sealOf, hasHearth, isDry, onStation, RACK_CAP, DRY_AT, dryDaysLeft, sysOf, cacheSign, low, matName, BIOMES, biomeOf, treeKind, realMedianOf: se => { const d = se.rivals.filter(r => r.days != null).map(r => r.days).sort((a, b) => a - b); return d[d.length >> 1]; }, WEIGHT, loadOf, carryCap, moveCampCost, moveCamp, collectSize, berryRipe, bushRipeDay, stockOf, stockWord, billFor, nightOk, NIGHT_OK, treeYield, treeNames, fishPool, sizeOf, SHELTERS, shelterOptions, chooseShelter, dropPlan, makeCamp, foundWreck, shelterName, canWorkInside, travel, activeWindows, windowOn, timeMult, weatherName, dayFrac, midday, setTune, DATA, C, MATS, ACTIONS, EVENTS, newGame, runDay, beginDay, act, endDay, choose, carryLoad, available, tapOut, placing, status, season, storeKcal, temperature, shelterLevel, SHELTER_NAMES, shelterBill, shelterMissing, matList, fishOdds, huntOdds, bowDrillOdds, dayHours, hoursLeft, phaseOf, lowTide, igniter, blade, cutter, chopper, hasRod, digger };
 if (typeof module !== 'undefined') module.exports = API; else root.Engine = API;
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
@@ -2366,7 +2376,7 @@ function feel(lines) {
 }
 
 let S = null;            // game state (engine owns it)
-let setup = { season: 'US-S9', gear: [], weight: 180, showRemaining: false };
+let setup = { season: 'US-S9', gear: [], weight: 180, showRemaining: false, budget: false };
 let view = null;         // transient card: {kind:'result'|'night'|'morning', lines, title}
 let mini = null;         // running mini-game
 
@@ -2462,22 +2472,28 @@ function renderSetup() {
   }
   app.append(s1);
   const s2 = $(`<section class="step"><h2>2 · Ten items <span class="label num" id="count"></span></h2>
-    <div class="muted" style="font-size:13px">Typical loadout frequency: Common, Uncommon or Rare. <button class="linkbtn" id="popular">Take the ten most common</button></div>
+    <div class="rules" role="group" aria-label="Gear rules"><button class="rule" data-b="0">Any ten</button><button class="rule" data-b="1">Budget · ${E.BUDGET} points</button></div>
+    <div class="muted" id="rulenote" style="font-size:13px"></div>
     <div class="gear"></div>
     <details class="issued"><summary>Everyone is also issued clothing and a few personal things</summary><p class="muted" style="font-size:13px;margin:6px 0 0">${ISSUED.clothing.join(', ')}. Personal: ${ISSUED.personal.join(', ').toLowerCase()}.</p></details></section>`);
   const grid = s2.querySelector('.gear');
-  const count = () => { s2.querySelector('#count').textContent = `${setup.gear.length} / 10`; startBtn.disabled = setup.gear.length === 0; };
+  const fits = id => !setup.budget || E.kitCost(setup.gear) + E.gearCost(id) <= E.BUDGET;
+  const count = () => { const pts = E.kitCost(setup.gear); s2.querySelector('#count').textContent = `${setup.gear.length} / 10${setup.budget ? ` · ${pts} of ${E.BUDGET} points` : ''}`; startBtn.disabled = setup.gear.length === 0 || (setup.budget && pts > E.BUDGET);
+    s2.querySelectorAll('.rule').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.b === (setup.budget ? 1 : 0))));
+    s2.querySelector('#rulenote').innerHTML = setup.budget ? `Every item costs points by how much it tends to help: the gill net 12, fishing gear, the axe and the sleeping bag 4, the small things 1. The ten most common come to ${E.kitCost(POPULAR)}. <button class="linkbtn" id="popular">Fill with the most common that fit</button>` : 'Typical loadout frequency: Common, Uncommon or Rare. <button class="linkbtn" id="popular">Take the ten most common</button>';
+    s2.querySelector('#popular').onclick = () => { setup.gear = []; for (const id of POPULAR) if (setup.gear.length < 10 && fits(id)) setup.gear.push(id); drawGear(); count(); }; };
   const drawGear = () => {
     grid.replaceChildren();
     for (const g of D.gear) {
       const on = setup.gear.includes(g.id);
-      const b = $(`<button class="item" aria-pressed="${on}"><span>${esc(g.id)} <small class="num" title="Typical loadout frequency">${g.rate >= 0.5 ? 'Common' : g.rate >= 0.1 ? 'Uncommon' : 'Rare'}</small></span><small>${esc(g.effect)}</small></button>`);
-      b.onclick = () => { if (on) setup.gear = setup.gear.filter(x => x !== g.id); else if (setup.gear.length < 10) setup.gear.push(g.id); drawGear(); count(); };
+      const c = E.gearCost(g.id); const out = !on && setup.budget && !fits(g.id);
+      const b = $(`<button class="item${out ? ' over' : ''}" aria-pressed="${on}"><span>${esc(g.id)} ${setup.budget ? `<small class="num cost" title="Points">${c} pt${c > 1 ? 's' : ''}</small>` : `<small class="num" title="Typical loadout frequency">${g.rate >= 0.5 ? 'Common' : g.rate >= 0.1 ? 'Uncommon' : 'Rare'}</small>`}</span><small>${esc(g.effect)}</small></button>`);
+      b.onclick = () => { if (on) setup.gear = setup.gear.filter(x => x !== g.id); else if (setup.gear.length < 10 && fits(g.id)) setup.gear.push(g.id); drawGear(); count(); };
       grid.append(b);
     }
   };
   app.append(s2);
-  s2.querySelector('#popular').onclick = () => { setup.gear = POPULAR.slice(); drawGear(); count(); };
+  s2.querySelectorAll('.rule').forEach(b => b.onclick = () => { setup.budget = b.dataset.b === '1'; if (setup.budget && E.kitCost(setup.gear) > E.BUDGET) { const kept = []; for (const id of setup.gear) if (E.kitCost(kept) + E.gearCost(id) <= E.BUDGET) kept.push(id); setup.gear = kept; } drawGear(); count(); });
   const opts = $(`<details><summary>More options</summary><div class="opts">
     <label class="opt" for="wt">Starting weight (lb)<input id="wt" type="number" min="100" max="300" step="1" value="${setup.weight}"></label>
     <div class="muted" style="font-size:12.5px">A medical check ends your run at a set BMI, so a heavier start gives you more to lose.</div>
@@ -2489,7 +2505,7 @@ function renderSetup() {
   app.append(opts);
   const startBtn = $(`<button class="big-btn">Drop me off</button>`);
   startBtn.onclick = () => {
-    startGame(setup.season, setup.gear, { weight: setup.weight, showRemaining: setup.showRemaining });
+    startGame(setup.season, setup.gear, { weight: setup.weight, showRemaining: setup.showRemaining, budget: setup.budget });
   };
   app.append(startBtn);
   const links = $(`<div style="display:flex;gap:16px;justify-content:center"><button class="linkbtn" id="rec">Records and badges</button><button class="linkbtn" id="how">How to play</button></div>`);
@@ -6038,6 +6054,7 @@ function renderEnd() {
       <div class="stat"><div class="label">Kcal a day</div><div class="v">${fmt(S.stats.kcal / Math.max(1, S.day))}</div></div></div>
     <p class="muted" style="margin:0">${[E.shelterName(S) === 'No real shelter' ? 'No real shelter' : `Shelter: ${E.shelterName(S).toLowerCase()}`, S.stats.lost.includes('shelter fire') ? 'burned it down' : '', S.stats.walked ? `walked ${fmtDist(S.stats.walked)}` : '', caught ? `caught ${caught}` : ''].filter(Boolean).map(esc).join(' · ')}.</p>
     ${rec.newBest || rec.newBadges.length ? `<div class="alerts">${rec.newBest ? '<span class="alert tone-big">New personal best</span>' : ''}${rec.newBadges.map(k => `<span class="alert tone-big">Badge: ${esc(BADGES.find(b => b[0] === k)[1])}</span>`).join('')}</div>` : ''}
+    ${S.opts && S.opts.budget ? `<p class="muted" style="margin:0">Budget kit: ${E.kitCost(S.gear)} of ${S.opts.budget} points.</p>` : ''}
     ${S.daily ? `<p class="muted" style="margin:0">Daily challenge, ${esc(S.daily)}. Everyone who played today got the same site, the same ten items, and the same storms, cold snaps and visitors on the same days.</p>` : ''}
     <div class="sect">The other survivors${S.replaced ? `, with you in place of ${esc(S.replaced)}` : ''}</div>
     <table class="cast"><tbody></tbody></table>
@@ -6046,7 +6063,7 @@ function renderEnd() {
   cast.forEach((c, i) => tb.append($(`<tr class="${c.me ? 'me' : ''}"><td>${i + 1}</td><td>${esc(c.name)}<div class="muted" style="font-size:12px">${esc(c.me ? '' : c.reason)}</div></td><td>${c.days}</td></tr>`)));
   app.append(end);
   const again = $(`<button class="big-btn">Same site, new run</button>`);
-  again.onclick = () => { renderEnd.played = null; startGame(S.seasonKey, S.gear, { weight: S.weight0, showRemaining: S.opts.showRemaining }); };
+  again.onclick = () => { renderEnd.played = null; startGame(S.seasonKey, S.gear, { weight: S.weight0, showRemaining: S.opts.showRemaining, budget: !!S.opts.budget }); };
   const share = $(`<button class="act" style="text-align:center"><b>Share this run</b><small>Copies a short summary</small></button>`);
   share.onclick = async () => { const t = summaryText(); try { if (navigator.share) await navigator.share({ text: t }); else { await navigator.clipboard.writeText(t); share.querySelector('small').textContent = 'Copied.'; } } catch (e) { share.querySelector('small').textContent = t; } };
   const other = $(`<button class="linkbtn" style="align-self:center">Pick another season</button>`);

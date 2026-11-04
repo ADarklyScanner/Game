@@ -74,6 +74,10 @@ Steps 0 to 3 of TESTPLAN.md (inventory, coverage, every action and event, eight 
 - **Wreck achievement:** finding the crash site in each place is already recorded (`records.wrecks`); the achievement itself comes with the unlocking system.
 - **Set levels and unlocking:** once the drop sites are settled, they become set levels in an unlocking order.
 
+## Gear budget (Nov 4)
+
+An optional rule on the setup screen: **Any ten** (as before) or **Budget · 20 points**. Each item costs about a point for every 0.65 days it adds in a full kit, from the gear simulation (`tests/gearsim/budgetkits.js` fitted with the 10-item kits): the gill net 12 (it would be worth 15), fishing gear, the axe and the sleeping bag 4, down to 1 for the small things. The bow and the ferro rod are costed by hand. The ten most common items come to 26 points, so a budget kit means giving something up. The run remembers the rule (`opts.budget`) and the end screen shows the kit's points.
+
 ## Left out on purpose
 
 Trading and social contact: dropped, the game stays solo.
@@ -83,6 +87,6 @@ Things that only pay off over a longer time than a run lasts: farming and crop g
 ## Rules every phase follows
 
 - `tests/run-all.sh` must pass before anything is published.
-- Bot survival (median and mean over 1,020 games) must stay within 5% of the original game played by the same bot: median 56, mean 56.4 days.
-- Standing now: median 56 (0.0%), mean 54.9 (-2.7%).
+- Bot survival (median and mean over 1,020 games) must stay within 5% of the original game played by the same bot. The bot was improved on Nov 3 and 4 (it makes do without gear), so the reference was re-recorded with it on the original game: median 63, mean 63.4 days.
+- Standing now: median 60 (-4.8%), mean 61.0 (-3.8%).
 - Saves from older versions must keep loading.

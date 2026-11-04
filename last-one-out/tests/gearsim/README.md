@@ -10,3 +10,7 @@ Every item alone, every pair, every set of three and four, run in all 17 places 
 Put an earlier `comboresult.json` next to it as `before.json` (with a `label`) and the report adds a before-and-after section.
 
 Results (Nov 4, 2026, after the fixes, with the Nov 3 run as before.json): https://claude.ai/artifact/C7t6VdPtTjBZZZudUdh8aP
+
+`budgetkits.js` plays random kits that fit the gear budget (up to 10 items, at most 20 points). Fitted together with the 10-item kits, it gives each item's days in a full kit, which set the costs (`GEAR_COST` in the game):
+
+    for p in 0 1 2 3; do PART=$p K=400 node budgetkits.js b$p.json & done; wait
