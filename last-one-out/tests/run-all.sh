@@ -33,4 +33,5 @@ node budget.js
 node unlocks.js
 node oldsave.js
 node minis.js
+node selfcheck.js
 echo "Everything passed."

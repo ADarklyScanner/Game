@@ -12,9 +12,9 @@ Design posture from the review: **fire is a tool, not a status** (it hardens poi
 | 2 | Fire | Char cloth | Nothing | Craft: a scrap of cloth charred in a tin, near-sure ignition |
 | 3 | Fire | Fire hardening | The digging stick needs a fire to harden its point | A general job: harden stakes, spears and points |
 | 4 | Fire | Fire-bent shafts | Arrows are warmed and bent (Warm / Bend), and a bad job leaves them crooked | Done; check the fire is required |
-| 5 | Water | Dew collection | Nothing | A dawn job after a clear night: cloth through wet grass, about half a pot |
-| 6 | Water | Ice vs snow | Melt snow exists ("a little wood") | Melting ice at half the wood; snow made properly expensive |
-| 7 | Water | Rain catchment | Rain counts as water if you have a pot, tarp or ground sheet | An explicit job that fills the pots |
+| 5 | Water | Dew collection | **Built Nov 4**: Mop the dew at first light (not in rain, frost or snow): half a day of water in dry country, otherwise a drink or a pot of clean water | |
+| 6 | Water | Ice vs snow | **Built Nov 4**: Melt lake ice (an axe or a stone to break it) at half the wood; snow now costs half a day of wood a pot | |
+| 7 | Water | Rain catchment | **Built Nov 4**: Rig the tarp (or ground sheet) to catch rain: fills the pots with clean water | |
 | 8 | Shelter | Snow cave | Nothing (no snow shelter at all) | Dig into a drift: no materials, warm, collapse and air risks |
 | 9 | Shelter | Shelter orientation | Wind direction exists (windDir) | Choose which way the door faces; wind through the door costs warmth |
 | 10 | Hunting | Scout expansion | Scout exists: one line, helps snares | Say what was found: which animal, how fresh, which way |

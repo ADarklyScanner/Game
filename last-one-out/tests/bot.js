@@ -26,7 +26,9 @@ function makeBot(E, s, opts = {}) {
       const want = !s.shelterType && noTool.length ? noTool[noTool.length - 1] : o[o.length - 1];
       if (want && (!s.shelterGoal || s.shelterGoal === s.shelterType || !can(s.shelterGoal) || (!s.shelterType && s.shelterGoal !== want && !(s.shelterWork > 0)))) E.chooseShelter(s, want); }
     const pri = [];
-    if (E.season(s).climate.water === 'scarce' && (s.water || 0) < 2) pri.push('water'); /* out where water is scarce: haul more before it runs out, as the game warns you to */
+    if (E.season(s).climate.water === 'scarce' && (s.water || 0) < 3) pri.push('dew'); /* first light in dry country: wring the dew out of the grass */
+    if (E.season(s).climate.water === 'scarce' && (s.water || 0) < 2) pri.push('water');
+    pri.push('catch_rain'); /* rain and a tarp: fill the pots while it falls (offered only then) */ /* out where water is scarce: haul more before it runs out, as the game warns you to */
     if ((s.sys && s.sys.axeOff) || (E.haftOf ? E.haftOf(s) : 1) < 0.35) pri.push('fix_axe');
     if (s.axeEdge < 0.5) pri.push('sharpen');
     if (((s.bagHoles || 0) > 0 || (E.clothesOf ? E.clothesOf(s) : 1) < 0.6) && s.phase >= 2) pri.push('mend');

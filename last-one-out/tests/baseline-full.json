@@ -236,24 +236,23 @@
   "status": "won"
  },
  "US-S12#11": {
-  "d5": "f33605064c1c",
-  "d25": "b64cf3162fce",
-  "end": "0d5142a327d2",
-  "day": 28,
+  "d5": "4736220411c0",
+  "end": "aade33e4633d",
+  "day": 24,
   "status": "medical"
  },
  "US-S12#222": {
-  "d5": "63dba2f6e838",
-  "d25": "7c71257d4143",
-  "end": "0ba2194a6376",
+  "d5": "829c4e794eb7",
+  "d25": "b3f6c1c6775b",
+  "end": "a6e7b71fbf27",
   "day": 35,
   "status": "medical"
  },
  "US-S12#3333": {
-  "d5": "9629a02e98ec",
-  "d25": "38622e6c6ff9",
-  "end": "aa9c0757d144",
-  "day": 28,
+  "d5": "d70c5e3cd08a",
+  "d25": "d7b2e710c04e",
+  "end": "4a030d1ea7ab",
+  "day": 35,
   "status": "medical"
  },
  "US-S13#11": {

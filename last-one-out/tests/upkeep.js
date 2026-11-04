@@ -67,6 +67,17 @@ const nights = (mk, n, f) => { let hit = 0; for (let i = 0; i < n; i++) { const 
   const c = camp('US-S6', 32); c.mats.bark = 6; const k0 = c.mats.cordage; E.act(c, 'cordage', { extra: { good: false } }); check('cordage stopped part way gives one length', c.mats.cordage - k0 === 1, c.mats.cordage - k0);
   const a = camp('US-S6', 33); a.axeEdge = 0.3; a.mats.stone = 2; E.act(a, 'sharpen', { extra: { good: false } }); check('sharpening stopped part way gives half the edge', a.axeEdge > 0.3 && a.axeEdge < 0.75, a.axeEdge);
 }
+{ // water: dew at first light, ice melts cheaper than snow, a tarp catches rain
+  const d = camp('US-S12', 41, ['Knife']); d.phase = 0; d.hours = 0.2; const w0 = d.water || 0; check('dew is offered at first light in dry country', E.available(d, 'dew').ok, E.available(d, 'dew').why);
+  E.act(d, 'dew'); check('and gives half a day of water', Math.abs((d.water || 0) - w0 - 0.5) < 1e-9, d.water); check('once a morning', !E.available(d, 'dew').ok);
+  const late = camp('US-S12', 42, ['Knife']); late.phase = 2; check('not in the afternoon', !E.available(late, 'dew').ok);
+  const i = camp('US-S6', 43, ['Pot', 'Knife']); i.day = 60; E.beginDay(i); i.event = null; i.fire = true; i.firewood = 10; i.mats.stone = 2; i.potWater = 0; check('lake ice can be melted', E.available(i, 'melt_ice').ok, E.available(i, 'melt_ice').why);
+  const f0 = i.firewood; E.act(i, 'melt_ice'); const iceWood = f0 - i.firewood; i.potWater = 0; const f1 = i.firewood; E.act(i, 'melt_snow'); const snowWood = f1 - i.firewood;
+  check('ice takes about half the wood of snow', iceWood > 0 && iceWood <= snowWood / 1.9, [iceWood, snowWood]);
+  const r = camp('US-S1', 44, ['Tarp', 'Pot']); r.rain = true; r.potWater = 0; r.boiled = 0; check('rain and a tarp: catch it', E.available(r, 'catch_rain').ok, E.available(r, 'catch_rain').why);
+  E.act(r, 'catch_rain'); check('fills the pots with clean water', r.potWater === 2 && r.boiled > 0, [r.potWater, r.boiled]);
+  const nr = camp('US-S1', 45, ['Pot']); nr.rain = true; check('no tarp or sheet: no rigging', !E.available(nr, 'catch_rain').ok);
+}
 { // something alive in a snare is a real choice
   check('the snare event exists', !!E.EVENTS.snarepred && E.EVENTS.snarepred.options.length === 3);
 }
