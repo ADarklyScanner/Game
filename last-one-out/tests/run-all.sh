@@ -3,6 +3,7 @@
 set -e
 cd "$(dirname "$0")"
 node baseline.js
+node golden.js
 node food.js
 node cooking.js
 node fire.js
@@ -30,4 +31,6 @@ node screens.js
 node campsite.js
 node budget.js
 node unlocks.js
+node oldsave.js
+node minis.js
 echo "Everything passed."

@@ -6,7 +6,7 @@ check('every item has a cost', E.DATA.gear.every(g => E.GEAR_COST[g.id] >= 1), E
 const popular = E.DATA.gear.slice(0, 10).map(g => g.id);
 check('the ten most common do not fit the budget', E.kitCost(popular) > E.BUDGET, E.kitCost(popular));
 check('a budget run remembers it', E.newGame('US-S6', ['Axe'], { seed: 1, budget: true }).opts.budget === E.BUDGET && !E.newGame('US-S6', ['Axe'], { seed: 1 }).opts.budget);
-const names = els => els.map(e => e.childNodes[0].textContent.trim());
+const names = els => els.map(e => e.closest('.item').dataset.id);
 (async () => {
   const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 390, height: 844 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto('file://' + path.resolve(__dirname, process.env.GAME_FILE || '../index.html')); await p.waitForTimeout(600);
