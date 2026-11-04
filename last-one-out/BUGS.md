@@ -148,12 +148,19 @@ Real contestants rarely take these, so they stay modest, but each now has a job 
 | 103 | Salt | Sodium only, which matters after a month | Salt on the food is one of the things that keeps you going, every day it lasts |
 | 104 | Hammock | No mice or spiders | The best sleep on a mild night (better recovery, and it keeps you going), and the hip bones do not grind once you are thin |
 
+### Found teaching the test bot to stalk (Nov 4)
+
+| # | Bug | Fix |
+|---|---|---|
+| 105 | A shot at an animal you had walked up to on the map cost the full three and a half hours of a blind hunt, on top of the walking | About an hour and a quarter: the last of the stalk and the shot |
+| 106 | A slingshot could bring down a moose | It stings big game; it almost never drops it |
+
 ### Test-side problems (not game bugs)
 
 - The test bot could not make do without gear. With no axe or saw it still aimed for a log cabin and never built anything; with no ferro rod it never made a bow drill; it gathered every material forever instead of what the shelter still needed, and stopped gathering once the shelter was up (so no drying rack or smoker). It now builds the best roof it has the tools for (a quick one first), makes a bow drill (and a stone blade for it), gathers what its shelter and camp works lack, breaks ice for water, and lifts the gill net once a day when the floats show a catch. The no-gear average went from 22 to 39 days. Because the bot changed, the balance reference was re-recorded with the new bot on the original game (median 62, mean 61.7); the current game is at 62 and 60.8 (−1.5%).
 - With a ferro rod the bot never knapped a stone blade or twisted a handline early (it only did that on the way to a bow drill), so a ferro rod looked like it cost days. It now makes both early whatever it carries.
 - The bot kept no cordage unless a build called for it, so with an auger it had no cord for set lines; it now keeps a few lengths. It also never did handwork by the fire unless it needed cordage (the game counts that toward keeping your will), so it now whittles; and it keeps a stone or pole to break the ice with. Balance reference re-recorded with this bot on the original game (median 63, mean 63.4); the current game is at 60 and 61.0 (−4.8%, −3.8%). Most runs end at a weekly medical check, so the median moves in whole weeks.
-- The bot cannot judge the bow or slingshot. In the browser game you stalk animals you can see; the bot can only hunt blind, and a blind hunt (three and a half hours of hard walking) costs more food than it brings in, with or without good odds. The gear simulation's numbers for these two are left out of any tuning until the bot can stalk.
+- The bot could not judge the bow or slingshot: it could only hunt blind. It now stalks once a day after the trapline (the map's own odds of seeing something, a typical player's aim) and carries a big kill home five loads a day. Balance reference re-recorded with this bot on the original game (median 63, mean 62.7); the current game is at 63 and 61.4 (0.0%, −2.1%).
 
 - The test bot never hauled water in the dry places and lived off its starting supply. It now hauls water when it runs low, as the game tells a player to. Its median in the dry desert site went from 13 days (dying of thirst) to 35; the old number came from the bot, not the rules.
 - The rule checks skip through days without doing any jobs. The test loader now gives the character in them a drink each day; whole days played by the bots and the lazy test are left alone.

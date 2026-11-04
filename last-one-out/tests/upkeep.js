@@ -56,6 +56,12 @@ const nights = (mk, n, f) => { let hit = 0; for (let i = 0; i < n; i++) { const 
   const sa = camp('US-S6', 14, ['Salt']); sa.stores = [{ id: 'trout', por: 4, left: 5, smoked: false }]; E.endDay(sa); check('salt on the food keeps you going', (sa.lastHabits || []).includes('salt on the food'), JSON.stringify(sa.lastHabits));
   const h = camp('AU-S1', 15, ['Hammock']); h.day = 5; h.stores = [{ id: 'trout', por: 4, left: 5, smoked: false }]; E.endDay(h); check('a hammock on a mild night', E.temperature(h) <= 3 || (h.lastHabits || []).includes('a good night off the ground'), JSON.stringify([E.temperature(h), h.lastHabits]));
 }
+{ // a shot at an animal you can see is about an hour; a slingshot does not drop a moose
+  const s = camp('US-S6', 21, ['Bow and arrows']); s.hours = 8; E.act(s, 'hunt', { extra: { target: 'hare', hit: 'good', scent: 'cross' } }); check('a seen shot takes about an hour', s.hours - 8 < 2, s.hours - 8);
+  const b = camp('US-S6', 22, ['Bow and arrows']); b.hours = 8; E.act(b, 'hunt'); check('a blind hunt takes most of the day', b.hours - 8 >= 3, b.hours - 8);
+  const big = Object.keys(E.DATA.foods).find(k => E.DATA.foods[k].big); let downs = 0; for (let i = 0; i < 200; i++) { const t = camp('US-S6', 400 + i, ['Slingshot']); E.act(t, 'hunt', { extra: { target: big, hit: 'good', scent: 'up' } }); if (t.carcass && t.carcass.big) downs++; }
+  check('a slingshot almost never drops big game', downs <= 10, downs);
+}
 { // something alive in a snare is a real choice
   check('the snare event exists', !!E.EVENTS.snarepred && E.EVENTS.snarepred.options.length === 3);
 }

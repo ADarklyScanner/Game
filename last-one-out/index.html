@@ -78,7 +78,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: .01e
 .item span { font-weight: 700; font-size: 14px; }
 .item small { color: var(--muted); font-size: 11.5px; line-height: 1.3; }
 .rules { display: flex; gap: 6px; flex-wrap: wrap; margin: 2px 0 6px; } .rule { border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 999px; padding: 5px 12px; font-size: 13px; cursor: pointer; } .rule[aria-pressed="true"] { background: var(--ember); color: var(--ember-ink); border-color: var(--ember); }
-.item.over { opacity: .45; } .item .cost { font-weight: 700; }
+.item.over { opacity: .45; } .season.locked { opacity: .5; cursor: default; } .season .lockline { display: block; font-size: 12.5px; margin-top: 4px; } .item .cost { font-weight: 700; }
 .linkbtn { background: none; border: 0; color: var(--ember); padding: 0; cursor: pointer; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
 details { border-top: 1px solid var(--line); padding-top: 8px; }
 summary { cursor: pointer; color: var(--muted); font-size: 13px; }
@@ -1210,7 +1210,7 @@ function act(s, id, opts = {}) {
   if (s.phase > 2 && !nightOk(s, id)) return [];
   const lines = []; const av = available(s, id); const A = ACTIONS[id];
   if (!av.ok) { lines.push([`Couldn't ${A.label.toLowerCase()}: ${av.why.toLowerCase()}.`, 'muted']); return lines; }
-  const h = A.hours * (s.health < 40 ? 1.25 : 1) * (s.sys && s.sys.dry ? 1.25 : 1); /* thirst slows every job */
+  const h = (id === 'hunt' && opts.extra && opts.extra.target ? 1.25 : A.hours) /* a shot at an animal you walked up to: the last of the stalk and the shot, not a whole blind hunt */ * (s.health < 40 ? 1.25 : 1) * (s.sys && s.sys.dry ? 1.25 : 1); /* thirst slows every job */
   if ((s.rain || s.storm) && !opts.inside && !['inside', 'camp'].includes(A.where)) s.wet = Math.min(1, s.wet + (s.storm ? 0.2 : 0.12) * h);
   if ((s.rain || s.storm) && opts.inside) s.morale += 0.5;
   const atNight = s.phase === 3; if (atNight) { s.nightHours = round1((s.nightHours || 0) + h); const lamp = lampOk(s) && (!s.fire || (!!opts.inside && !s.fireInside)) && !['light_fire', 'tend_fire'].includes(id); if (lamp) burnLamp(s, h, lines, !!opts.inside); else s.morale -= 0.3 * h; } // steady lamplight takes the strain out of night work
@@ -1313,7 +1313,7 @@ function doAction(s, id, lines, mod, opts) {
       // an animal in front of you: the shot decides. Nothing in sight: the season's odds of something stepping out.
       let p;
       const crooked = bow && s.sys && s.sys.crooked ? Math.min(1, Math.min(s.sys.crooked, s.arrows) / s.arrows) : 0; // a crooked shaft flies wide
-      if (X.target) { p = { good: bow ? 0.82 : 0.6, poor: bow ? 0.55 : 0.4, miss: 0.04, none: 0 }[X.hit || 'none'] * (big ? 0.75 : 1) * Math.min(1.15, s.skill.hunt) * (1 - 0.3 * crooked) * (bow ? bowPower(s) : 1); if (s.health < 40) p *= 0.85; const smoked = s.sys && s.sys.smokeDay != null && s.day - s.sys.smokeDay <= 1; if (X.scent === 'down') p *= smoked ? 0.8 : 0.6; else if (smoked) p *= 1.05; if (X.scent === 'up') p *= 1.15; p *= 0.5 + 0.5 * stalkNoise(s); }
+      if (X.target) { p = { good: bow ? 0.82 : 0.6, poor: bow ? 0.55 : 0.4, miss: 0.04, none: 0 }[X.hit || 'none'] * (big ? (bow ? 0.75 : 0.02) : 1) /* a slingshot stone stings a moose; it does not bring one down */ * Math.min(1.15, s.skill.hunt) * (1 - 0.3 * crooked) * (bow ? bowPower(s) : 1); if (s.health < 40) p *= 0.85; const smoked = s.sys && s.sys.smokeDay != null && s.day - s.sys.smokeDay <= 1; if (X.scent === 'down') p *= smoked ? 0.8 : 0.6; else if (smoked) p *= 1.05; if (X.scent === 'up') p *= 1.15; p *= 0.5 + 0.5 * stalkNoise(s); }
       else p = huntOdds(s) * mod * (1 - 0.3 * crooked);
       const killed = chance(s, p);
       if (killed && (big || (!X.target && bow && se.big.length && chance(s, 0.0022 * se.mult.hunt)))) {
@@ -2382,6 +2382,14 @@ let mini = null;         // running mini-game
 
 // how hard a season is comes from the rival exit days: when the middle of the pack went home, against the winner
 function realMedian(se) { const d = se.rivals.filter(r => r.days != null).map(r => r.days).sort((a, b) => a - b); return d[d.length >> 1]; }
+/* places open a difficulty group at a time, the forgiving ones first. Last 30 days, or outlast half the field, in any place of a group and the
+   next group opens. A place you have played stays open, and More options can open everything. The daily challenge is always open. */
+const placeLevel = k => DIFF_NAMES.length - 1 - DIFF_NAMES.findIndex(d => d[0] === diffLabel(k)[0]);
+const UNLOCK_DAYS = 30;
+const cleared = se => { const r = records.seasons[se.key] || {}; return (r.bestDays || 0) >= Math.min(UNLOCK_DAYS, realMedian(se)) || (r.bestPlace || 99) <= Math.ceil((se.rivals.length + 1) / 2); };
+function openGroups() { if (records.openAll) return DIFF_NAMES.length; let g = 1; for (let lv = 0; lv < DIFF_NAMES.length - 1; lv++) { if (D.seasons.some(se => placeLevel(se.key) === lv && cleared(se))) g = lv + 2; else break; } return g; }
+function placeOpen(se) { return placeLevel(se.key) < openGroups() || ((records.seasons[se.key] || {}).runs || 0) > 0; }
+const groupName = lv => DIFF_NAMES[DIFF_NAMES.length - 1 - lv][0];
 // difficulty blends the roster and the game: when the rivals go home, when a typical player goes home here,
 // and how often a careful player beats the real winner (all from the simulations stored in the data)
 function diffScore(se) {
@@ -2420,14 +2428,15 @@ function earnedBadges(s, place) {
   return b;
 }
 function recordRun(s, place) { // once per run; returns {newBest, newBadges}
-  if (s.recorded) return { newBest: false, newBadges: [] };
-  s.recorded = true;
+  if (s.recorded) return { newBest: false, newBadges: [], opened: [] };
+  s.recorded = true; const groups0 = openGroups();
   const r = records.seasons[s.seasonKey] || (records.seasons[s.seasonKey] = { runs: 0, bestDays: 0, bestPlace: 99, wins: 0 });
   r.runs++; const newBest = s.day > r.bestDays; r.bestDays = Math.max(r.bestDays, s.day); r.bestPlace = Math.min(r.bestPlace, place); if (s.status === 'won') r.wins++;
   if (s.daily) { records.daily = records.daily || {}; const d = records.daily[s.daily] || (records.daily[s.daily] = { days: 0, place: 99 }); d.days = Math.max(d.days, s.day); d.place = Math.min(d.place, place); d.season = s.seasonKey; }
   const got = earnedBadges(s, place); if (Object.keys(records.seasons).length >= D.seasons.length) got.add('sweep');
   const newBadges = []; for (const k of got) if (!records.badges[k]) { records.badges[k] = new Date().toISOString().slice(0, 10); newBadges.push(k); }
-  saveRecords(); return { newBest, newBadges };
+  const opened = []; for (let lv = groups0; lv < openGroups(); lv++) opened.push(groupName(lv));
+  saveRecords(); return { newBest, newBadges, opened };
 }
 function dailyKey() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function dailyPlan(key = dailyKey()) { let h = 2166136261; for (const ch of key) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return { key, seed: h, season: D.seasons[h % D.seasons.length] }; }
@@ -2441,9 +2450,10 @@ function placeOf() { const ahead = S.rivals.filter(r => r.days > S.day || (r.pla
 // ------------------------------------------------------------ setup screen
 function renderSetup() {
   // easiest first: by difficulty level, then by how long a typical player lasts there (longest first)
-  const level = k => DIFF_NAMES.length - 1 - DIFF_NAMES.findIndex(d => d[0] === diffLabel(k)[0]);
+  const level = placeLevel;
   const avgDays = se => ((D.difficulty || {})[se.key] || {}).median ?? realMedian(se);
   const seasons = D.seasons.slice().sort((a, b) => level(a.key) - level(b.key) || avgDays(b) - avgDays(a));
+  if (!placeOpen(D.seasons.find(se => se.key === setup.season) || seasons[0])) setup.season = seasons.find(placeOpen).key;
   app.className = 'wrap'; app.replaceChildren();
   app.append($(`<header class="hero"><h1>Last One <span>Out</span></h1>
     <p>Ten people, ten items, one wilderness. Pick a place, outlast the other survivors, and live off what the land gives you.</p></header>`));
@@ -2462,12 +2472,13 @@ function renderSetup() {
     const [dl, dc] = diffLabel(se.key);
     const rec = records.seasons[se.key] || {}; const typical = (D.difficulty || {})[se.key] && D.difficulty[se.key].median;
     const tags = [rec.runs ? `<span class="tag mine">Your best ${rec.bestDays} days${rec.wins ? ` · won ${rec.wins}×` : ''}</span>` : ''].join('');
-    const b = $(`<button class="season" role="listitem" aria-pressed="${se.key === setup.season}">
+    const open = placeOpen(se); const lv = level(se.key);
+    const b = $(`<button class="season${open ? '' : ' locked'}" role="listitem" aria-pressed="${se.key === setup.season}"${open ? '' : ' aria-disabled="true"'}>
       <b>${esc(se.name)} · ${esc(se.location)}</b><span class="diff ${dc}">${dl}</span>
       <span class="desc">${esc(se.blurb)}</span>
       <span class="stats"><span><em class="num">${realMedian(se)} days</em>median rival</span><span><em class="num">${win} days</em>longest-lasting rival</span>${typical ? `<span><em class="num">~${typical} days</em>a typical player</span>` : ''}</span>
-      ${tags ? `<span class="tags">${tags}</span>` : ''}</button>`);
-    b.onclick = () => { setup.season = se.key; list.querySelectorAll('.season').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); };
+      ${tags ? `<span class="tags">${tags}</span>` : ''}${open ? '' : `<span class="lockline">Locked. Last ${UNLOCK_DAYS} days, or outlast half the field, in a ${esc(groupName(lv - 1).toLowerCase())} place to open it.</span>`}</button>`);
+    b.onclick = () => { if (!open) return; setup.season = se.key; list.querySelectorAll('.season').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); };
     list.append(b);
   }
   app.append(s1);
@@ -2497,11 +2508,14 @@ function renderSetup() {
   const opts = $(`<details><summary>More options</summary><div class="opts">
     <label class="opt" for="wt">Starting weight (lb)<input id="wt" type="number" min="100" max="300" step="1" value="${setup.weight}"></label>
     <div class="muted" style="font-size:12.5px">A medical check ends your run at a set BMI, so a heavier start gives you more to lose.</div>
+    <label class="opt" for="openall">Open every place<input id="openall" type="checkbox" ${records.openAll ? 'checked' : ''}></label>
+    <div class="muted" style="font-size:12.5px">Places open a difficulty group at a time. Tick this to skip that and choose any of them.</div>
     <label class="opt" for="rem">Know how many are left<input id="rem" type="checkbox" ${setup.showRemaining ? 'checked' : ''}></label>
     <div class="muted" style="font-size:12.5px">The other survivors never know who has quit. Leave this off to play it the same way.</div>
   </div></details>`);
   opts.querySelector('#wt').onchange = (e) => { setup.weight = Math.max(100, Math.min(300, +e.target.value || 180)); };
   opts.querySelector('#rem').onchange = (e) => { setup.showRemaining = e.target.checked; };
+  opts.querySelector('#openall').onchange = (e) => { records.openAll = e.target.checked; saveRecords(); renderSetup(); };
   app.append(opts);
   const startBtn = $(`<button class="big-btn">Drop me off</button>`);
   startBtn.onclick = () => {
@@ -6054,6 +6068,7 @@ function renderEnd() {
       <div class="stat"><div class="label">Kcal a day</div><div class="v">${fmt(S.stats.kcal / Math.max(1, S.day))}</div></div></div>
     <p class="muted" style="margin:0">${[E.shelterName(S) === 'No real shelter' ? 'No real shelter' : `Shelter: ${E.shelterName(S).toLowerCase()}`, S.stats.lost.includes('shelter fire') ? 'burned it down' : '', S.stats.walked ? `walked ${fmtDist(S.stats.walked)}` : '', caught ? `caught ${caught}` : ''].filter(Boolean).map(esc).join(' · ')}.</p>
     ${rec.newBest || rec.newBadges.length ? `<div class="alerts">${rec.newBest ? '<span class="alert tone-big">New personal best</span>' : ''}${rec.newBadges.map(k => `<span class="alert tone-big">Badge: ${esc(BADGES.find(b => b[0] === k)[1])}</span>`).join('')}</div>` : ''}
+    ${rec.opened && rec.opened.length ? `<div class="alerts">${rec.opened.map(g => `<span class="alert tone-big">New places open: ${esc(g.toLowerCase())}</span>`).join('')}</div>` : ''}
     ${S.opts && S.opts.budget ? `<p class="muted" style="margin:0">Budget kit: ${E.kitCost(S.gear)} of ${S.opts.budget} points.</p>` : ''}
     ${S.daily ? `<p class="muted" style="margin:0">Daily challenge, ${esc(S.daily)}. Everyone who played today got the same site, the same ten items, and the same storms, cold snaps and visitors on the same days.</p>` : ''}
     <div class="sect">The other survivors${S.replaced ? `, with you in place of ${esc(S.replaced)}` : ''}</div>

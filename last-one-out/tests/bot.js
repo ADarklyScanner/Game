@@ -2,7 +2,24 @@
 function makeBot(E, s, opts = {}) {
   const skip = new Set(opts.skip || []);
   const ok = id => !skip.has(id) && E.available(s, id).ok;
+  /* the browser game puts animals on the map (about 1.4 small ones per square, more in good weather and good habitat) and the player shoots
+     at one they can see. The bot copies that once a day: walk about 1.5 km; see something with the same odds the map would give; shoot
+     with a typical player's aim. Its own dice, so the game's luck is not disturbed. */
+  let bdice = (s.seed * 2654435761) >>> 0; const brnd = () => { bdice = (bdice * 1103515245 + 12345) >>> 0; return bdice / 4294967296; };
+  const stalk = () => {
+    if (opts.noStalk || s.today.done.includes('hunt') || s.today.stalked === s.day || !ok('hunt') || s.phase > 2) return null;
+    s.today.stalked = s.day; const se = E.season(s); if (!se.pools.hunt.length) return null;
+    const win = k => !!(E.windowOn && E.windowOn(s, k)); const dayF = Math.min(2.2, se.mult.hunt) * (E.stockOf ? E.stockOf(s, 'game') : 1) * (s.storm ? 0.3 : s.fog ? 0.7 : 1) * (E.status(s).snowy ? 0.8 : 1) * (E.timeMult ? E.timeMult(s, 'game') : 1) * (win('rut') || win('migration') ? 1.5 : 1);
+    const cells = 1.5; const big = se.big.length && (E.hasBow ? E.hasBow(s) : s.gear.includes('Bow and arrows')) && brnd() < 1 - Math.exp(-0.05 * Math.min(2, se.mult.hunt) * (win('rut') ? 4 : 1) * cells * 0.5);
+    const seen = big || brnd() < 1 - Math.exp(-1.4 * dayF * cells * 0.5); /* about half of what the map holds shows itself to someone walking through */
+    if (!seen) { E.travel(s, 1500); return null; } /* walked the ridges and saw nothing: the walk is the cost */
+    const pool = big ? se.big.map(id => [id, 1]) : se.pools.hunt; const tot = pool.reduce((a, [, w]) => a + w, 0); let r = brnd() * tot, target = pool[0][0]; for (const [id, w] of pool) { r -= w; if (r <= 0) { target = id; break; } }
+    const q = brnd(); const hit = q < 0.35 ? 'good' : q < 0.75 ? 'poor' : 'miss'; const sc = brnd(); const scent = sc < 0.25 ? 'down' : sc < 0.5 ? 'up' : 'cross';
+    return { id: 'hunt', metres: 1500, extra: { target, hit, scent, size: 0.8 + brnd() * 0.5 } };
+  };
   const policy = () => {
+    /* a big animal dressed out there: walk the meat home a load at a time while there is light */
+    while (E.carryLoad && s.carcass && s.carcass.dressed && s.phase >= 0 && s.phase < 2 && (s.today.loads || 0) < 5) { E.travel(s, 3000); if (s.phase >= 2 || s.status !== 'playing') break; E.carryLoad(s); s.today.loads = (s.today.loads || 0) + 1; } /* about five loads is a day's packing */
     /* aim for the best shelter the tools on hand can build: a cabin needs an axe or saw; without one, a debris hut or a lean-to */
     /* first a roof that needs no tools (a quick one, then the best), and only then a cabin, which needs an axe or saw and weeks of logs */
     { const can = k => E.SHELTERS[k].bill.tool !== 'cutter' || E.cutter(s); const o = E.shelterOptions(s).filter(can); const noTool = o.filter(k => E.SHELTERS[k].bill.tool !== 'cutter');
@@ -42,8 +59,10 @@ function makeBot(E, s, opts = {}) {
     if (s.sys && s.sys.soot > 0.5) pri.push('check_roof');
     if (s.crafts.hearth !== 1 && s.mats.stone < 6 && s.day > 3) pri.push('stones');
     const handsBusy = s.today.done.some(x => ['whittle', 'cook', 'tend_fire', 'needle_tea', 'bone_broth', 'cordage'].includes(x));
-    pri.push('craft_pemmican', 'cordage', ...(s.day > 3 && s.mats.cordage < 4 && s.mats.bark < 3 ? ['bark'] : []), /* keep a few lengths of cord for set lines and mending */ ...(handsBusy ? [] : ['whittle']), /* an hour by the fire with the hands busy keeps the doubts away */ ...(s.net && s.net.catch.length && !s.today.done.includes('checknet') ? ['checknet'] : []), 'setnet', /* lift the net once, when the floats show something in it */ 'checktraps', 'fish', ...(E.available(s, 'snares').ok && E.ACTIONS.scout && !(s.sys && s.sys.scoutDay === s.day) ? ['scout'] : []), 'snares', 'setlines', 'berries', 'shellfish', ...(E.ACTIONS.inspect && !(s.sys && s.sys.inspectDay === s.day) && (E.available(s, 'roots').ok || E.available(s, 'greens').ok) ? ['inspect'] : []), 'roots', 'greens', 'forage', 'cattail', 'hunt', 'boil', 'water');
-    for (const p of pri) { if (s.today.done.filter(x => x === p).length >= 2) continue; if (ok(p)) return p; }
+    pri.push('craft_pemmican', 'cordage', ...(s.day > 3 && s.mats.cordage < 4 && s.mats.bark < 3 ? ['bark'] : []), /* keep a few lengths of cord for set lines and mending */ ...(handsBusy ? [] : ['whittle']), /* an hour by the fire with the hands busy keeps the doubts away */ ...(s.net && s.net.catch.length && !s.today.done.includes('checknet') ? ['checknet'] : []), 'setnet', /* lift the net once, when the floats show something in it */ 'checktraps', 'stalk', 'fish', /* with a bow or slingshot, after the trapline and the fishing: walk out looking for something to shoot, as a player does on the map */ ...(E.available(s, 'snares').ok && E.ACTIONS.scout && !(s.sys && s.sys.scoutDay === s.day) ? ['scout'] : []), 'snares', 'setlines', 'berries', 'shellfish', ...(E.ACTIONS.inspect && !(s.sys && s.sys.inspectDay === s.day) && (E.available(s, 'roots').ok || E.available(s, 'greens').ok) ? ['inspect'] : []), 'roots', 'greens', 'forage', 'cattail', 'hunt', 'boil', 'water');
+    for (const p of pri) {
+      if (p === 'stalk') { const st = stalk(); if (st) return st; continue; }
+      if (s.today.done.filter(x => x === p).length >= 2) continue; if (ok(p)) return p; }
     return null;
   };
   policy.event = x => x.event && x.event.id === 'strangeberries' ? Math.max(0, x.event.optIds.indexOf(2)) : 0; // a sensible player leaves berries they do not know

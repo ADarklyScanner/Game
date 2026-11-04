@@ -29,4 +29,5 @@ node handson.js
 node screens.js
 node campsite.js
 node budget.js
+node unlocks.js
 echo "Everything passed."
