@@ -136,10 +136,23 @@ Old saves from all 24 earlier versions load and play on, and save, reload and co
 | 98 | The gill net cost more than it caught: two wades a day, soaked each time, and the same lake stock the rod uses | It fishes a little better (60% of nights in an average place, up to four in it), and lifting it by its shore line wets your arms, not your waist. A net knotted from salvage still fishes less than a real one |
 | 99 | A carved gorge hook on bark cord caught 80% as well as steel hooks and line | 65% (55% if rushed) |
 
+### Items that did nearly nothing (Nov 4, built)
+
+Real contestants rarely take these, so they stay modest, but each now has a job and a place where it helps.
+
+| # | Item | Was | Now |
+|---|---|---|---|
+| 100 | Scotch eyed auger | One session off a cabin or hut | Pegged joints: the bed frame, drying rack, cache and every shelter need no cordage, and pegged camp works stand up to storms and snow better |
+| 101 | Ground sheet | A small warmth bonus | A dry layer under the bed (counts as bedding), catches rain to drink, keeps stores dry, and keeps you out of the worst of an open-air night |
+| 102 | Shovel | The same as a free digging stick | Roots and cattails come out half again as fast, and in snow it banks the shelter walls (a fifth less cold at night) |
+| 103 | Salt | Sodium only, which matters after a month | Salt on the food is one of the things that keeps you going, every day it lasts |
+| 104 | Hammock | No mice or spiders | The best sleep on a mild night (better recovery, and it keeps you going), and the hip bones do not grind once you are thin |
+
 ### Test-side problems (not game bugs)
 
 - The test bot could not make do without gear. With no axe or saw it still aimed for a log cabin and never built anything; with no ferro rod it never made a bow drill; it gathered every material forever instead of what the shelter still needed, and stopped gathering once the shelter was up (so no drying rack or smoker). It now builds the best roof it has the tools for (a quick one first), makes a bow drill (and a stone blade for it), gathers what its shelter and camp works lack, breaks ice for water, and lifts the gill net once a day when the floats show a catch. The no-gear average went from 22 to 39 days. Because the bot changed, the balance reference was re-recorded with the new bot on the original game (median 62, mean 61.7); the current game is at 62 and 60.8 (−1.5%).
 - With a ferro rod the bot never knapped a stone blade or twisted a handline early (it only did that on the way to a bow drill), so a ferro rod looked like it cost days. It now makes both early whatever it carries.
+- The bot kept no cordage unless a build called for it, so with an auger it had no cord for set lines; it now keeps a few lengths. It also never did handwork by the fire unless it needed cordage (the game counts that toward keeping your will), so it now whittles; and it keeps a stone or pole to break the ice with. Balance reference re-recorded with this bot on the original game (median 63, mean 63.4); the current game is at 60 and 61.0 (−4.8%, −3.8%). Most runs end at a weekly medical check, so the median moves in whole weeks.
 - The bot cannot judge the bow or slingshot. In the browser game you stalk animals you can see; the bot can only hunt blind, and a blind hunt (three and a half hours of hard walking) costs more food than it brings in, with or without good odds. The gear simulation's numbers for these two are left out of any tuning until the bot can stalk.
 
 - The test bot never hauled water in the dry places and lived off its starting supply. It now hauls water when it runs low, as the game tells a player to. Its median in the dry desert site went from 13 days (dying of thirst) to 35; the old number came from the bot, not the rules.

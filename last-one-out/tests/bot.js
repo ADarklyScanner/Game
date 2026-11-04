@@ -13,7 +13,7 @@ function makeBot(E, s, opts = {}) {
     if ((s.sys && s.sys.axeOff) || (E.haftOf ? E.haftOf(s) : 1) < 0.35) pri.push('fix_axe');
     if (s.axeEdge < 0.5) pri.push('sharpen');
     if (((s.bagHoles || 0) > 0 || (E.clothesOf ? E.clothesOf(s) : 1) < 0.6) && s.phase >= 2) pri.push('mend');
-    pri.push('ice_hole'); /* frozen water and no axe or saw: break a hole by hand to drink (offered only then) */
+    pri.push('ice_hole'); if (/stone or a stout pole/.test(E.available(s, 'ice_hole').why || '')) pri.push('stones', 'cut_poles'); /* frozen water and no axe or saw: break a hole by hand to drink (offered only then) */
     if (s.mats.tinder < 2) pri.push('tinder'); // keep something to light a fire with
     /* no ferro rod: make a bow drill, and a stone blade to make it with if there is no knife or axe */
     if (!s.gear.includes('Ferro rod') && !(s.crafts.bowdrill >= 1)) { pri.push('craft_bowdrill'); if (!E.blade(s) && !E.chopper(s)) pri.push('craft_stoneblade', 'stones'); if (s.mats.cordage < 1) pri.push('cordage', 'bark'); }
@@ -41,7 +41,8 @@ function makeBot(E, s, opts = {}) {
     if (s.shelterLvl >= 2 && (E.sealOf ? E.sealOf(s) : 1) < 0.4) pri.push('caulk'); // re-chink when the seal is poor, not at every crack
     if (s.sys && s.sys.soot > 0.5) pri.push('check_roof');
     if (s.crafts.hearth !== 1 && s.mats.stone < 6 && s.day > 3) pri.push('stones');
-    pri.push('craft_pemmican', 'cordage', ...(s.net && s.net.catch.length && !s.today.done.includes('checknet') ? ['checknet'] : []), 'setnet', /* lift the net once, when the floats show something in it */ 'checktraps', 'fish', ...(E.available(s, 'snares').ok && E.ACTIONS.scout && !(s.sys && s.sys.scoutDay === s.day) ? ['scout'] : []), 'snares', 'setlines', 'berries', 'shellfish', ...(E.ACTIONS.inspect && !(s.sys && s.sys.inspectDay === s.day) && (E.available(s, 'roots').ok || E.available(s, 'greens').ok) ? ['inspect'] : []), 'roots', 'greens', 'forage', 'cattail', 'hunt', 'boil', 'water');
+    const handsBusy = s.today.done.some(x => ['whittle', 'cook', 'tend_fire', 'needle_tea', 'bone_broth', 'cordage'].includes(x));
+    pri.push('craft_pemmican', 'cordage', ...(s.day > 3 && s.mats.cordage < 4 && s.mats.bark < 3 ? ['bark'] : []), /* keep a few lengths of cord for set lines and mending */ ...(handsBusy ? [] : ['whittle']), /* an hour by the fire with the hands busy keeps the doubts away */ ...(s.net && s.net.catch.length && !s.today.done.includes('checknet') ? ['checknet'] : []), 'setnet', /* lift the net once, when the floats show something in it */ 'checktraps', 'fish', ...(E.available(s, 'snares').ok && E.ACTIONS.scout && !(s.sys && s.sys.scoutDay === s.day) ? ['scout'] : []), 'snares', 'setlines', 'berries', 'shellfish', ...(E.ACTIONS.inspect && !(s.sys && s.sys.inspectDay === s.day) && (E.available(s, 'roots').ok || E.available(s, 'greens').ok) ? ['inspect'] : []), 'roots', 'greens', 'forage', 'cattail', 'hunt', 'boil', 'water');
     for (const p of pri) { if (s.today.done.filter(x => x === p).length >= 2) continue; if (ok(p)) return p; }
     return null;
   };

@@ -47,6 +47,15 @@ const nights = (mk, n, f) => { let hit = 0; for (let i = 0; i < n; i++) { const 
   const n = camp('US-S6', 9, ['Knife']); n.day = 60; E.beginDay(n); n.event = null; n.mats.stone = 0; n.mats.poles = 0; check('it needs a stone or a pole', !E.available(n, 'ice_hole').ok);
   const a = camp('US-S6', 9); a.day = 60; E.beginDay(a); a.event = null; check('with an axe it is not needed', !E.available(a, 'ice_hole').ok);
 }
+{ // the rarely-taken items each have a job
+  const a = camp('US-S6', 11, ['Scotch eyed auger']); a.mats.poles = 8; a.mats.cordage = 0; check('the auger pegs a bed frame without cordage', E.available(a, 'craft_platform').ok, E.available(a, 'craft_platform').why);
+  check('and a cabin needs no cordage', (E.billFor(a, 'cabin').cordage || 0) === 0);
+  const n = camp('US-S6', 11, ['Knife']); n.mats.poles = 8; n.mats.cordage = 0; check('without it the frame needs lashing', !E.available(n, 'craft_platform').ok);
+  const g = camp('US-S1', 12, ['Ground sheet']); g.rain = true; g.today.done = []; check('a ground sheet catches rain to drink', E.waterToday(g).ok && E.waterToday(g).how === 'rain', JSON.stringify(E.waterToday(g)));
+  const sh = camp('US-S6', 13, ['Shovel']); sh.day = 60; E.beginDay(sh); sh.event = null; sh.fire = true; sh.firewood = 20; E.endDay(sh); check('a shovel banks snow against the shelter', !!(sh.sys && sh.sys.banked));
+  const sa = camp('US-S6', 14, ['Salt']); sa.stores = [{ id: 'trout', por: 4, left: 5, smoked: false }]; E.endDay(sa); check('salt on the food keeps you going', (sa.lastHabits || []).includes('salt on the food'), JSON.stringify(sa.lastHabits));
+  const h = camp('AU-S1', 15, ['Hammock']); h.day = 5; h.stores = [{ id: 'trout', por: 4, left: 5, smoked: false }]; E.endDay(h); check('a hammock on a mild night', E.temperature(h) <= 3 || (h.lastHabits || []).includes('a good night off the ground'), JSON.stringify([E.temperature(h), h.lastHabits]));
+}
 { // something alive in a snare is a real choice
   check('the snare event exists', !!E.EVENTS.snarepred && E.EVENTS.snarepred.options.length === 3);
 }
