@@ -9,4 +9,4 @@ Every item alone, every pair, every set of three and four, run in all 17 places 
 
 Put an earlier `comboresult.json` next to it as `before.json` (with a `label`) and the report adds a before-and-after section.
 
-Results from Nov 3, 2026: https://claude.ai/artifact/C7t6VdPtTjBZZZudUdh8aP
+Results (Nov 4, 2026, after the fixes, with the Nov 3 run as before.json): https://claude.ai/artifact/C7t6VdPtTjBZZZudUdh8aP

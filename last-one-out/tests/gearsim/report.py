@@ -95,7 +95,7 @@ if os.path.exists('before.json'):
 </section>''')
 secs.append('<section><h2>All the numbers</h2>' + table(['#', 'Item', 'One number', 'Alone', 'In a full kit'], [[str(n + 1), e(i), fmt(score[i]), fmt(solo[i]), fmt(full.get(i, 0))] for n, i in enumerate(order)]) + '</section>')
 secs.append(f'''<section class="note"><h2>How it was run</h2>
-<p>The game's own rules and its test bot, which plays every job it can with what it carries. Same seeds for every kit in a place, so the differences come from the gear, not the luck. Runs stop at 60 days. Kits up to {R["maxk"]} items were all run; full 10-item kits were sampled at random. Game as of Nov 3, 2026 (water round and upkeep included).</p></section>''')
+<p>The game's own rules and its test bot, which plays every job it can with what it carries. Same seeds for every kit in a place, so the differences come from the gear, not the luck. Runs stop at 60 days. Kits up to {R["maxk"]} items were all run; full 10-item kits were sampled at random. Game as of Nov 4, 2026: water round, upkeep, the ice hole and the gill net fixes, with the test bot that makes do without gear.</p></section>''')
 
 page = f'''<title>Last One Out Gear Simulation</title>
 <meta name="claude:viewport-fit-sides" content="cover">
