@@ -705,13 +705,13 @@ function dryRate(s, where, x) {
 }
 function dryDaysLeft(s, where, x) { const r = dryRate(s, where, x); return r > 0 ? Math.max(1, Math.ceil((x.moist - DRY_AT) / r)) : null; }
 // hang fresh food on a station: splits a store entry if only part of it fits
-function hang(s, where, maxPor) {
+function hang(s, where, maxPor, thick) {
   let free = Math.max(0, Math.floor((capOf(s, where) - onStation(s, where)) * 10 + 1e-9) / 10); let n = 0; if (maxPor != null) free = Math.min(free, maxPor);
   const fresh = s.stores.filter(hangable).sort((a, b) => a.left - b.left);
   for (const x of fresh) {
     if (free < 0.1) break;
     let y = x; if (x.por > free) { y = Object.assign({}, x, { por: round1(free) }); x.por = round1(x.por - free); s.stores.push(y); }
-    y.where = where; y.moist = y.moist ?? FRESH_MOIST[DATA.foods[y.id].kind]; y.smoke = y.smoke || 0; y.thick = !blade(s);
+    y.where = where; y.moist = y.moist ?? FRESH_MOIST[DATA.foods[y.id].kind]; y.smoke = y.smoke || 0; y.thick = thick != null ? !!thick : !blade(s);
     free = round1(free - y.por); n += y.por;
   }
   return round1(n);
@@ -1508,10 +1508,11 @@ function doAction(s, id, lines, mod, opts) {
     }
     case 'clean': {
       const k = (blade(s) ? 1 : 0.8) * (X.good === false ? 0.85 : 1); let bait = 0, bone = 0, kcal = 0, feathers = 0;
-      for (const x of s.raw) { const f = DATA.foods[x.id]; addFood(s, x.id, round1(x.por * k)); if (f.fat) { addFood(s, 'fat', round1(f.fat * k)); kcal += round1(f.fat * k) * DATA.foods.fat.kcal; } if (f.organ) { addFood(s, 'organ', round1(f.organ * k)); kcal += round1(f.organ * k) * DATA.foods.organ.kcal; } kcal += x.por * k * f.kcal; bait += f.kind === 'fish' ? 2 : 1; if (f.kind === 'fish' && f.por >= 3) bone += 1; if (f.kind === 'game') { bone += 1; if (BIRDS.test(x.id)) feathers += 2; else if (f.por >= 3 && !/snake|frog/.test(x.id)) { s.mats.hide += 1; s.hideRaw = (s.hideRaw || 0) + 1; } } }
+      for (const x of s.raw) { const f = DATA.foods[x.id]; addFood(s, x.id, round1(x.por * k)); if (f.fat) { addFood(s, 'fat', round1(f.fat * k)); kcal += round1(f.fat * k) * DATA.foods.fat.kcal; } if (f.organ) { addFood(s, 'organ', round1(f.organ * k)); kcal += round1(f.organ * k) * DATA.foods.organ.kcal; } kcal += x.por * k * f.kcal; bait += f.kind === 'fish' ? 2 : 1; if (f.kind === 'fish' && f.por >= 3) bone += 1; if (f.kind === 'game') { bone += 1; if (BIRDS.test(x.id)) feathers += 2; else if (f.por >= 3 && !/snake|frog/.test(x.id) && !X.torn) { s.mats.hide += 1; s.hideRaw = (s.hideRaw || 0) + 1; } } }
       const n = s.raw.length; const gameN = s.raw.filter(x => DATA.foods[x.id].kind === 'game').length; s.raw = []; if (n) { const sys = sysOf(s); sys.hands = has(s, 'Soap') ? 0 : 0.4; if (gameN) sys.offal = round1((sys.offal || 0) + gameN * 0.5); } s.mats.bait += bait; s.mats.bone += bone; s.mats.feathers += feathers; /* fish guts go back in the water or the bait tin; mammal and bird guts make the pile */
       lines.push([`Cleaned ${n} catch${n === 1 ? '' : 'es'}: ${Math.round(kcal).toLocaleString('en-US')} kcal into the stores, ${bait} bait${bone ? `, ${bone} bone` : ''}${feathers ? `, ${feathers} feathers` : ''}.`, 'good']);
       if (!blade(s)) lines.push(['Without a knife a fifth of it was wasted.', 'muted']); else if (X.good === false) lines.push(['Ragged cuts. Some of it went in the bait tin instead of the pot.', 'muted']);
+      if (X.torn) lines.push(['The skin tore as you peeled it. No good for hide.', 'muted']); if (X.ripped) lines.push(['Plucked against the grain and tore the skin; the fat under it came away with the feathers.', 'muted']);
       break;
     }
     case 'dress': {
@@ -1519,8 +1520,10 @@ function doAction(s, id, lines, mod, opts) {
       const c = s.carcass; const f = DATA.foods[c.id]; const late = c.hour != null ? (s.day - c.day) * 14 + (s.hours - c.hour) : 0; const swollen = late > 4 && temperature(s) > 5 && !/snake|frog|insect/.test(c.id); /* guts left in on a warm day sour the meat around them */
       const k = (blade(s) ? 1 : 0.75) * (X.good === false ? 0.8 : 1) * (swollen ? 0.85 : 1);
       if (X.good === false) lines.push(['Nicked the gut. Had to cut away the tainted meat.', 'warn']);
+      if (X.taint) { c.por = round1(c.por * 0.9); lines.push(['Pulled too hard and the bladder burst over the hindquarters. You washed and trimmed what you could.', 'warn']); }
+      if (X.bone) { s.hours = round1(s.hours + 0.2 * X.bone); s.phase = phaseOf(s); lines.push([`Hacked through bone instead of finding the joint${X.bone > 1 ? 's' : ''}. Slow, and it dulls the blade.`, 'muted']); }
       if (swollen) lines.push(['It lay too long with the guts in, and the belly had started to swell. You cut away the sour meat around them.', 'warn']);
-      c.dressed = true; c.por = round1(c.por * k); const bird = BIRDS.test(c.id); if (bird) s.mats.feathers += 2; else if (f.kind === 'game' && !/snake|frog|insect/.test(c.id)) { s.mats.hide += c.big ? 2 : 1; s.hideRaw = (s.hideRaw || 0) + (c.big ? 2 : 1); } s.mats.bone += c.big ? 4 : 1;
+      c.dressed = true; c.por = round1(c.por * k); const bird = BIRDS.test(c.id); if (bird) s.mats.feathers += 2; else if (f.kind === 'game' && !/snake|frog|insect/.test(c.id)) { const hn = Math.max(0, (c.big ? 2 : 1) - (X.torn ? 1 : 0)); s.mats.hide += hn; s.hideRaw = (s.hideRaw || 0) + hn; if (X.torn) lines.push(['The hide tore as you skinned it; only part of it is worth keeping.', 'muted']); } s.mats.bone += c.big ? 4 : 1;
       if (!c.big) { addFood(s, c.id, c.por); if (c.fat) addFood(s, 'fat', c.fat); if (c.organ) addFood(s, 'organ', c.organ); s.carcass = null; lines.push([`${BIRDS.test(c.id) ? 'Gutted and plucked' : 'Gutted and skinned'} the ${low(f.name)}: ${Math.round(c.por * f.kcal).toLocaleString('en-US')} kcal${blade(s) ? '' : ', messy without a knife'}.`, 'good']); }
       else { s.hours = round1(s.hours + 2); s.today.burn += 400; lines.push([`Opened and quartered the ${low(f.name)}. ${Math.round(c.por).toLocaleString('en-US')} portions of meat, ${c.fat} of fat. Carry it in ${Math.ceil(c.por / C.carry)} loads.`, 'good']); }
       if (c.id === 'porcupine' && chance(s, 0.15) && !s.conditions.some(x => /Quills/.test(x.name))) { addCond(s, { name: 'Quills in the hand', days: 3, dmg: 0.5 }); s.morale -= 3; lines.push(['Quills through the glove and into the palm. Each one comes out with a barb.', 'bad']); }
@@ -1612,8 +1615,8 @@ function doAction(s, id, lines, mod, opts) {
       break;
     }
     case 'dry_food': {
-      const n = hang(s, 'rack'); const sys = sysOf(s); const d = dryDaysLeft(s, 'rack', { moist: 0.72, thick: !blade(s) });
-      lines.push([`${blade(s) ? 'Sliced' : 'Hacked'} ${Math.round(n)} portion${Math.round(n) === 1 ? '' : 's'} ${blade(s) ? 'thin' : 'into thick pieces (no knife)'} and hung them on the rack.${d ? ` In this weather, about ${d} day${d === 1 ? '' : 's'} to dry.` : ' Too wet out for anything to dry today.'}${sys.rackRoof ? '' : ' No roof over it: rain will wet it again.'}`, 'info']);
+      const th = X.thick != null ? !!X.thick : !blade(s); const n = hang(s, 'rack', null, th); const sys = sysOf(s); const d = dryDaysLeft(s, 'rack', { moist: 0.72, thick: th });
+      lines.push([`${blade(s) ? 'Sliced' : 'Hacked'} ${Math.round(n)} portion${Math.round(n) === 1 ? '' : 's'} ${!th ? 'thin' : blade(s) ? 'into strips too thick to dry through quickly' : 'into thick pieces (no knife)'} and hung them on the rack.${d ? ` In this weather, about ${d} day${d === 1 ? '' : 's'} to dry.` : ' Too wet out for anything to dry today.'}${sys.rackRoof ? '' : ' No roof over it: rain will wet it again.'}`, 'info']);
       break;
     }
     case 'render_fat': {
@@ -3474,7 +3477,7 @@ function interactionsHere() {
     if (!S.shelterGoal) { if (E.shelterOptions(S).length) out.push({ label: S.shelterType ? 'Upgrade shelter' : 'Build shelter', sub: S.shelterType ? 'pick what to build next' : 'pick a design', fn: openShelterChoice }); }
     else if (push('shelter', null, startBuild)) out[out.length - 1].sub = E.available(S, 'shelter').odds + ` · next: ${STAGE_NAME[buildStage()] || 'build'}`;
     else { const miss = E.shelterMissing(S); if (miss && miss.length) out.push({ label: `${E.SHELTERS[S.shelterGoal].name}`, sub: 'Needs ' + miss.join(', '), fn: openNeeds, dim: true }); }
-    push('change_dry'); push('cook', null, startCook); push('melt_snow'); push('melt_ice'); push('catch_rain'); push('star_fire'); push('photo'); push('cut_belt'); if (S.cachePlace === 'camp') push('repair_cache'); push('fire_in'); push('fire_out'); push('mend', null, () => startCraft('mend')); push('work_hide', null, () => startCraft('work_hide')); push('smoke_clothes'); push('read_sky'); push('shape_pot', null, () => startCraft('shape_pot')); push('fire_pots', null, () => startCraft('fire_pots')); push('clear_roof'); push('splint', null, () => startCraft('splint')); push('dig_latrine'); push('bed', null, () => startCraft('bed')); push('bury'); push('scrub'); push('check_roof'); push('caulk', null, () => startCraft('caulk')); push('fix_axe'); push('repair', null, startRepair); push('boil', null, muddy() ? startFilter : null); push('lay_out_camp', null, openLayout); push('needle_tea'); push('bone_broth'); push('dry'); if (push('smoke', 'Hot smoke', () => doAct('smoke', { mode: 'hot' }))) { const ref = out[out.length - 1]; push('smoke', 'Cold smoke', () => doAct('smoke', { mode: 'cold' })); if (out[out.length - 1] !== ref) out[out.length - 1].sub = 'a smoulder, no flame · slower, less wood, does not cook it'; } push('dry_food'); push('render_fat'); push('talk_camera'); push('cordage', null, startCordage); push('sharpen', null, startSharpen); push('rest');
+    push('change_dry'); push('cook', null, startCook); push('melt_snow'); push('melt_ice'); push('catch_rain'); push('star_fire'); push('photo'); push('cut_belt'); if (S.cachePlace === 'camp') push('repair_cache'); push('fire_in'); push('fire_out'); push('mend', null, () => startCraft('mend')); push('work_hide', null, () => startCraft('work_hide')); push('smoke_clothes'); push('read_sky'); push('shape_pot', null, () => startCraft('shape_pot')); push('fire_pots', null, () => startCraft('fire_pots')); push('clear_roof'); push('splint', null, () => startCraft('splint')); push('dig_latrine'); push('bed', null, () => startCraft('bed')); push('bury'); push('scrub'); push('check_roof'); push('caulk', null, () => startCraft('caulk')); push('fix_axe'); push('repair', null, startRepair); push('boil', null, muddy() ? startFilter : null); push('lay_out_camp', null, openLayout); push('needle_tea'); push('bone_broth'); push('dry'); if (push('smoke', 'Hot smoke', () => doAct('smoke', { mode: 'hot' }))) { const ref = out[out.length - 1]; push('smoke', 'Cold smoke', () => doAct('smoke', { mode: 'cold' })); if (out[out.length - 1] !== ref) out[out.length - 1].sub = 'a smoulder, no flame · slower, less wood, does not cook it'; } push('dry_food', null, () => E.blade(S) ? startSlice() : doAct('dry_food')); push('render_fat'); push('talk_camera'); push('cordage', null, startCordage); push('sharpen', null, startSharpen); push('rest');
     { const ready = Object.keys(E.ACTIONS).some(k => k.startsWith('craft_') && av(k).ok); out.push({ label: 'Craft…', sub: ready ? '' : 'see what each thing needs', fn: () => openBuild(false) }); }
     return overflow(out);
   }
@@ -4036,24 +4039,98 @@ function startTrace(kind, onDone) {
   if (!svg) return;
   // sample the guide curve
   const guide = svg.querySelector('path[stroke-dasharray]'); const L = guide.getTotalLength(); const pts = []; for (let i = 0; i <= 60; i++) { const p = guide.getPointAtLength(L * i / 60); pts.push({ x: p.x, y: p.y }); }
-  let drawing = false, prog = 0, off = 0, n = 0, d = ''; const cut = svg.querySelector('#cut'), knife = svg.querySelector('#knife');
+  let drawing = false, prog = 0, off = 0, n = 0, d = '', lastP = null, deep = 0; const cut = svg.querySelector('#cut'), knife = svg.querySelector('#knife');
   const nearest = (p) => { let best = 1e9, bi = 0; for (let i = 0; i < pts.length; i++) { const dd = Math.hypot(pts[i].x - p.x, pts[i].y - p.y); if (dd < best) { best = dd; bi = i; } } return { dist: best, i: bi }; };
-  const move = (e) => { if (!drawing) return; const p = svg.toLocal(e); const nr = nearest(p); if (nr.i < prog - 6) return; if (nr.dist > band) { off++; } n++; prog = Math.max(prog, nr.i); d += (d ? ' L ' : 'M ') + p.x.toFixed(1) + ' ' + p.y.toFixed(1); cut.setAttribute('d', d); knife.setAttribute('cx', p.x); knife.setAttribute('cy', p.y); padText(nr.dist > band ? (fish ? 'Off the line. Stay on the belly.' : 'Too deep. Keep the blade shallow.') : prog > 54 ? 'Nearly through.' : 'Follow the line.'); if (prog >= 58) { drawing = false; const good = off / Math.max(1, n) < 0.3; sfx.play(good ? 'good' : 'bad'); setTimeout(() => onDone(good), 350); } };
+  const move = (e) => { if (!drawing) return; const p = svg.toLocal(e); const nr = nearest(p); if (nr.i < prog - 6) return; if (nr.dist > band) { off++; } n++;
+    { const now = performance.now(); if (lastP) { const dd = Math.hypot(p.x - lastP.x, p.y - lastP.y), v = dd / Math.max(8, now - lastP.t) * 1000; if (dd > 1.5 && v < 45 && !fish) { deep++; if (deep === 4 || deep === 10) { sfx.play('bad'); buzz(15); } } } lastP = { x: p.x, y: p.y, t: now }; } /* a dragging, heavy blade sinks */ prog = Math.max(prog, nr.i); d += (d ? ' L ' : 'M ') + p.x.toFixed(1) + ' ' + p.y.toFixed(1); cut.setAttribute('d', d); knife.setAttribute('cx', p.x); knife.setAttribute('cy', p.y); padText(nr.dist > band ? (fish ? 'Off the line. Stay on the belly.' : 'Too deep. Keep the blade shallow.') : prog > 54 ? 'Nearly through.' : 'Follow the line.'); if (deep >= 4 && nr.dist <= band) padText('Slow and heavy, the blade is sinking. Keep it moving.'); if (prog >= 58) { drawing = false; const good = off / Math.max(1, n) < 0.3 && deep < 10; sfx.play(good ? 'good' : 'bad'); setTimeout(() => onDone(good), 350); } };
   svg.onpointerdown = (e) => { const p = svg.toLocal(e); if (nearest(p).i <= prog + 4) { drawing = true; svg.setPointerCapture(e.pointerId); move(e); } };
-  svg.onpointermove = move; svg.onpointerup = () => { drawing = false; }; svg.onpointercancel = () => { drawing = false; };
+  svg.onpointermove = move; svg.onpointerup = () => { drawing = false; lastP = null; }; svg.onpointercancel = () => { drawing = false; lastP = null; };
   padText(fish ? 'Drag the knife along the dotted line, vent to gills.' : bird ? 'Pluck the breast, then open it along the line. Shallow, or you nick the gut.' : 'Open it along the line. Shallow, or you nick the gut.');
 }
 function startClean() {
   autoResolve(); const finish = (good) => { if (!mini) return; endMini(); doAct('clean', { good }); };
   mini = { type: 'clean', deadline: W.t + 45, update() {}, acts: [{ label: 'Finish now', sub: 'a rushed job', fn: () => finish(false) }], cancel: () => finish(false) };
   if (!E.blade(S)) { miniUI('<div class="mtext">No knife. Tearing it open with a sharp rock.</div>'); mini.acts = [{ label: 'Tear it open', sub: 'messy', primary: true, fn: () => finish(true) }]; lastActs = ''; refreshActs(); return; }
-  lastActs = ''; refreshActs(); const first = S.raw && S.raw[0] && E.DATA.foods[S.raw[0].id]; startTrace(!first || first.kind === 'fish' || first.kind === 'shellfish' ? 'fish' : /grouse|duck|bird|ptarmigan|goose|guineafowl/.test(S.raw[0].id) ? 'bird' : 'small', finish);
+  lastActs = ''; refreshActs(); const first = S.raw && S.raw[0] && E.DATA.foods[S.raw[0].id]; const kind = !first || first.kind === 'fish' || first.kind === 'shellfish' ? 'fish' : /grouse|duck|bird|ptarmigan|goose|guineafowl|pigeon|quail|swan/.test(S.raw[0].id) ? 'bird' : 'small';
+  const ex = {}; const done = good => { if (!mini) return; endMini(); handsDone('clean', good && !ex.torn && !ex.ripped); doAct('clean', Object.assign({ good }, ex)); };
+  if (kind === 'bird') startPluck(r => { ex.ripped = r; startTrace('bird', done); }); else if (kind === 'small' && first.por >= 3 && !/snake|frog/.test(S.raw[0].id)) startTrace('small', g => startPeel(t => { ex.torn = t; done(g); })); else startTrace(kind, done);
 }
 function startDress() {
   autoResolve(); const finish = (good) => { if (!mini) return; endMini(); doAct('dress', { good }); };
   mini = { type: 'clean', deadline: W.t + 45, update() {}, acts: [{ label: 'Finish now', sub: 'a rushed job', fn: () => finish(false) }], cancel: () => finish(false) };
   if (!E.blade(S)) { miniUI('<div class="mtext">No knife. Working it open with a stone edge.</div>'); mini.acts = [{ label: 'Tear it open', sub: 'messy', primary: true, fn: () => finish(true) }]; lastActs = ''; refreshActs(); return; }
-  lastActs = ''; refreshActs(); startTrace('deer', finish);
+  lastActs = ''; refreshActs(); const c = S.carcass || {}; const ex = {}; const done = good => { if (!mini) return; endMini(); handsDone('dress', good && !ex.taint); doAct('dress', Object.assign({ good }, ex)); };
+  const bird = /grouse|duck|bird|ptarmigan|goose|guineafowl|pigeon|quail|swan|turkey/.test(c.id || '');
+  if (bird) startPluck(r => startTrace('bird', done)); else if (!c.big) startTrace('small', g => startPeel(t => { ex.torn = t; done(g); }));
+  else startTrace('deer', g => startGuts(t => { ex.taint = t; startPeel(tr => { ex.torn = tr; startQuarter(b => { ex.bone = b; done(g); }); }, true); }));
+}
+/* plucking: swipe with the lie of the feathers, toward the tail. Against the grain tears the skin */
+function startPluck(next) {
+  const F = []; for (let i = 0; i < 46; i++) F.push({ x: 70 + Math.random() * 170, y: 38 + Math.random() * 40, on: true }); let rip = 0, last = null;
+  const svg = pad(`<path d="M 34 62 C 40 36, 120 26, 196 34 C 236 38, 262 50, 268 62 C 258 82, 190 92, 120 90 C 64 88, 36 80, 34 62 Z" fill="#e8c4a8"/><circle cx="262" cy="44" r="15" fill="#7a6650"/><g id="fe">${F.map((f, i) => `<path data-i="${i}" d="M ${f.x.toFixed(0)} ${f.y.toFixed(0)} q -9 -3 -14 2 q 6 3 14 -2" fill="#8a7458" stroke="#6e5a42" stroke-width=".6"/>`).join('')}</g><text x="20" y="18" font-size="9" fill="#e8e0cc" opacity=".75">tail ←</text>`, 300, 110);
+  if (!svg) return next(false);
+  const left = () => F.filter(f => f.on).length;
+  svg.onpointerdown = (e) => { last = svg.toLocal(e); svg.setPointerCapture(e.pointerId); };
+  svg.onpointermove = (e) => { if (!last) return; const p = svg.toLocal(e); const dx = p.x - last.x; if (Math.abs(dx) < 3) return; const against = dx > 0;
+    let got = 0; F.forEach((f, i) => { if (f.on && Math.hypot(f.x - p.x, f.y - p.y) < 14) { f.on = false; got++; const el = svg.querySelector(`#fe path[data-i="${i}"]`); if (el) el.remove(); if (against) svg.insertAdjacentHTML('beforeend', `<circle cx="${f.x.toFixed(0)}" cy="${f.y.toFixed(0)}" r="3" fill="#b8604a" opacity=".8"/>`); } });
+    if (got && against) { rip++; if (rip === 2 || rip === 6) { sfx.play('bad'); buzz(15); } padText('Against the grain: the skin is tearing. Pull toward the tail.'); } else if (got) { sfx.play('tap'); padText(`${left()} feathers left on the breast.`); }
+    last = p; if (left() <= 4 && mini) { svg.onpointermove = null; const r = rip >= 6; setTimeout(() => next(r), 300); } };
+  svg.onpointerup = () => { last = null; };
+  padText('Pluck the breast: swipe toward the tail, with the lie of the feathers.');
+}
+/* skinning: peel the skin back from the cut. Steady pulls; a jerk tears it */
+function startPeel(next, big) {
+  let prog = 0, last = null, tears = 0; const need = big ? 420 : 240;
+  const svg = pad(`<path d="M 30 60 C 50 30, 120 22, 200 26 C 250 28, 275 40, 278 60 C 270 84, 200 92, 120 90 C 60 88, 36 80, 30 60 Z" fill="#b0503e"/><clipPath id="pc"><path d="M 30 60 C 50 30, 120 22, 200 26 C 250 28, 275 40, 278 60 C 270 84, 200 92, 120 90 C 60 88, 36 80, 30 60 Z"/></clipPath><g clip-path="url(#pc)"><rect id="skin" x="0" y="0" width="300" height="110" fill="#8a6a48"/></g><g id="tr"></g>`, 300, 110);
+  if (!svg) return next(false);
+  let trail = []; /* speed over the last tenth of a second, not one jittery event */
+  svg.onpointerdown = (e) => { last = Object.assign(svg.toLocal(e), { t: performance.now() }); trail = [last]; svg.setPointerCapture(e.pointerId); };
+  svg.onpointermove = (e) => { if (!last) return; const p = svg.toLocal(e); const now = performance.now(); const dy = last.y - p.y; last = Object.assign(p, { t: now }); trail.push(last); while (trail.length > 2 && now - trail[1].t > 100) trail.shift(); const t0 = trail[0], span = now - t0.t, v = span >= 40 ? Math.hypot(p.x - t0.x, p.y - t0.y) / span * 1000 : 0; if (dy <= 0.5) return;
+    if (v > 650) { tears++; sfx.play('bad'); buzz(20); svg.querySelector('#tr').insertAdjacentHTML('beforeend', `<path d="M ${p.x.toFixed(0)} ${(p.y + 8).toFixed(0)} l 6 -8 l 6 8" stroke="#2a1a12" stroke-width="2" fill="none"/>`); padText('You jerked it and the skin tore. Steady.'); last = null; trail = []; return; }
+    prog += dy; const f = Math.min(1, prog / need); svg.querySelector('#skin').setAttribute('y', (-f * 110).toFixed(1)); if (prog < need) padText(`Peeling it back. ${Math.round(f * 100)}%.`); else if (mini) { svg.onpointermove = null; sfx.play('good'); setTimeout(() => next(tears >= (big ? 3 : 2)), 300); } };
+  svg.onpointerup = () => { last = null; };
+  padText(big ? 'Skin it: draw the hide up off the carcass in long, steady pulls.' : 'Peel the skin back from the cut: drag upward, steady.');
+}
+/* the guts: ease them out. Hold to draw them toward you; the tension builds, let it off before it tears */
+function startGuts(next) {
+  let prog = 0, ten = 0, pulling = false, over = false;
+  const svg = pad(`<path d="M 30 60 C 50 30, 120 22, 200 26 C 250 28, 275 40, 278 60 C 270 84, 200 92, 120 90 C 60 88, 36 80, 30 60 Z" fill="#8a6a48"/><path d="M 60 60 C 100 50, 180 50, 230 58" stroke="#5a2a20" stroke-width="16" fill="none" stroke-linecap="round"/><ellipse id="gut" cx="140" cy="62" rx="40" ry="16" fill="#c8a0a0"/><rect x="14" y="10" width="80" height="6" rx="3" fill="rgba(0,0,0,.35)"/><rect id="ten" x="14" y="10" width="0" height="6" rx="3" fill="#e0a050"/><text x="98" y="16" font-size="8" fill="#e8e0cc" opacity=".75">tension</text>`, 300, 110);
+  if (!svg) return next(false);
+  const draw = () => { svg.querySelector('#gut').setAttribute('cy', (62 + prog * 46).toFixed(1)); const t = svg.querySelector('#ten'); t.setAttribute('width', (Math.min(1, ten) * 80).toFixed(1)); t.setAttribute('fill', ten > 0.75 ? '#d0503a' : '#e0a050'); };
+  const fin = (taint) => { if (over) return; over = true; pulling = false; mini.update = () => {}; mini.acts = mini.acts.filter(a => a.label !== 'Ease them out'); lastActs = ''; refreshActs(); setTimeout(() => next(taint), 400); };
+  const act = { label: 'Ease them out', sub: 'hold; let the tension off', primary: true, down: () => { pulling = true; }, up: () => { pulling = false; } };
+  mini.acts = [act, ...mini.acts]; lastActs = ''; refreshActs();
+  mini.update = (dt) => { if (over) return; if (pulling) { prog = Math.min(1, prog + dt * 0.22); ten += dt * 0.6; } else ten = Math.max(0, ten - dt * 0.9);
+    if (ten >= 1) { sfx.play('bad'); buzz(40); padText('It tore. The bladder burst.'); draw(); return fin(true); } draw();
+    if (prog >= 1) { sfx.play('good'); padText('Out clean, in one piece.'); return fin(false); } padText(ten > 0.75 ? 'It is straining. Let it off a moment.' : pulling ? 'Drawing them out.' : 'Hold to ease the guts out toward you.'); };
+  padText('Hold to ease the guts out toward you. When it strains, let the tension off.'); draw();
+}
+/* quartering: feel for each joint along the leg and cut there. Tap wrong and you are cutting bone */
+function startQuarter(next) {
+  const legs = [[60, 88, 56, 108], [90, 90, 88, 108], [190, 90, 190, 108], [230, 86, 236, 108]].map(([x1, y1, x2, y2]) => ({ x1: x1, y1: y1 - 34, x2, y2, j: 0.3 + Math.random() * 0.45, done: false })); let bone = 0;
+  const pt = (l, f) => [l.x1 + (l.x2 - l.x1) * f, l.y1 + (l.y2 - l.y1) * f];
+  const svg = pad(`<path d="M 30 50 C 50 20, 120 12, 200 16 C 250 18, 275 30, 278 50 C 270 70, 200 76, 120 74 C 60 72, 36 66, 30 50 Z" fill="#a04a3a"/>${legs.map((l, i) => `<path class="leg" data-i="${i}" d="M ${l.x1} ${l.y1} L ${l.x2} ${l.y2}" stroke="#8a3e30" stroke-width="10" stroke-linecap="round"/>`).join('')}<g id="qm"></g>`, 300, 110);
+  if (!svg) return next(0);
+  svg.onpointerdown = (e) => { const q = svg.toLocal(e); let best = null, bd = 1e9; legs.forEach((l, i) => { if (l.done) return; for (let f = 0; f <= 1; f += 0.02) { const [x, y] = pt(l, f); const d = Math.hypot(x - q.x, y - q.y); if (d < bd) { bd = d; best = { i, f }; } } }); if (!best || bd > 12) return;
+    const l = legs[best.i]; const off = best.f - l.j; if (Math.abs(off) < 0.09) { l.done = true; const [x, y] = pt(l, l.j); svg.querySelector('#qm').insertAdjacentHTML('beforeend', `<path d="M ${x - 7} ${y} L ${x + 7} ${y}" stroke="#f0e6d0" stroke-width="2.5"/>`); sfx.play('stick'); padText(`The joint. It parts clean. ${legs.filter(z => z.done).length} of 4.`); if (legs.every(z => z.done)) setTimeout(() => next(bone), 300); }
+    else { bone++; sfx.play('bad'); buzz(12); const [x, y] = pt(l, best.f); svg.querySelector('#qm').insertAdjacentHTML('beforeend', `<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="2.5" fill="#e8e0cc" opacity=".7"/>`); padText(off < 0 ? 'Solid bone. The joint is lower down.' : 'Solid bone. The joint is higher up.'); if (bone >= 8) { legs.forEach(z => { z.done = true; }); setTimeout(() => next(bone), 300); } } };
+  padText('Quarter it: feel along each leg for the joint and cut there. Tap where you think it is.');
+}
+/* slicing for the rack: draw each cut down through the meat. Even strips a finger-width wide dry through; fat ones rot in the middle */
+function startSlice() {
+  autoResolve(); const K = craftKit('dry_food', false); const x0 = 40, x1 = 260, cuts = [x0, x1]; let drag = null, over = false;
+  const svg = pad(`<rect x="${x0}" y="24" width="${x1 - x0}" height="56" rx="8" fill="#9a3e30"/>${[34, 44, 54, 64, 72].map(y => `<path d="M ${x0 + 6} ${y} L ${x1 - 6} ${y + 2}" stroke="#b8604c" stroke-width="1" opacity=".6"/>`).join('')}<g id="strips"></g><path id="ghost" stroke="#fff" stroke-width="1.5" stroke-dasharray="3 3" fill="none"/>`, 300, 100);
+  const strips = () => { const c = cuts.slice().sort((a, b) => a - b); const out = []; for (let i = 1; i < c.length; i++) out.push([c[i - 1], c[i] - c[i - 1]]); return out; };
+  const draw = () => { if (!svg) return; svg.querySelector('#strips').innerHTML = cuts.filter(x => x !== x0 && x !== x1).map(x => `<path d="M ${x.toFixed(1)} 22 L ${x.toFixed(1)} 82" stroke="#2a1410" stroke-width="2"/>`).join('') + strips().map(([a, w]) => w > 26 ? `<rect x="${(a + 2).toFixed(1)}" y="84" width="${(w - 4).toFixed(1)}" height="4" rx="2" fill="#d06a4a"/>` : w < 9 ? `<rect x="${(a + 1).toFixed(1)}" y="84" width="${Math.max(1, w - 2).toFixed(1)}" height="4" rx="2" fill="#e0b050"/>` : `<rect x="${(a + 2).toFixed(1)}" y="84" width="${(w - 4).toFixed(1)}" height="4" rx="2" fill="#9ec08a"/>`).join(''); };
+  const done = () => { if (over) return; over = true; const st = strips(); const fat = st.filter(([, w]) => w > 26).length, thin = st.filter(([, w]) => w < 9).length; const thick = fat > st.length * 0.3;
+    padText(thick ? 'Too many fat strips. They will stay wet in the middle.' : thin > 3 ? 'Some are shavings. They will dry to crumbs, but they dry.' : 'Even strips, a finger wide. They will dry through.'); sfx.play(thick ? 'bad' : 'good'); setTimeout(() => K.finish(!thick, { thick }), 500); };
+  if (svg) { svg.onpointerdown = (e) => { if (over) return; const q = svg.toLocal(e); if (q.x <= x0 + 2 || q.x >= x1 - 2) return; drag = { x: q.x, y: q.y }; svg.setPointerCapture(e.pointerId); K.start(); };
+    svg.onpointermove = (e) => { if (!drag) return; const q = svg.toLocal(e); svg.querySelector('#ghost').setAttribute('d', `M ${drag.x} ${drag.y} L ${q.x} ${q.y}`); };
+    svg.onpointerup = (e) => { if (!drag) return; const q = svg.toLocal(e); svg.querySelector('#ghost').setAttribute('d', ''); const len = Math.abs(q.y - drag.y), x = (q.x + drag.x) / 2; const slant = Math.abs(q.x - drag.x); drag = null;
+      if (len < 36) { padText('Draw the knife all the way down through the meat.'); return; } if (slant > 14) { padText('Crooked. Draw straight down, or the strip is thick at one end.'); }
+      cuts.push(x); sfx.play('stick'); draw(); const st = strips(); const n = st.length; padText(`${n} strip${n === 1 ? '' : 's'}.` + (st.some(([, w]) => w > 26) ? ' Some are still fat.' : '')); if (st.every(([, w]) => w <= 26) || n >= 16) done(); }; }
+  mini = { type: 'craft', deadline: W.t + 60, update() {}, acts: [{ label: 'Hang them up', sub: 'as they are', fn: () => { if (!K.worked) return K.quit(); done(); } }, ...K.tail()], cancel: K.cancel() };
+  padText('Draw the knife straight down through the meat to cut strips, each about a finger wide.'); draw(); lastActs = ''; refreshActs();
 }
 // cordage: reverse wrap, twist one strand away then fold the other over. The order is the whole trick.
 function startCordage() {
