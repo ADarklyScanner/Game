@@ -5,7 +5,7 @@ const { loadGame } = require('./load-game'); const E = loadGame(process.env.GAME
 const SRC = process.env.GAME_FILE || path.join(__dirname, '..', 'index.html'); const TMP = '/tmp/last-one-out-minis.html';
 const html = fs.readFileSync(SRC, 'utf8'); const hook = 'window.claude?.hot?.snapshot?.(() => ({ game: S }));';
 if (!html.includes(hook)) throw new Error('hook point not found');
-fs.writeFileSync(TMP, html.replace(hook, 'window.__m = { startLash, startHunt, startFish, startNet, startSteps, startTaps, startCordage, startSharpen, startForage, startSearch, mini: () => mini, S: () => S, acts: () => mini ? mini.acts.map(a => a.label) : [], press: l => { const a = mini && mini.acts.find(x => x.label === l); if (a) { if (a.down) a.down(); if (a.fn) a.fn(); if (a.up) a.up(); return true; } return false; } };\n' + hook));
+fs.writeFileSync(TMP, html.replace(hook, 'window.__m = { startFire, startLash, startHunt, startFish, startNet, startSteps, startTaps, startCordage, startSharpen, startForage, startSearch, mini: () => mini, S: () => S, acts: () => mini ? mini.acts.map(a => a.label) : [], press: l => { const a = mini && mini.acts.find(x => x.label === l); if (a) { if (a.down) a.down(); if (a.fn) a.fn(); if (a.up) a.up(); return true; } return false; } };\n' + hook));
 const KEY = 'last-one-out-v1'; const save = s => JSON.stringify(s, (k, v) => v === Infinity ? 1e9 : v);
 let fails = 0, passes = 0; const check = (name, ok, detail) => { if (ok) passes++; else { fails++; console.log('FAIL', name, detail ?? ''); } };
 function base() { const s = E.newGame('US-S6', ['Knife', 'Ferro rod', 'Axe', 'Fishing gear', 'Bow and arrows', 'Gillnet', 'Paracord'], { seed: 41, weight: 200 }); s.campChosen = true; E.beginDay(s); s.event = null; s.storm = s.rain = s.fog = s.snowfall = false; s.hours = 2; s.phase = 0; Object.assign(s.mats, { poles: 20, cordage: 20, boughs: 20 }); return s; }
@@ -63,6 +63,10 @@ function base() { const s = E.newGame('US-S6', ['Knife', 'Ferro rod', 'Axe', 'Fi
   // thread crafts are paced: rushing the next move tangles it
   await fresh(); await p.evaluate(() => window.__m.startSteps('mend', { steps: ['Stitch', 'Pull'], need: 8, intro: 'x' })); await p.evaluate(() => { window.__m.press('Stitch'); window.__m.press('Pull'); });
   check('rushing a stitch tangles it', /tangled/.test(await p.evaluate(() => (document.querySelector('#padtext') || {}).textContent || '')));
+  // the fire chain starts with the lay
+  await fresh(); await p.evaluate(() => { const S = window.__m.S(); S.mats.tinder = 3; S.firewood = 3; window.__m.startFire(); });
+  check('lighting a fire starts with how you lay it', ['Teepee', 'Log cabin', 'Lean-to lay'].every(l => 0) || (await p.evaluate(() => window.__m.acts())).includes('Log cabin'), await p.evaluate(() => window.__m.acts()));
+  await p.evaluate(() => window.__m.press('Teepee')); check('then the strike', await p.evaluate(() => window.__m.mini() && window.__m.mini().type === 'fire'));
   check('no page errors', !errs.length, errs.slice(0, 3));
   await b.close(); console.log(fails ? `${fails} mini-game check(s) failed, ${passes} passed.` : `All ${passes} mini-game checks passed.`); process.exitCode = fails ? 1 : 0;
 })();
