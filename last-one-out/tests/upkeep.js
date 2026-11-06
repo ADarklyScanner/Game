@@ -115,6 +115,23 @@ const nights = (mk, n, f) => { let hit = 0; for (let i = 0; i < n; i++) { const 
   let plain = 0, ruin = 0; for (let i = 0; i < 300; i++) { const a = camp('US-S2', 1000 + i); E.act(a, 'search'); plain += a.found.length; const b = camp('US-S2', 1000 + i); E.act(b, 'search', { mod: 2.2, extra: { ruin: true } }); ruin += b.found.length; }
   check('picking through the old camp finds more than the shore', ruin > plain * 1.5, [plain, ruin]);
 }
+{ // bedding: a leaky roof soaks it, damp bedding holds little warmth, airing it on a dry day fixes it
+  const b = camp('US-S6', 81); E.sysOf(b).bed = 1; const w0 = E.bedDampOf(b); b.sys.leaky = true; b.rain = true; E.endDay(b); check('a leak in the rain soaks the bedding', E.bedDampOf(b) > w0 + 0.3, E.bedDampOf(b));
+  E.beginDay(b); b.event = null; b.rain = b.storm = b.fog = b.snowfall = false; check('airing it is offered on a dry day', E.available(b, 'air_bed').ok, E.available(b, 'air_bed').why); E.act(b, 'air_bed'); check('aired, it dries', E.bedDampOf(b) < 0.1, E.bedDampOf(b));
+  const sc = E.shelterScores(b); check('the shelter scores read out', sc.length === 8 && sc.every(r => r[1] >= 0 && r[1] <= 3), sc);
+}
+{ // the damage report names the part; repairing fixes that part
+  const d = camp('US-S6', 82); d.storm = true; d.shelterCond = 1; E.endDay(d); check('a storm leaves a named damage', ['frame', 'walls', 'roof'].includes(d.sys.damage), d.sys.damage);
+  E.beginDay(d); d.event = null; d.storm = false; d.mats.boughs = 10; E.act(d, 'repair', { extra: { good: true } }); check('repairing clears it', !d.sys.damage, d.sys.damage);
+}
+{ // felling: a tree dropped on camp, a hang-up, a kickback
+  const f = camp('US-S6', 83, ['Axe']); f.shelterCond = 1; const h0 = f.hours; E.act(f, 'cut_logs', { extra: { good: true, fell: 'lean', hung: true, hitCamp: true, kick: true, tree: { kind: 'conifer', age: 'mature' } } });
+  check('a tree across camp smashes the shelter', f.shelterCond <= 0.65, f.shelterCond); check('a hang-up costs time', f.hours - h0 >= 0.5, f.hours - h0); check('a kickback bruises ribs', f.conditions.some(c => /kickback/.test(c.name)));
+}
+{ // snares in a funnel catch like scouted ones; bare ones like badly set ones
+  const a = camp('US-S6', 84); a.mats.wire = 6; E.act(a, 'snares', { extra: { good: true, funnel: true } }); check('a funnel set counts as a good set', a.sys.goodSnares >= 6, a.sys.goodSnares);
+  const c = camp('US-S6', 85); c.mats.wire = 6; E.act(c, 'snares', { extra: { good: true, bare: true } }); check('bare snares count as poor', c.sys.poorSnares >= 6, c.sys.poorSnares);
+}
 { // the raft: dry logs soak up slower; a gust taken standing rolls it; missing the drop-off fishes the shallows
   const mk = dry => { const t = camp('US-S6', 71, ['Axe', 'Fishing gear']); Object.assign(t.mats, { logs: 8, cordage: 8 }); E.act(t, 'craft_raft', { extra: { good: true, logs: dry ? 'dry' : 'green' } }); E.act(t, 'craft_raft', { extra: { good: true } }); return t; };
   const d = mk(true), g = mk(false); check('dry logs make a dry raft', d.sys.raft && d.sys.raft.dry === true && !g.sys.raft.dry, [d.sys.raft, g.sys.raft]);

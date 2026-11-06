@@ -5,7 +5,7 @@ const { loadGame } = require('./load-game'); const E = loadGame(process.env.GAME
 const SRC = process.env.GAME_FILE || path.join(__dirname, '..', 'index.html'); const TMP = '/tmp/last-one-out-minis.html';
 const html = fs.readFileSync(SRC, 'utf8'); const hook = 'window.claude?.hot?.snapshot?.(() => ({ game: S }));';
 if (!html.includes(hook)) throw new Error('hook point not found');
-fs.writeFileSync(TMP, html.replace(hook, 'window.__m = { startSlice, startClean, startDress, startRaft, startFilter, startCook, startBuild, startFire, startLash, startHunt, startFish, startNet, startSteps, startTaps, startCordage, startSharpen, startForage, startSearch, mini: () => mini, S: () => S, acts: () => mini ? mini.acts.map(a => a.label) : [], press: l => { const a = mini && mini.acts.find(x => x.label === l); if (a) { if (a.down) a.down(); if (a.fn) a.fn(); if (a.up) a.up(); return true; } return false; } };\n' + hook));
+fs.writeFileSync(TMP, html.replace(hook, 'window.__m = { startFell, startSnare, W: () => W, startSlice, startClean, startDress, startRaft, startFilter, startCook, startBuild, startFire, startLash, startHunt, startFish, startNet, startSteps, startTaps, startCordage, startSharpen, startForage, startSearch, mini: () => mini, S: () => S, acts: () => mini ? mini.acts.map(a => a.label) : [], press: l => { const a = mini && mini.acts.find(x => x.label === l); if (a) { if (a.down) a.down(); if (a.fn) a.fn(); if (a.up) a.up(); return true; } return false; } };\n' + hook));
 const KEY = 'last-one-out-v1'; const save = s => JSON.stringify(s, (k, v) => v === Infinity ? 1e9 : v);
 let fails = 0, passes = 0; const check = (name, ok, detail) => { if (ok) passes++; else { fails++; console.log('FAIL', name, detail ?? ''); } };
 function base() { const s = E.newGame('US-S6', ['Knife', 'Ferro rod', 'Axe', 'Fishing gear', 'Bow and arrows', 'Gillnet', 'Paracord'], { seed: 41, weight: 200 }); s.campChosen = true; E.beginDay(s); s.event = null; s.storm = s.rain = s.fog = s.snowfall = false; s.hours = 2; s.phase = 0; Object.assign(s.mats, { poles: 20, cordage: 20, boughs: 20 }); return s; }
@@ -113,6 +113,27 @@ function base() { const s = E.newGame('US-S6', ['Knife', 'Ferro rod', 'Axe', 'Fi
     if (!even) await p.evaluate(() => window.__m.press('Hang them up')); await p.waitForTimeout(800);
     const r = await p.evaluate(() => { const S = window.__m.S(); const on = S.stores.filter(x => x.where === 'rack'); return { n: on.length, thick: on.map(x => x.thick), open: !!window.__m.mini() }; });
     if (even) check('even strips hang thin', r.n > 0 && r.thick.every(t => !t) && !r.open, r); else check('fat strips hang thick', r.n > 0 && r.thick.every(t => t) && !r.open, r); }
+  // felling: pick a way for it to fall, cut, and step clear when it cracks (or don't)
+  for (const clear of [true, false]) { await fresh(); await p.evaluate(() => { const W = window.__m.W(); const t = W.trees.find(x => !x.gone && !x.cut && x.kind !== 'log' && x.kind !== 'snag' && x.age === 'mature'); window.__tree = t; W.player.x = t.x - 30; W.player.y = t.y + 10; window.__m.S().mats.logs = 0; window.__m.startFell(t); });
+    const c = await p.evaluate(() => { const L = (t => ({ a: ((t.k || 0) * 2.399) % 6.283 }))(window.__tree); const i = Math.round(L.a / (Math.PI / 4)) % 8; const e = document.querySelector(`#mini .fd[data-i="${i}"]`); const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; });
+    await p.mouse.click(c[0], c[1]); await p.waitForTimeout(1200);
+    for (let k = 0; k < 8 && await p.evaluate(() => !!window.__m.mini() && window.__m.acts()[0] === 'Swing'); k++) { await p.evaluate(() => window.__m.press('Swing')); await p.waitForTimeout(120); }
+    check('the last swing of a felling cracks and asks you to step clear', (await p.evaluate(() => window.__m.acts())).includes('Step clear'), await p.evaluate(() => window.__m.acts()));
+    if (clear) await p.evaluate(() => window.__m.press('Step clear')); await p.waitForTimeout(1700);
+    const g = await p.evaluate(() => ({ logs: window.__m.S().mats.logs, kick: window.__m.S().conditions.some(c => /kickback/.test(c.name)), open: !!window.__m.mini() }));
+    if (clear) check('stepped clear, the tree is down and you are not hurt', g.logs > 0 && !g.kick && !g.open, g); else check('stood at the stump, the butt kicks back', g.logs > 0 && g.kick, g); }
+  // snares: the site, the loop, and the cover
+  for (const bare of [false, true]) { await fresh(); await p.evaluate(() => { const S = window.__m.S(); S.mats.wire = 6; window.__m.startSnare(window.__m.W().tracks[0]); });
+    let c = await p.evaluate(() => { const e = document.querySelector('#mini .ss[data-i="0"]'); const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }); await p.mouse.click(c[0], c[1]); await p.waitForTimeout(800);
+    const a = await svgXY(150, 50), b2 = await svgXY(140, 65); await p.mouse.move(a[0], a[1]); await p.mouse.down(); for (let i = 1; i <= 6; i++) { await p.mouse.move(a[0] + (b2[0] - a[0]) * i / 6, a[1] + (b2[1] - a[1]) * i / 6); await p.waitForTimeout(20); } await p.mouse.up();
+    await p.evaluate(() => window.__m.press('Set it')); await p.waitForTimeout(200);
+    if (bare) await p.evaluate(() => window.__m.press('Leave it bare')); else for (let i = 0; i < 4; i++) { c = await p.evaluate(i => { const e = document.querySelector(`#mini .cv[data-i="${i}"]`); const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }, i); await p.mouse.click(c[0], c[1]); await p.waitForTimeout(60); }
+    await p.waitForTimeout(700); const g = await p.evaluate(() => ({ snares: window.__m.S().snares, good: (window.__m.S().sys || {}).goodSnares || 0, poor: (window.__m.S().sys || {}).poorSnares || 0, open: !!window.__m.mini() }));
+    if (!bare) check('snares set in the funnel and covered are good sets', g.snares > 0 && g.good > 0 && !g.poor && !g.open, g); else check('snares left bare are poor sets', g.snares > 0 && g.poor > 0 && !g.open, g); }
+  // the figure-4: assembled in order it holds and the stone comes next
+  { await fresh(); await p.evaluate(() => { window.__m.S().mats.stone = 6; window.__m.startSnare(window.__m.W().tracks[0], true); });
+    for (const j of [1, 2, 0]) { const c = await svgXY(66 + j * 85, 21); await p.mouse.click(c[0], c[1]); await p.waitForTimeout(80); } await p.waitForTimeout(900);
+    check('a figure-4 built in order leads on to the stone', (await p.evaluate(() => window.__m.acts())).includes('Nudge left'), await p.evaluate(() => window.__m.acts())); }
   // the debris hut's second session is shingling: out of order leaves a leak, in order leaves none
   for (const order of [[4, 0, 1, 2, 3], [0, 1, 2, 3, 4]]) { await fresh();
     await p.evaluate(() => { const S = window.__m.S(); Object.assign(S.mats, { poles: 20, boughs: 30, moss: 20, cordage: 10 }); S.shelterGoal = 'hut'; S.shelterWork = 1; S.shelterPaid = true; window.__m.startBuild(); });

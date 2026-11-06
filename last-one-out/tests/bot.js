@@ -57,6 +57,7 @@ function makeBot(E, s, opts = {}) {
     if ((s.sys && s.sys.snowLoad) > 1.5) pri.unshift('clear_roof');
     if (s.sys && s.sys.gaps) pri.push('caulk');
     if (s.shelterLvl >= 1 && (E.bedOf ? E.bedOf(s) : 1) < 0.3) pri.push('bed', 'boughs');
+    if (E.ACTIONS.air_bed && E.available(s, 'air_bed').ok && E.bedDampOf(s) >= 0.35) pri.push('air_bed'); /* damp bedding is no bedding */
     if (s.shelterLvl >= 2 && (E.sealOf ? E.sealOf(s) : 1) < 0.4) pri.push('caulk'); // re-chink when the seal is poor, not at every crack
     if (s.sys && s.sys.soot > 0.5) pri.push('check_roof');
     if (s.crafts.hearth !== 1 && s.mats.stone < 6 && s.day > 3) pri.push('stones');
