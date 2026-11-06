@@ -228,6 +228,9 @@ summary { cursor: pointer; color: var(--muted); font-size: 13px; }
 .act.design .needs { display: flex; flex-wrap: wrap; gap: 4px; } .need { font: 500 11.5px/1.3 var(--mono); padding: 1px 7px; border-radius: 9px; border: 1px solid rgba(90,74,50,.35); }
 .need.ok { background: rgba(75,106,52,.14); border-color: rgba(75,106,52,.45); } .need.miss { border: 1.5px dashed #983828; color: #983828; } .need.time { opacity: .75; }
 .season .sitechips { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 2px 0 4px; } .season .sc { font: 500 11.5px/1.3 var(--mono); opacity: .85; } .season .sc.pips i { width: 6px; height: 6px; }
+.sheet.book { padding-top: 0; } .nbtabs { position: sticky; top: 0; z-index: 2; display: flex; gap: 2px; margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))) 10px; padding: 10px max(12px, env(safe-area-inset-left, 0px)) 0; background: var(--bg); border-bottom: 1px solid var(--line); }
+.nbtabs button { flex: 1 1 0; min-width: 0; min-height: 44px; border: 1px solid var(--line); border-bottom: 0; border-radius: 8px 8px 0 0; background: var(--panel2); color: var(--muted); font: 15px var(--display); cursor: pointer; }
+.nbtabs button[aria-selected="true"] { background: var(--bg); color: var(--fg); font-weight: 600; transform: translateY(1px); } .nbtabs button[data-k="game"] { flex: 0 0 48px; font-size: 19px; }
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .acts .card .cap { font: italic 15px var(--display); color: var(--paper-soft); padding: 7px 0 0; }
 .acts .card .actbtn b { flex: 1 1 auto; font: 400 19px/1.15 var(--display); text-transform: none; letter-spacing: 0; color: var(--paper-ink); }
@@ -6082,8 +6085,7 @@ function sheet(build) {
   build(sh, close); document.body.append(scrim);
   const f = sh.querySelector('button:not(:disabled)'); if (f) f.focus();
 }
-function openCamp() {
-  sheet((sh) => {
+function pageCamp(sh, close) {
     const st = E.status(S);
     sh.append($(`<h2>Camp</h2>`));
     const traps = []; if (S.snares) traps.push(`${S.snares} snares`); if (S.deadfalls) traps.push(`${S.deadfalls} deadfalls`); if (S.fishTrap) traps.push('fish trap');
@@ -6120,10 +6122,8 @@ function openCamp() {
     sh.append(sr);
     const wear = []; if (E.sprayLeft(S)) wear.push(`Bear spray: ${E.sprayLeft(S)} blast${E.sprayLeft(S) === 1 ? '' : 's'} left`); if (E.fouling(S) > 0.3 && !E.latrineOk(S)) wear.push('No latrine: the ground near camp and the water are getting fouled'); if (E.raftOf(S)) wear.push(`Raft: ${Math.round(E.raftOf(S).float * 100)}% afloat${E.raftOf(S).inWater ? ', in the water' : ', on shore'}`); if (S.sys && S.sys.mat) wear.push(`Door mat: ${S.sys.mat === 'tight' ? 'tight weave' : 'loose weave'}`); if (E.flintOf(S)) wear.push(`Glassy stone: ${E.flintOf(S)}`); if (E.clothesOf(S) < 0.8) wear.push(`Clothes: ${E.clothesOf(S) < 0.5 ? 'in rags' : 'worn'}, letting the cold in`); if (S.bagHoles) wear.push(`Sleeping bag: ${S.bagHoles} hole${S.bagHoles === 1 ? '' : 's'}, colder nights`); if (S.greenWood > 0) wear.push(`Woodpile: ${Math.round(S.greenWood)} day${Math.round(S.greenWood) === 1 ? '' : 's'} of green wood, still seasoning`); if (S.highGround) wear.push('Camp is on high ground, out of the floods'); { const g = E.greenPots(S); if (g.length) wear.push(`Clay pots drying: ${g.map(x => Math.min(100, Math.round(x.dry * 100)) + '%').join(', ')}${g.some(x => x.dry >= 1) ? ' (ready to fire)' : ''}`); if (E.clayPots(S)) wear.push(`Fired clay pot${E.clayPots(S) > 1 ? 's' : ''}: ${E.clayPots(S)}`); }
     if (wear.length) { sh.append($(`<div class="sect">Worth knowing</div>`)); const r = $(`<div class="rows"></div>`); for (const w of wear) r.append($(`<div class="muted">${esc(w)}</div>`)); sh.append(r); }
-  });
 }
-function openBody() {
-  sheet((sh) => { sh.classList.add('nb');
+function pageBody(sh, close) { sh.classList.add('nb');
     sh.append($(`<h2>Body</h2>`));
     sh.append(spark());
     const ld = S.lastDay;
@@ -6143,7 +6143,6 @@ function openBody() {
     sh.append(rows);
     if (S.conditions.length) { sh.append($(`<div class="sect">Conditions</div>`)); const r = $(`<div class="rows"></div>`); for (const c of S.conditions) r.append($(`<div class="row"><span>${esc(c.name)}</span><span>${c.days} day${c.days === 1 ? '' : 's'} to go</span></div>`)); sh.append(r); }
     sh.append($(`<div class="muted" style="font-size:12px">Nutrient reserves, warning signs and daily damage follow the Food Conspiracies long-term nutrition tables. Lean meat with no fat leads to protein overload.</div>`));
-  });
 }
 function spark() {
   const h = S.history; const W = 320, H = 56, pad = 4;
@@ -6156,8 +6155,7 @@ function spark() {
     <path class="a" d="M${pts[0]} L${pts.join(' L')} L${x(h.length - 1)},${H} L${x(0)},${H} Z"/><path class="l" d="M${pts.join(' L')}"/>
     <line x1="0" x2="${W}" y1="${lim}" y2="${lim}"/><text x="${W - 4}" y="${lim - 3}" text-anchor="end">${Math.round(E.status(S).medLimit * 100)}% limit</text></svg>`);
 }
-function openNotes() {
-  sheet((sh) => { sh.classList.add('nb');
+function pageNotes(sh, close) { sh.classList.add('nb');
     const se = E.season(S);
     sh.append($(`<h2>Field notes</h2>`));
     sh.append($(`<div class="muted" style="font-size:13px">${esc(se.region)}. Typical catches and conditions in this area.</div>`));
@@ -6178,10 +6176,8 @@ function openNotes() {
     const c = se.climate;
     sh.append($(`<div class="row"><span>Weather</span><span>${c.snow ? 'snow from about day ' + c.snow : 'no lasting snow'}${c.freeze ? ', ice from about day ' + c.freeze : ''}</span></div>`));
     sh.append($(`<div class="muted" style="font-size:12px">Percentages are shares of this area's catch pool, not odds. Animal sizes and calories are approximate game values.</div>`));
-  });
 }
-function openJournal() {
-  sheet((sh) => { sh.classList.add('nb');
+function pageJournal(sh, close) { sh.classList.add('nb');
     sh.append($(`<h2>Journal</h2>`));
     { const kn = (S.sys && S.sys.known) || {}; const mush = MUSH_LOOKS.map((m, i) => [m[0], i]).filter(([l]) => kn[l]); const plants = Object.keys(kn).filter(k => k.startsWith('plant:')).map(k => k.slice(6));
       if (mush.length || plants.length) { sh.append($(`<div class="grp">What you know</div>`)); const r = $(`<div class="rows"></div>`);
@@ -6195,16 +6191,9 @@ function openJournal() {
       sh.append($(`<div class="grp">${d.day === 0 ? 'Drop day' : 'Day ' + d.day}${d.today ? ' · so far' : ''}</div>`));
       const ul = $(`<ul class="log journal"></ul>`); for (const [t, c] of d.lines) ul.append($(`<li class="tone-${c}">${esc(t)}</li>`)); if (!d.lines.length) ul.append($(`<li class="tone-muted">A quiet day.</li>`)); sh.append(ul);
     }
-  });
 }
-function openMenu() {
-  sheet((sh, close) => {
-    sh.append($(`<h2>Menu</h2>`));
-    const camp = $(`<button class="act"><b>Camp and food</b><small>Fire, shelter, traps, food stores, rationing</small></button>`); camp.onclick = () => { close(); openCamp(); };
-    const body = $(`<button class="act"><b>Body</b><small>Weight, nutrition, injuries</small></button>`); body.onclick = () => { close(); openBody(); };
-    const notes = $(`<button class="act"><b>Field notes</b><small>What the land gives here</small></button>`); notes.onclick = () => { close(); openNotes(); };
-    const jour = $(`<button class="act"><b>Journal</b><small>Every day so far</small></button>`); jour.onclick = () => { close(); openJournal(); };
-    sh.append(camp, body, notes, jour, $(`<div class="grp">Game</div>`));
+function pageGame(sh, close) {
+    sh.append($(`<h2>Game</h2>`));
     const how = $(`<button class="act"><b>How to play</b><small>Rules, odds and what the numbers mean</small></button>`); how.onclick = () => { close(); openHow(); };
     const rec = $(`<button class="act"><b>Records and badges</b><small>Your best runs on every season</small></button>`); rec.onclick = () => { close(); openRecords(); };
     sh.append(how, rec, $(`<div class="grp">This run</div>`));
@@ -6215,8 +6204,17 @@ function openMenu() {
     let armed2 = false;
     quit.onclick = () => { if (!armed2) { armed2 = true; quit.querySelector('b').textContent = 'Delete this run: press again'; return; } if (mini && W) endMini(); mini = null; if (W) W.over = true; setup.season = S.seasonKey; setup.gear = S.gear.slice(); store.del(SAVE); S = null; view = null; close(); renderSetup(); };
     sh.append(tap, quit, $(`<div class="grp">Settings</div>`), settingsBlock());
-  });
 }
+/* the menu is a notebook (UI spec 4.5): tabs across the top, each a page; the game and settings behind the gear */
+const NB_TABS = [['camp', 'Camp', () => pageCamp], ['body', 'Body', () => pageBody], ['notes', 'Notes', () => pageNotes], ['journal', 'Journal', () => pageJournal], ['game', '\u2699', () => pageGame]];
+function notebook(tab) {
+  sheet((sh, close) => { sh.classList.add('nb', 'book'); const bar = $(`<div class="nbtabs" role="tablist" aria-label="Notebook"></div>`); const page = $(`<div class="nbpage"></div>`); sh.append(bar, page);
+    const show = k => { bar.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.k === k))); page.replaceChildren(); page.className = 'nbpage'; NB_TABS.find(x => x[0] === k)[2]()(page, close); sh.scrollTop = 0; notebook.last = k; };
+    for (const [k, name] of NB_TABS) { const b = $(`<button role="tab" data-k="${k}" aria-label="${k === 'game' ? 'Game and settings' : name}">${name}</button>`); b.onclick = () => show(k); bar.append(b); }
+    show(tab || notebook.last || 'camp'); });
+}
+function openCamp() { notebook('camp'); } function openBody() { notebook('body'); } function openNotes() { notebook('notes'); } function openJournal() { notebook('journal'); }
+function openMenu() { notebook(); }
 
 function settingsBlock() {
   const b = $(`<div class="rows" style="margin-bottom:6px">
