@@ -84,6 +84,14 @@ The 17 places sit in five difficulty groups (Forgiving, Tough, Hard, Very hard, 
 
 The bow (Nov 4): a shot at an animal you can see now takes about an hour, not the 3.5 hours of a blind hunt, and a slingshot almost never drops big game. The test bot stalks once a day with a bow or slingshot (after the trapline, before fishing), with the map's own odds of seeing something and a typical player's aim, and carries a big kill home five loads a day. With that, the bow is about even over 60 days; runs with a big kill in game-rich places last 7 to 16 days longer.
 
+## Nov 6: the specs, built
+
+- **Show-independence pass** (all 4 steps): per-place special cases are data, difficulty calibration is frozen into each place, found-item text is generic, the auger is shown as "Hand auger". Golden runs (tests/golden.js) and an old save (tests/oldsave.js) guard it.
+- **Skills backlog** (design/SKILLS-BACKLOG.md): all 14 Builds in: dew, ice vs snow, rain catchment, star fire, char cloth, fire-hardened stakes, crooked arrows without fire, snow cave, door orientation, scout reports, the kill clock, named greens and mushrooms with field notes, tree species.
+- **UI spec**: tile grid with line icons and chips (4.2), HUD icons (4.7), build picker with quality pips and have/need chips (4.3), drop-site chips (4.6), the menu as a tabbed notebook (4.5). Not done: anchored popovers on world objects and ghost placement (the tiles already group by tool), the camp-site popover.
+- **Mini-game brief**: reel in, numb-hands warning, let down the bow, slips cost, nothing done is nothing built, Not now everywhere, hands remember (head start) and the usual way (quick mode), forage and shore search by hand, fish that fight three ways, thread crafts paced, wet crafts darken as you work them, lashings show their binding. Not done yet: the fire chain, cooking and water minis, the deep shelter and camp-layout system, the raft builder, tracking and trapline rebuilds.
+- **In-game self-check** with #selfcheck.
+
 ## Left out on purpose
 
 Trading and social contact: dropped, the game stays solo.

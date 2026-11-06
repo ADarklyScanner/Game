@@ -30,7 +30,7 @@ function base() { const s = E.newGame('US-S6', ['Knife', 'Ferro rod', 'Axe', 'Fi
   check('and costs time and steadiness', await p.evaluate(d0 => window.__m.mini().deadline < d0 && window.__m.mini().wobble > 0, d0));
   // rhythm crafts: a slip costs a step
   await fresh(); await p.evaluate(() => window.__m.startSteps('mend', { steps: ['Stitch', 'Pull'], need: 8, intro: 'x' }));
-  for (const l of ['Stitch', 'Pull', 'Stitch', 'Stitch']) await p.evaluate(l => window.__m.press(l), l);
+  for (const l of ['Stitch', 'Pull', 'Stitch', 'Stitch']) { await p.evaluate(l => window.__m.press(l), l); await p.waitForTimeout(320); }
   check('a slip loses a step', /^2 of 8|Lost a step/.test(await p.evaluate(() => document.querySelector('#padtext') ? document.querySelector('#padtext').textContent : '')), await p.evaluate(() => (document.querySelector('#padtext') || {}).textContent));
   // lashing: running out the clock is a rushed job even with every joint tapped
   await fresh(); await p.evaluate(() => window.__m.startLash('repair', 3, 'x')); await p.evaluate(() => { window.__m.mini().cancel(); });
@@ -60,6 +60,9 @@ function base() { const s = E.newGame('US-S6', ['Knife', 'Ferro rod', 'Axe', 'Fi
   await fresh(); { await p.evaluate(() => window.__m.startSearch()); await p.waitForTimeout(200); const box = await p.evaluate(() => { const r = document.querySelector('#mini svg').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
     await p.mouse.move(box.x + 5, box.y + box.h * 0.5); await p.mouse.down(); for (let k = 0; k <= 30; k++) await p.mouse.move(box.x + box.w * k / 30, box.y + box.h * (0.2 + 0.6 * (k % 2))); await p.mouse.up();
     await p.evaluate(() => window.__m.press('Done looking')); await p.waitForTimeout(300); check('a swept shore is searched', await p.evaluate(() => window.__m.S().today.done.includes('search'))); }
+  // thread crafts are paced: rushing the next move tangles it
+  await fresh(); await p.evaluate(() => window.__m.startSteps('mend', { steps: ['Stitch', 'Pull'], need: 8, intro: 'x' })); await p.evaluate(() => { window.__m.press('Stitch'); window.__m.press('Pull'); });
+  check('rushing a stitch tangles it', /tangled/.test(await p.evaluate(() => (document.querySelector('#padtext') || {}).textContent || '')));
   check('no page errors', !errs.length, errs.slice(0, 3));
   await b.close(); console.log(fails ? `${fails} mini-game check(s) failed, ${passes} passed.` : `All ${passes} mini-game checks passed.`); process.exitCode = fails ? 1 : 0;
 })();

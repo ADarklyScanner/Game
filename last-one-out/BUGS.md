@@ -183,6 +183,14 @@ Real contestants rarely take these, so they stay modest, but each now has a job 
 
 Checked and left as they are: a wrong-sized snare is still set (it catches less, by design since Nov 2); an unreadable save is only kept when one exists, so no false banner; the body-state filter is only set when it changes. Still open: the fish trap is not on the map, so the trapline walk cannot include it yet; fishing and hunting still use the text pad rather than a painted one; the inside view is unpainted.
 
+### Found while building the UI and hands-on work (Nov 6)
+
+| # | Bug | Fix |
+|---|---|---|
+| 128 | The +/- numbers by the vitals never showed: they looked for the old `.vital` class after the HUD was redesigned to `.vt` | They look for `.vt` (and sit on the page, so a refresh does not wipe them) |
+| 129 | "Pick through the ruin" passed 2.2x odds that the search rule never used | Applied |
+| 130 | Thread crafts could be drummed as fast as you can tap | Rushing the next move tangles the thread and costs a step |
+
 ### Test-side problems (not game bugs)
 
 - The test bot could not make do without gear. With no axe or saw it still aimed for a log cabin and never built anything; with no ferro rod it never made a bow drill; it gathered every material forever instead of what the shelter still needed, and stopped gathering once the shelter was up (so no drying rack or smoker). It now builds the best roof it has the tools for (a quick one first), makes a bow drill (and a stone blade for it), gathers what its shelter and camp works lack, breaks ice for water, and lifts the gill net once a day when the floats show a catch. The no-gear average went from 22 to 39 days. Because the bot changed, the balance reference was re-recorded with the new bot on the original game (median 62, mean 61.7); the current game is at 62 and 60.8 (−1.5%).
