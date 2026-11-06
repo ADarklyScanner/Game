@@ -8,10 +8,10 @@ Design posture from the review: **fire is a tool, not a status** (it hardens poi
 
 | # | Domain | Item | Already in the game | Still to build |
 |---|---|---|---|---|
-| 1 | Fire | Fire lays (star fire for banking) | One fire; banking overnight exists as wood use | A lay choice when it is below freezing; the star fire banks with less wood |
-| 2 | Fire | Char cloth | Nothing | Craft: a scrap of cloth charred in a tin, near-sure ignition |
-| 3 | Fire | Fire hardening | The digging stick needs a fire to harden its point | A general job: harden stakes, spears and points |
-| 4 | Fire | Fire-bent shafts | Arrows are warmed and bent (Warm / Bend), and a bad job leaves them crooked | Done; check the fire is required |
+| 1 | Fire | Fire lays (star fire for banking) | **Built Nov 4**: Lay a star fire for the night: 30% less wood, a little less heat | |
+| 2 | Fire | Char cloth | **Built Nov 4**: a strip of the cotton T-shirt charred in a pot or a salvaged tin (6 strips, 3 squares each); a square takes a ferro spark or a bow-drill ember in damp tinder | |
+| 3 | Fire | Fire hardening | **Built Nov 4**: Fire-harden stakes (2 poles): the fish trap tears less in high water, the rack falls less in storms. The digging stick was already hardened | Spears and points come with spear fishing |
+| 4 | Fire | Fire-bent shafts | **Already in**: without a fire the arrows come out crooked; the button now says so | |
 | 5 | Water | Dew collection | **Built Nov 4**: Mop the dew at first light (not in rain, frost or snow): half a day of water in dry country, otherwise a drink or a pot of clean water | |
 | 6 | Water | Ice vs snow | **Built Nov 4**: Melt lake ice (an axe or a stone to break it) at half the wood; snow now costs half a day of wood a pot | |
 | 7 | Water | Rain catchment | **Built Nov 4**: Rig the tarp (or ground sheet) to catch rain: fills the pots with clean water | |

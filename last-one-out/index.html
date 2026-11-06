@@ -503,8 +503,9 @@ function tinderDamp(s) { return (s.sys && s.sys.tinderDamp) || 0; }
 function hasHearth(s) { return s.crafts.hearth >= 1 || (s.fireInside && (s.crafts.chimney >= 2 || s.shelterType === 'rock')); }
 function fireOdds(s) {
   const d = tinderDamp(s); const clumsy = s.sys && s.sys.clumsyDay === s.day ? 0.8 : 1;
-  if (igniter(s) === 'ferro') return clamp(0.97 * (1 - 0.5 * d) * (wetWeather(s) ? 0.85 : 1) * clumsy, 0.05, 0.98);
-  return d > 0.2 ? 0.03 : bowDrillOdds(s) * (1 - d) * clumsy; // an ember will not take in damp tinder
+  const cc = !!(s.sys && s.sys.charcloth > 0); /* char cloth takes the spark first, and the tinder catches from it */
+  if (igniter(s) === 'ferro') return clamp(0.97 * (1 - (cc ? 0.2 : 0.5) * d) * (wetWeather(s) && !cc ? 0.85 : 1) * clumsy, 0.05, 0.98);
+  return d > (cc ? 0.45 : 0.2) ? 0.03 : bowDrillOdds(s) * (cc ? 1.25 : 1) * (1 - (cc ? 0.5 : 1) * d) * clumsy; // an ember will not take in damp tinder
 }
 const WALLED = ['hut', 'rock', 'cabin'];
 // a bed of boughs keeps the ground from drawing the heat out of you; it packs down a little every night. A raised frame gets it off the frozen ground.
@@ -802,6 +803,9 @@ const ACTIONS = {
   dew: { label: 'Mop the dew', hours: 0.5, effort: 'light', group: 'Camp', where: 'any' },
   cook: { label: 'Cook a meal now', hours: 0.5, effort: 'rest', group: 'Camp', where: 'camp' },
   tend_fire: { label: 'Tend the fire', hours: 1, effort: 'rest', group: 'Camp', where: 'camp' },
+  star_fire: { label: 'Lay a star fire for the night', hours: 0.25, effort: 'light', group: 'Camp', where: 'camp' },
+  craft_charcloth: { label: 'Make char cloth', hours: 0.5, effort: 'light', group: 'Build' },
+  harden_stakes: { label: 'Fire-harden stakes', hours: 1, effort: 'light', group: 'Build' },
   // crafts (at camp)
   craft_bowdrill: { label: 'Carve a bow drill', hours: 2, effort: 'light', group: 'Build' },
   craft_handline: { label: 'Make a handline and hooks', hours: 2, effort: 'light', group: 'Build' },
@@ -871,7 +875,7 @@ function inSeason(s, id) {
 }
 
 // jobs you can do after dark by firelight or inside, two and a half hours of them at most
-const NIGHT_OK = ['change_dry', 'photo', 'splint', 'craft_stoneblade', 'craft_mat', 'craft_bow', 'tiller_bow', 'work_hide', 'craft_leader', 'mend', 'read_sky', 'shape_pot', 'craft_lamp', 'fix_axe', 'render_fat', 'melt_snow', 'melt_ice', 'whittle', 'cordage', 'talk_camera', 'read_letter', 'sharpen', 'boil', 'needle_tea', 'bone_broth', 'rest', 'craft_hooks', 'craft_arrows', 'craft_lure', 'craft_bowdrill', 'craft_handline', 'clean', 'cook', 'light_fire', 'dry', 'fire_in', 'tend_fire', 'craft_mittens', 'craft_pemmican'];
+const NIGHT_OK = ['change_dry', 'photo', 'splint', 'craft_stoneblade', 'craft_mat', 'craft_bow', 'tiller_bow', 'work_hide', 'craft_leader', 'mend', 'read_sky', 'shape_pot', 'craft_lamp', 'fix_axe', 'render_fat', 'melt_snow', 'melt_ice', 'star_fire', 'craft_charcloth', 'harden_stakes', 'whittle', 'cordage', 'talk_camera', 'read_letter', 'sharpen', 'boil', 'needle_tea', 'bone_broth', 'rest', 'craft_hooks', 'craft_arrows', 'craft_lure', 'craft_bowdrill', 'craft_handline', 'clean', 'cook', 'light_fire', 'dry', 'fire_in', 'tend_fire', 'craft_mittens', 'craft_pemmican'];
 function nightOk(s, id) { const A = ACTIONS[id]; return !!A && NIGHT_OK.includes(id) && (s.fire || lampOk(s) || (canWorkInside(s) && DARK_OK.includes(id)) || id === 'light_fire') && (s.nightHours || 0) + A.hours <= 2.5; }
 // Returns {ok, why, odds} for one action in the current state.
 let skipLight = false;
@@ -1040,6 +1044,10 @@ function available(s, id) {
     case 'fix_axe': { if (!(has(s, 'Axe') || has(s, 'Hatchet'))) return r(false, 'No axe'); const off = s.sys && s.sys.axeOff; if (!off && haftOf(s) >= 0.6) return r(false, 'The head is tight'); if (!blade(s) && off) return r(false, 'Needs a knife to carve a wedge'); return r(true, '', s.mats.hide >= 1 ? 'a new wedge and a wet rawhide wrap' : 'a new wedge'); }
     case 'search': return r(true, '', pct(se.found.rate * Math.pow(0.82, s.stats.found) * (s.day - s.lastStorm <= 1 ? 2 : 1)) + ' to find salvage' + (s.day - s.lastStorm <= 1 ? ' · storm wrack' : ''));
     case 'rest': return r(true, '', '');
+    /* fire is a tool: a star fire banks the night with less wood, char cloth takes a spark in damp air, the coals harden green stakes */
+    case 'star_fire': return !s.fire ? r(false, 'Needs a fire') : s.sys && s.sys.starDay === s.day ? r(false, 'Laid for tonight') : s.firewood < 1 ? r(false, 'Needs a day of wood') : r(true, '', 'logs like spokes, pushed in as they burn · less wood, a little less heat');
+    case 'craft_charcloth': { const sys = s.sys || {}; const tin = potLike(s) || has(s, 'Frying pan') || has(s, 'Canteen') || s.found.some(f => f.cls === 'Container' && /can|tin|drum|bucket/i.test(f.name)); return (sys.charcloth || 0) >= 6 ? r(false, 'You have plenty') : (sys.shirtCut || 0) >= 6 ? r(false, 'The T-shirt is cut to nothing') : !s.fire ? r(false, 'Needs the fire') : !tin ? r(false, 'Needs a pot or a tin to char it in') : r(true, '', 'a strip of the cotton T-shirt · catches a spark in damp air'); }
+    case 'harden_stakes': return s.sys && s.sys.hardStakes ? r(false, 'Made') : !s.fire ? r(false, 'Needs the fire') : !(s.fishTrap || s.crafts.rack >= 1 || s.crafts.smoker >= 1) ? r(false, 'Nothing staked yet') : s.mats.poles < 2 ? r(false, 'Needs 2 poles') : r(true, '', 'the fish trap and racks hold longer');
     case 'melt_snow': { const cap = waterCap(s); return !snowy(s) ? r(false, 'No snow') : !cap ? r(false, 'Nothing to melt it in') : !s.fire ? r(false, 'Needs the fire') : (s.potWater || 0) >= cap ? r(false, 'Pots are full') : r(true, '', `fills ${cap} pot${cap > 1 ? 's' : ''} at camp · a lot of wood: snow is mostly air`); }
     /* lake ice is nearly all water: half the wood of snow for the same pot */
     case 'melt_ice': { const cap = waterCap(s); return !frozen(s) ? r(false, 'The water is open') : !cap ? r(false, 'Nothing to melt it in') : !s.fire ? r(false, 'Needs the fire') : (s.potWater || 0) >= cap ? r(false, 'Pots are full') : !(chopper(s) || s.mats.stone >= 1) ? r(false, 'Needs an axe or a stone to break the ice') : r(true, '', `fills ${cap} pot${cap > 1 ? 's' : ''} · half the wood of snow`); }
@@ -1053,7 +1061,7 @@ function available(s, id) {
     case 'craft_handline': return s.crafts.handline >= 1 ? r(false, 'Made') : has(s, 'Fishing gear') && s.line > 0 ? r(false, 'You have fishing gear') : s.mats.cordage < 3 ? r(false, 'Needs 3 cordage') : !(s.mats.bone >= 1 || blade(s)) ? r(false, 'Needs bone or a knife') : r(true, '', '');
     case 'craft_hooks': return s.hooks >= 6 ? r(false, 'Enough hooks') : !blade(s) ? r(false, 'Needs a knife') : s.mats.bone < 1 ? r(false, 'Needs bone from a catch') : r(true, '', '+3 gorge hooks');
     case 'craft_diggingstick': return s.crafts.diggingstick >= 1 ? r(false, 'Made') : has(s, 'Shovel') ? r(false, 'You have a shovel') : !s.fire ? r(false, 'Needs a fire to harden the point') : s.mats.poles < 1 ? r(false, 'Needs a pole') : r(true, '', '1 pole, hardened in the coals');
-    case 'craft_arrows': return !hasBow(s) ? r(false, 'Needs a bow') : !blade(s) ? r(false, 'Needs a knife') : s.arrows >= C.arrows ? r(false, 'Quiver is full') : s.mats.feathers < 1 ? r(false, 'Needs feathers from a bird') : s.mats.poles < 1 ? r(false, 'Needs a straight pole for shafts') : r(true, '', `${s.arrows} arrows · +${Math.min(2, C.arrows - s.arrows)} · 1 pole, 1 feather`);
+    case 'craft_arrows': return !hasBow(s) ? r(false, 'Needs a bow') : !blade(s) ? r(false, 'Needs a knife') : s.arrows >= C.arrows ? r(false, 'Quiver is full') : s.mats.feathers < 1 ? r(false, 'Needs feathers from a bird') : s.mats.poles < 1 ? r(false, 'Needs a straight pole for shafts') : r(true, '', `${s.arrows} arrows · +${Math.min(2, C.arrows - s.arrows)} · 1 pole, 1 feather${s.fire ? '' : ' · no fire to straighten them: they will fly crooked'}`);
     case 'craft_smoker': return s.crafts.smoker >= 2 ? r(false, 'Built') : !(s.crafts.smoker >= 1) && s.mats.poles < 4 ? r(false, 'Needs 4 poles') : r(true, '', progressText(s, 'smoker', 2));
     case 'craft_cache': return s.crafts.cache >= 2 ? r(false, 'Built') : !(s.crafts.cache >= 1) && (s.mats.cordage < lash(s, 2) || s.mats.poles < 2) ? r(false, pegged(s) ? 'Needs 2 poles' : 'Needs 2 poles, 2 cordage') : r(true, '', progressText(s, 'cache', 2));
     case 'craft_fishtrap': return s.fishTrap ? r(false, 'Built') : c.water === 'scarce' ? r(false, 'No water to trap in') : frozen(s) ? r(false, 'Frozen') : !(s.crafts.fishtrap >= 1) && s.mats.poles < 2 ? r(false, 'Needs 2 poles') : r(true, '', progressText(s, 'fishtrap', 3));
@@ -1426,7 +1434,8 @@ function doAction(s, id, lines, mod, opts) {
       if (X.good === false) { gain('cordage', 1, 'Twisted, unevenly'); lines.push(['You stopped part way. The rest of the fibre is a tangle of short ends.', 'muted']); break; } /* stopped part way */
       gain('cordage', 2, 'Twisted'); s.skill.craft = Math.min(1.5, s.skill.craft + 0.02); break; }
     case 'light_fire': {
-      const ig = igniter(s); let p = fireOdds(s); if (X.ember != null) p = X.ember ? (ig === 'bowdrill' && tinderDamp(s) > 0.2 ? 0.03 : Math.min(0.98, p + 0.4)) : p * 0.3;
+      const ig = igniter(s); let p = fireOdds(s); const cc = !!(s.sys && s.sys.charcloth > 0); if (X.ember != null) p = X.ember ? (ig === 'bowdrill' && tinderDamp(s) > (cc ? 0.45 : 0.2) ? 0.03 : Math.min(0.98, p + 0.4)) : p * 0.3;
+      if (cc) { s.sys.charcloth -= 1; lines.push(['Laid a square of char cloth on the tinder bundle.', 'muted']); }
       s.mats.tinder -= 1;
       if (chance(s, clamp(p, 0, 0.98))) { s.fire = true; lines.push([ig === 'ferro' ? 'Sparks into the tinder, blow, and it takes. Fire.' : 'Smoke, then an ember, then flame. Fire, by hand.', 'good']); s.morale += s.firstFire ? 2 : 10; if (!s.firstFire) { s.firstFire = true; lines.push(['First fire going.', 'good']); } s.skill.fire = Math.min(1.8, s.skill.fire + 0.12); }
       else { s.fireFails++; lines.push([ig === 'ferro' ? (tinderDamp(s) > 0.2 ? 'The tinder is too damp. It smoulders and dies.' : 'The sparks skittered off the tinder and died. Again.') : X.ember ? 'An ember, but the tinder would not take. It needs to be drier.' : 'Smoke but no ember. Your arms give out.', 'bad']); s.morale -= 2; s.skill.fire = Math.min(1.8, s.skill.fire + 0.04); }
@@ -1567,6 +1576,9 @@ function doAction(s, id, lines, mod, opts) {
       if (chance(s, 0.4)) gain('stone', 1, 'Picked up');
       break;
     }
+    case 'star_fire': { sysOf(s).starDay = s.day; lines.push(['Laid the logs out like the spokes of a wheel, ends touching in the coals. Push them in as they burn and it will see the night through on half the wood.', 'info']); break; }
+    case 'craft_charcloth': { const sys = sysOf(s); sys.shirtCut = (sys.shirtCut || 0) + 1; sys.charcloth = (sys.charcloth || 0) + 3; lines.push(['Cut a strip off the cotton T-shirt, packed it tight in the tin and set it in the coals until the smoke stopped. Black, soft squares that take a spark like paper takes a match.', 'good']); break; }
+    case 'harden_stakes': { s.mats.poles -= 2; sysOf(s).hardStakes = true; lines.push(['Turned the stake points in the coals until they were brown and hard as horn. They will rot and split much slower in the wet.', 'good']); break; }
     case 'melt_ice': { const cap = waterCap(s); s.potWater = cap; s.firewood = Math.max(0, round1(s.firewood - 0.25)); lines.push([chopper(s) ? 'Chopped slabs of clear ice from the lake edge and set them by the coals. Ice melts down to nearly its own weight in water.' : 'Broke slabs of ice off the lake edge with a stone and set them by the coals. Nearly all of it is water.', 'info']); break; }
     case 'catch_rain': { const cap = waterCap(s); s.potWater = cap; s.boiled = Math.max(s.boiled || 0, 2); lines.push([has(s, 'Tarp') ? 'Strung the tarp with one corner low over the pot. It runs like a tap.' : 'Pegged the ground sheet into a trough and let it run into the pot.', 'good']); lines.push(['Rainwater, straight from the sky. Clean enough to drink as it is.', 'muted']); break; }
     case 'dew': { s.today.dew = true; s.today.drank = true; if (season(s).climate.water === 'scarce') { s.water = round1((s.water || 0) + 0.5); lines.push(['Dragged a shirt through the grass at first light and wrung it out, again and again. Half a day of water, and it tastes of grass.', 'good']); } else { const cap = waterCap(s); if (cap && (s.potWater || 0) < cap) { s.potWater = (s.potWater || 0) + 1; s.boiled = Math.max(s.boiled || 0, 1); lines.push(['Mopped the dew off the grass with a shirt and wrung it into the pot. A pot of clean water, slowly.', 'good']); } else lines.push(['Mopped the dew with a shirt and wrung it into your mouth. A long drink, no fire needed.', 'good']); } s.wet = Math.min(1, s.wet + 0.1); break; }
@@ -1860,14 +1872,14 @@ function nightAndBody(s, burn, done, lines) {
   /* the fish trap: leaves clog it, high water tears gaps in the fence, freeze-up heaves the stakes, and in the end it washes away */
   if (s.fishTrap) { const sys = sysOf(s); sys.trapCond = sys.trapCond ?? 1;
     if (frozen(s)) { if (!sys.trapIced) { sys.trapIced = true; sys.trapCond -= 0.5; lines.push(['The ice took hold of the fish trap and heaved half its stakes out of the mud.', 'muted']); } }
-    else { if ((s.spate || s.storm) && drand(s, 'ftflood') < 0.35) { sys.trapCond -= 0.4; lines.push(['The high water tore a gap in the fish trap\u2019s fence. The fish can swim straight out until you mend it.', 'muted']); } else sys.trapCond -= 0.01;
+    else { if ((s.spate || s.storm) && drand(s, 'ftflood') < (sys.hardStakes ? 0.2 : 0.35)) { sys.trapCond -= sys.hardStakes ? 0.3 : 0.4; lines.push(['The high water tore a gap in the fish trap\u2019s fence. The fish can swim straight out until you mend it.', 'muted']); } else sys.trapCond -= 0.01;
       if (!sys.trapClog && drand(s, 'ftclog') < (s.storm || s.rain ? 0.12 : 0.04)) { sys.trapClog = true; lines.push(['Leaves and sticks have clogged the mouth of the fish trap. It catches nothing until you clear it.', 'muted']); } }
     if (sys.trapCond <= 0) { s.fishTrap = false; s.crafts.fishtrap = 0; sys.trapCond = 1; sys.trapClog = false; sys.trapIced = false; lines.push(['What was left of the fish trap has washed away. You would have to build it again.', 'bad']); } }
   /* snow buries the snares: they catch little until the line is walked and they are reset */
   if (s.snares && (s.snowfall || (s.storm && snowy(s))) && !(s.sys && s.sys.snaresBuried)) { sysOf(s).snaresBuried = true; lines.push(['Fresh snow has buried the snares. They will catch little until you walk the line and reset them.', 'muted']); }
   /* camp works stand out in the weather: a storm can lay the rack over or open up the smoker, snow can bring the woodshed down, and high water takes logs out of the bridge */
   { const wk = []; const sys = s.sys || {};
-    if ((s.storm || s.wind) && s.crafts.rack >= 1 && drand(s, 'wkrack') < (s.storm ? 0.12 : 0.03) * (poorly(s, 'rack') ? 1.8 : 1) * (pegged(s) ? 0.4 : 1)) { s.crafts.rack = 0; sysOf(s).rackRoof = false; s.mats.poles += 2; let fell = 0; for (const z of s.stores) if (z.where === 'rack') { delete z.where; fell++; } wk.push(`The wind laid the drying rack flat${fell ? ' and dropped what was hanging on it into the dirt' : ''}. Two poles are still good; it needs building again.`); }
+    if ((s.storm || s.wind) && s.crafts.rack >= 1 && drand(s, 'wkrack') < (s.storm ? 0.12 : 0.03) * (poorly(s, 'rack') ? 1.8 : 1) * (pegged(s) ? 0.4 : 1) * (s.sys && s.sys.hardStakes ? 0.6 : 1)) { s.crafts.rack = 0; sysOf(s).rackRoof = false; s.mats.poles += 2; let fell = 0; for (const z of s.stores) if (z.where === 'rack') { delete z.where; fell++; } wk.push(`The wind laid the drying rack flat${fell ? ' and dropped what was hanging on it into the dirt' : ''}. Two poles are still good; it needs building again.`); }
     if (s.storm && s.crafts.smoker >= 2 && drand(s, 'wksmoker') < 0.08 * (pegged(s) ? 0.4 : 1)) { s.crafts.smoker = 1; for (const z of s.stores) if (z.where === 'smoker') delete z.where; wk.push('The storm tore the boughs off the smoker and knocked the racks loose. A session of work puts it right.'); }
     if ((s.snowfall || s.storm) && snowy(s) && s.crafts.woodshed >= 1 && drand(s, 'wkshed') < 0.06 * (pegged(s) ? 0.4 : 1)) { s.crafts.woodshed = 0; s.mats.poles += 2; wk.push('The woodshed roof came down under the weight of snow. The wood is buried and wet; the shed needs building again.'); }
     if (s.spate && s.crafts.bridge >= 2 && drand(s, 'wkbridge') < 0.25) { s.crafts.bridge = 1; wk.push('The high water took a log out of the bridge. A session of work and it will carry you again.'); }
@@ -1881,7 +1893,8 @@ function nightAndBody(s, burn, done, lines) {
   if (s.patch) for (const k in s.patch) if (PATCH_BACK[k]) s.patch[k] = Math.min(1, s.patch[k] + PATCH_BACK[k]);
   // fire through the night
   const hearth = hasHearth(s); const hadFire = !!s.fire;
-  const woodNeed = ((T < -10 ? 2 : 1) + (s.wind ? 0.5 : 0)) * (s.crafts.stove >= 1 ? (poorly(s, 'stove') ? 0.67 : 0.5) : 1) * (hearth ? (poorly(s, 'hearth') && s.crafts.hearth >= 1 ? 0.93 : 0.85) : 1);
+  const star = !!(s.sys && s.sys.starDay === s.day);
+  const woodNeed = ((T < -10 ? 2 : 1) + (s.wind ? 0.5 : 0)) * (star ? 0.7 : 1) * (s.crafts.stove >= 1 ? (poorly(s, 'stove') ? 0.67 : 0.5) : 1) * (hearth ? (poorly(s, 'hearth') && s.crafts.hearth >= 1 ? 0.93 : 0.85) : 1);
   let fire = false;
   const rough = s.roughNight; s.roughNight = false; const shelterLvlSaved = s.shelterLvl; if (rough) { s.fire = false; lines.push(['A night in the open under a spruce, knees up, no fire, and the food back at camp.', 'bad']); s.morale -= 6; s.wet = Math.min(1, s.wet + (s.rain || s.storm ? 0.4 : 0.15)); }
   if (s.fire && !rough) {
@@ -2096,7 +2109,7 @@ function nightAndBody(s, burn, done, lines) {
   const openAir = s.shelterLvl === 0 && !has(s, 'Tarp') && !has(s, 'Ground sheet') && T < 8 ? 0.15 : 0;
   /* a shovel banks snow against the walls: snow is a good insulator, and it seals the gaps at the base where the wind gets in */
   const banked = has(s, 'Shovel') && snowy(s) && s.shelterLvl >= 1; if (banked && !(s.sys && s.sys.banked)) { sysOf(s).banked = true; lines.push(['Shovelled snow up against the walls of the shelter, a foot thick at the base. The draught along the floor is gone.', 'good']); }
-  const chill = ((T < 5 ? clamp((5 - T) / 30, 0, 1.2) * clamp(1 - bedding, 0, 1) : 0) + pastBag + openAir) * (banked ? 0.8 : 1) * (fire && s.fireInside ? 0.4 : fire ? 0.75 : 1) * (s.shelterLvl >= 3 ? 0.6 : s.shelterLvl === 2 ? 0.8 : 1);
+  const chill = ((T < 5 ? clamp((5 - T) / 30, 0, 1.2) * clamp(1 - bedding, 0, 1) : 0) + pastBag + openAir) * (banked ? 0.8 : 1) * (fire && s.fireInside ? (star ? 0.5 : 0.4) : fire ? (star ? 0.82 : 0.75) : 1) * (s.shelterLvl >= 3 ? 0.6 : s.shelterLvl === 2 ? 0.8 : 1);
   if (chill > 0.15) { dmg += chill * 4; s.morale -= chill * 3; if (chance(s, 0.5)) lines.push([chill > 0.6 ? 'Shivering all night, curled round the coals. You did not sleep.' : 'Too cold to sleep more than an hour at a time.', chill > 0.6 ? 'bad' : 'warn']); }
   const sleepQ = [0.5, 0.75, 1, 1.1][s.shelterLvl] * (fire ? 1 : 0.7) * (s.storm ? 0.7 : 1) * (lf > 0.2 ? 0.85 * (has(s, 'Hammock') ? 1.12 : 1) : 1) * (1 - Math.min(0.6, chill)) * (has(s, 'Hammock') && T > 3 ? 1.15 : 1); /* in a hammock the hip bones do not grind on the ground, and on a mild night it is the best sleep in the woods */
   if (lf > 0.2 && chance(s, 0.1)) lines.push(['Hips and ribs on the ground. There is no way to lie that does not hurt.', 'muted']);
@@ -3362,7 +3375,7 @@ function interactionsHere() {
     if (!S.shelterGoal) { if (E.shelterOptions(S).length) out.push({ label: S.shelterType ? 'Upgrade shelter' : 'Build shelter', sub: S.shelterType ? 'pick what to build next' : 'pick a design', fn: openShelterChoice }); }
     else if (push('shelter', null, startBuild)) out[out.length - 1].sub = E.available(S, 'shelter').odds;
     else { const miss = E.shelterMissing(S); if (miss && miss.length) out.push({ label: `${E.SHELTERS[S.shelterGoal].name}`, sub: 'Needs ' + miss.join(', '), fn: openShelterChoice, dim: true }); }
-    push('change_dry'); push('cook'); push('melt_snow'); push('melt_ice'); push('catch_rain'); push('photo'); push('cut_belt'); if (S.cachePlace === 'camp') push('repair_cache'); push('fire_in'); push('fire_out'); push('mend', null, () => startCraft('mend')); push('work_hide', null, () => startCraft('work_hide')); push('smoke_clothes'); push('read_sky'); push('shape_pot', null, () => startCraft('shape_pot')); push('fire_pots', null, () => startCraft('fire_pots')); push('clear_roof'); push('splint', null, () => startCraft('splint')); push('dig_latrine'); push('bed', null, () => startCraft('bed')); push('bury'); push('scrub'); push('check_roof'); push('caulk', null, () => startCraft('caulk')); push('fix_axe'); push('repair', null, startRepair); push('boil'); push('needle_tea'); push('bone_broth'); push('dry'); if (push('smoke', 'Hot smoke', () => doAct('smoke', { mode: 'hot' }))) { const ref = out[out.length - 1]; push('smoke', 'Cold smoke', () => doAct('smoke', { mode: 'cold' })); if (out[out.length - 1] !== ref) out[out.length - 1].sub = 'a smoulder, no flame · slower, less wood, does not cook it'; } push('dry_food'); push('render_fat'); push('talk_camera'); push('cordage', null, startCordage); push('sharpen', null, startSharpen); push('rest');
+    push('change_dry'); push('cook'); push('melt_snow'); push('melt_ice'); push('catch_rain'); push('star_fire'); push('photo'); push('cut_belt'); if (S.cachePlace === 'camp') push('repair_cache'); push('fire_in'); push('fire_out'); push('mend', null, () => startCraft('mend')); push('work_hide', null, () => startCraft('work_hide')); push('smoke_clothes'); push('read_sky'); push('shape_pot', null, () => startCraft('shape_pot')); push('fire_pots', null, () => startCraft('fire_pots')); push('clear_roof'); push('splint', null, () => startCraft('splint')); push('dig_latrine'); push('bed', null, () => startCraft('bed')); push('bury'); push('scrub'); push('check_roof'); push('caulk', null, () => startCraft('caulk')); push('fix_axe'); push('repair', null, startRepair); push('boil'); push('needle_tea'); push('bone_broth'); push('dry'); if (push('smoke', 'Hot smoke', () => doAct('smoke', { mode: 'hot' }))) { const ref = out[out.length - 1]; push('smoke', 'Cold smoke', () => doAct('smoke', { mode: 'cold' })); if (out[out.length - 1] !== ref) out[out.length - 1].sub = 'a smoulder, no flame · slower, less wood, does not cook it'; } push('dry_food'); push('render_fat'); push('talk_camera'); push('cordage', null, startCordage); push('sharpen', null, startSharpen); push('rest');
     { const ready = Object.keys(E.ACTIONS).some(k => k.startsWith('craft_') && av(k).ok); out.push({ label: 'Craft…', sub: ready ? '' : 'see what each thing needs', fn: () => openBuild(false) }); }
     return overflow(out);
   }
@@ -3418,7 +3431,7 @@ function interactionsHere() {
 function nightJobs(push, out, av, inside) {
   if (!inside) push('light_fire', null, startFire);
   if (!S.fire && !E.canWorkInside(S) && !E.lampOk(S)) { if (!inside) out.push({ label: 'No light', sub: 'nothing to see by', dim: true, fn: () => banner([['No fire and no lamp. Nothing to do in the dark but sleep.', 'muted']]) }); return; }
-  push('cook'); push('melt_snow'); push('melt_ice'); push('catch_rain'); push('clean', null, startClean); push('tend_fire'); push('dry'); push('change_dry'); push('photo'); push('whittle', null, () => doAct('whittle', {}, 1, true)); push('cordage', null, startCordage); push('sharpen', null, startSharpen); push('fix_axe'); push('mend', null, () => startCraft('mend', inside)); push('work_hide', null, () => startCraft('work_hide', inside)); push('read_sky'); push('needle_tea'); push('bone_broth'); push('render_fat'); push('boil'); push('read_letter', null, () => doAct('read_letter', {}, 1, true)); push('talk_camera'); if (!inside) push('fire_in');
+  push('cook'); push('melt_snow'); push('melt_ice'); push('catch_rain'); push('star_fire'); push('clean', null, startClean); push('tend_fire'); push('dry'); push('change_dry'); push('photo'); push('whittle', null, () => doAct('whittle', {}, 1, true)); push('cordage', null, startCordage); push('sharpen', null, startSharpen); push('fix_axe'); push('mend', null, () => startCraft('mend', inside)); push('work_hide', null, () => startCraft('work_hide', inside)); push('read_sky'); push('needle_tea'); push('bone_broth'); push('render_fat'); push('boil'); push('read_letter', null, () => doAct('read_letter', {}, 1, true)); push('talk_camera'); if (!inside) push('fire_in');
   if (E.NIGHT_OK.some(k => k.startsWith('craft_') && av(k).ok)) out.push({ label: 'Craft by firelight…', sub: 'hooks, arrows, a lure', fn: () => openBuild(true, inside) });
   push('rest');
 }
@@ -3475,7 +3488,7 @@ const ICON = {
 const TOOLS = [['camp', 'Camp'], ['fire', 'Fire'], ['gather', 'Gather'], ['knife', 'Knife'], ['wood', 'Wood'], ['fish', 'Fish'], ['hunt', 'Hunt'], ['traps', 'Traps']];
 const TOOL_JOBS = {
   camp: ['change_dry', 'catch_rain', 'photo', 'shelter', 'repair', 'rest', 'bed', 'dig_latrine', 'read_letter', 'talk_camera', 'splint', 'mend', 'check_roof', 'clear_roof', 'caulk', 'repair_cache', 'bury', 'scrub', 'read_sky', 'shadow_stick', 'moss_check', 'cairn', 'climb', 'scout'],
-  fire: ['light_fire', 'tend_fire', 'fire_in', 'fire_out', 'cook', 'boil', 'melt_snow', 'melt_ice', 'needle_tea', 'bone_broth', 'smoke', 'dry_food', 'render_fat', 'dry', 'smoke_clothes', 'shape_pot', 'fire_pots', 'water'],
+  fire: ['light_fire', 'tend_fire', 'star_fire', 'fire_in', 'fire_out', 'cook', 'boil', 'melt_snow', 'melt_ice', 'needle_tea', 'bone_broth', 'smoke', 'dry_food', 'render_fat', 'dry', 'smoke_clothes', 'shape_pot', 'fire_pots', 'water'],
   gather: ['dew', 'berries', 'greens', 'mushrooms', 'roots', 'shellfish', 'seaweed', 'insects', 'nettle', 'cattail', 'pinenuts', 'rosehips', 'seeds', 'forage', 'inspect', 'bait', 'moss', 'stones', 'dig_clay', 'tinder', 'search', 'boughs', 'bark'],
   knife: ['clean', 'dress', 'work_hide', 'sharpen', 'whittle', 'cordage', 'cut_belt'],
   wood: ['firewood', 'cut_poles', 'cut_logs', 'fix_axe'],

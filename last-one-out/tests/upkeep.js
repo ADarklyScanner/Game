@@ -78,6 +78,16 @@ const nights = (mk, n, f) => { let hit = 0; for (let i = 0; i < n; i++) { const 
   E.act(r, 'catch_rain'); check('fills the pots with clean water', r.potWater === 2 && r.boiled > 0, [r.potWater, r.boiled]);
   const nr = camp('US-S1', 45, ['Pot']); nr.rain = true; check('no tarp or sheet: no rigging', !E.available(nr, 'catch_rain').ok);
 }
+{ // fire as a tool: a star fire banks on less wood, char cloth takes a spark in damp air, hardened stakes last
+  const night = star => { const s = camp('US-S6', 51); s.day = 40; s.firewood = 10; s.fire = true; if (star) E.act(s, 'star_fire'); const w0 = s.firewood; E.endDay(s); return w0 - s.firewood; };
+  const plain = night(false), banked = night(true); check('a star fire burns less wood overnight', banked < plain * 0.8, [plain, banked]);
+  const c = camp('US-S1', 52, ['Pot', 'Knife']); c.gear = c.gear.filter(g => g !== 'Ferro rod'); c.crafts.bowdrill = 1; c.sys.tinderDamp = 0.35; const before = E.fireOdds(c);
+  check('char cloth can be made by the fire', E.available(c, 'craft_charcloth').ok, E.available(c, 'craft_charcloth').why); E.act(c, 'craft_charcloth');
+  check('and lights a bow-drill ember in damp tinder that would not take before', before <= 0.03 && E.fireOdds(c) > 0.1, [before, E.fireOdds(c)]);
+  const h = camp('AU-S3', 53); h.fishTrap = true; h.crafts.fishtrap = 1; h.mats.poles = 4; check('stakes can be fire-hardened', E.available(h, 'harden_stakes').ok, E.available(h, 'harden_stakes').why); E.act(h, 'harden_stakes');
+  let tornHard = 0, tornSoft = 0; for (let i = 0; i < 200; i++) for (const hard of [true, false]) { const t = camp('AU-S3', 600 + i); t.fishTrap = true; t.crafts.fishtrap = 1; t.storm = true; if (hard) t.sys.hardStakes = true; E.endDay(t); if ((t.sys.trapCond ?? 1) < 0.65) { if (hard) tornHard++; else tornSoft++; } }
+  check('hardened stakes tear out less often in a storm', tornHard < tornSoft * 0.8, [tornHard, tornSoft]);
+}
 { // something alive in a snare is a real choice
   check('the snare event exists', !!E.EVENTS.snarepred && E.EVENTS.snarepred.options.length === 3);
 }
