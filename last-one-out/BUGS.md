@@ -193,6 +193,8 @@ Checked and left as they are: a wrong-sized snare is still set (it catches less,
 | 131 | The page-play test pressed Build shelter through the open design picker hundreds of times, stacking pickers until the page froze (a player cannot, the picker covers the button) | The test answers an open picker as a player would, or closes it |
 | 132 | Every shelter session was the same lashing tap, so a rushed build had no lasting cost except in a cabin | Each session is its own stage (frame, shingle, dig, vent, stack, chink); a rushed stage leaves a weaker shelter and, under a roof of boughs or poles, a leak that wets you on rainy nights until patched |
 | 133 | Snare and deadfall sets on the map were forgotten at the start of each day, so after the first day checking the trapline skipped the walk | Sets are saved with the game and stay on the map while the snares are out |
+| 134 | The raft's careful-lashing bonus (fewer capsizes) was never reachable: fishing from the raft had no hands-on part, so it always used the rushed odds | Poling out and crouching for gusts decides it |
+| 135 | Pressing a shelter plan that still needs materials reopened the design picker, a loop with no word on where poles or boughs come from | It opens what the plan still needs, where each comes from, and a Walk there to the nearest source |
 
 ### Test-side problems (not game bugs)
 

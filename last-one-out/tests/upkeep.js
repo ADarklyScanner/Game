@@ -115,6 +115,24 @@ const nights = (mk, n, f) => { let hit = 0; for (let i = 0; i < n; i++) { const 
   let plain = 0, ruin = 0; for (let i = 0; i < 300; i++) { const a = camp('US-S2', 1000 + i); E.act(a, 'search'); plain += a.found.length; const b = camp('US-S2', 1000 + i); E.act(b, 'search', { mod: 2.2, extra: { ruin: true } }); ruin += b.found.length; }
   check('picking through the old camp finds more than the shore', ruin > plain * 1.5, [plain, ruin]);
 }
+{ // the raft: dry logs soak up slower; a gust taken standing rolls it; missing the drop-off fishes the shallows
+  const mk = dry => { const t = camp('US-S6', 71, ['Axe', 'Fishing gear']); Object.assign(t.mats, { logs: 8, cordage: 8 }); E.act(t, 'craft_raft', { extra: { good: true, logs: dry ? 'dry' : 'green' } }); E.act(t, 'craft_raft', { extra: { good: true } }); return t; };
+  const d = mk(true), g = mk(false); check('dry logs make a dry raft', d.sys.raft && d.sys.raft.dry === true && !g.sys.raft.dry, [d.sys.raft, g.sys.raft]);
+  for (const t of [d, g]) { t.sys.raft.inWater = true; t.storm = t.rain = t.wind = false; E.endDay(t); E.beginDay(t); t.event = null; }
+  check('dry logs soak up slower', d.sys.raft.float > g.sys.raft.float, [d.sys.raft.float, g.sys.raft.float]);
+  const c = mk(false); c.wind = true; c.storm = false; E.act(c, 'raft_fish', { extra: { capsize: true, spot: true } }); check('a gust taken standing rolls the raft', c.conditions.some(x => /capsize/.test(x.name)), c.conditions.map(x => x.name));
+  const f = mk(false); f.wind = true; f.storm = false; E.act(f, 'raft_fish', { extra: { capsize: false, spot: false } }); check('crouched for the gust, you stay dry', !f.conditions.some(x => /capsize/.test(x.name)));
+}
+{ // camp layout: the kitchen draws animals or keeps them off; the latrine keeps the water clean or fouls it
+  const k = camp('US-S6', 61); k.campChosen = true; const wdir = E.prevailOf(k);
+  E.act(k, 'lay_out_camp', { extra: { layout: { kitchen: [1, -1] } } }); check('a kitchen by the bed draws animals', E.kitchenMult(k) > 1, E.kitchenMult(k));
+  const cl = v => Math.max(-2, Math.min(2, Math.round(v * 2.9))); const dx = cl(Math.cos(wdir)), dy = cl(Math.sin(wdir)); E.act(k, 'lay_out_camp', { extra: { layout: { kitchen: [dx, dy] } } });
+  check('a kitchen out and downwind keeps them off', E.kitchenMult(k) < 1, [dx, dy, E.kitchenMult(k)]);
+  E.act(k, 'lay_out_camp', { extra: { layout: { kitchen: [-1, 1] } } }); check('the fire\'s spot is not a kitchen', !k.sys.layout.kitchen, k.sys.layout);
+  const lat = cell => { const t = camp('US-S6', 62); t.day = 20; E.sysOf(t).latrineDay = 19; t.sys.fouling = 0.3; t.sys.layout = { latrine: cell, water: 0 }; E.endDay(t); return t.sys.fouling; };
+  check('a latrine that drains to the water fouls it', lat([2, 0]) > 0.3, lat([2, 0]));
+  check('a latrine well away from the water cleans up faster', lat([-2, 1]) < lat([-1, -1]) || lat([-2, 1]) < 0.27, [lat([-2, 1]), lat([-1, -1])]);
+}
 { // cooking by hand: the hands decide, not the dice
   const ck = heat => { const c = camp('US-S6', 51); c.stores = [{ id: 'trout', por: 4, left: 5, smoked: false }]; c.fire = true; const m0 = c.morale; const out = JSON.stringify(E.act(c, 'cook', { extra: { heat } }) || c.log || ''); return { out: out + JSON.stringify(c.lastLines || ''), c }; };
   check('charred by hand is charred', /charred/.test(JSON.stringify(ck('burnt').c)), '');
