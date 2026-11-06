@@ -146,6 +146,11 @@ const nights = (mk, n, f) => { let hit = 0; for (let i = 0; i < n; i++) { const 
   const r = camp('US-S6', 95, ['Pot']); r.fire = true; r.stores = [{ id: 'fat', por: 4, left: 20, smoked: false }]; E.act(r, 'render_fat', { extra: { scorch: true } }); check('scorched fat renders less', r.stores[0].por < 4 * 0.85 - 0.01, r.stores[0].por);
   const m = camp('US-S6', 96, ['Pot']); m.fire = true; m.firewood = 5; E.act(m, 'melt_snow', { extra: { good: true } }); check('snow melted with care saves wood', m.firewood > 4.5, m.firewood);
 }
+{ // the ground: insects by still water with no smoke, the morning sun drying things out
+  const bug = fire => { const t = camp('AU-S2', 97); t.day = 10; E.beginDay(t); t.event = null; t.storm = t.wind = t.rain = false; E.sysOf(t).campSpot = { bugs: true }; t.fire = fire; t.firewood = fire ? 20 : 0; const m0 = t.morale; E.endDay(t); return t.morale - m0; };
+  if (E.temperature(camp('AU-S2', 97)) > 12) check('insects off still water cost will without smoke', bug(false) < bug(true), [bug(false), bug(true)]);
+  const sun = camp('US-S6', 98); E.sysOf(sun).campSpot = { sun: true }; sun.wet = 0.6; sun.sys.bedDamp = 0.5; sun.day = 5; let dried = false; for (let i = 0; i < 6 && !dried; i++) { E.endDay(sun); sun.wet = 0.6; sun.sys.bedDamp = 0.5; E.beginDay(sun); sun.event = null; dried = !sun.rain && !sun.storm && !sun.fog && !sun.snowfall && sun.wet < 0.6 && sun.sys.bedDamp < 0.5; } check('the morning sun dries things out on fair days', dried);
+}
 { // the raft: dry logs soak up slower; a gust taken standing rolls it; missing the drop-off fishes the shallows
   const mk = dry => { const t = camp('US-S6', 71, ['Axe', 'Fishing gear']); Object.assign(t.mats, { logs: 8, cordage: 8 }); E.act(t, 'craft_raft', { extra: { good: true, logs: dry ? 'dry' : 'green' } }); E.act(t, 'craft_raft', { extra: { good: true } }); return t; };
   const d = mk(true), g = mk(false); check('dry logs make a dry raft', d.sys.raft && d.sys.raft.dry === true && !g.sys.raft.dry, [d.sys.raft, g.sys.raft]);

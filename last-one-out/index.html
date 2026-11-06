@@ -1240,6 +1240,7 @@ function berryStage(s, X) { if (X && X.ripe) return 1.4; return 0.3 + 1.7 * berr
 function foragePool(s) { return season(s).pools.forage.filter(([t]) => inSeason(s, t)); }
 
 // ------------------------------------------------------------------ the day, in hours
+function morningSun(s) { const sp = (s.sys && s.sys.campSpot) || {}; if (!sp.sun || s.rain || s.storm || s.fog || s.snowfall) return; s.wet = Math.max(0, Math.round((s.wet - 0.1) * 100) / 100); if (s.sys && s.sys.bedDamp) s.sys.bedDamp = Math.max(0, Math.round((s.sys.bedDamp - 0.08) * 100) / 100); }
 function beginDay(s) {
   if (s.status !== 'playing' || s.phase !== -1) return [];
   const se = season(s); const lines = [];
@@ -1248,7 +1249,7 @@ function beginDay(s) {
   s.storm = dchance(s, 'storm', se.climate.storm); s.rain = !s.storm && dchance(s, 'rain', se.climate.storm * 1.5) && !snowy(s);
   s.snowfall = snowy(s) && !s.storm && dchance(s, 'snow', 0.22); s.fog = !s.storm && !s.rain && !s.snowfall && dchance(s, 'fog', se.climate.coast ? 0.12 : 0.07);
   s.wind = !s.storm && !s.fog && dchance(s, 'wind', 0.12); s.windDir = (s.storm || s.wind) && drand(s, 'wpre') < 0.75 ? prevailOf(s) + (drand(s, 'wdir') - 0.5) * 1.2 : drand(s, 'wdir') * 6.283; s.windStr = s.storm ? 1 : s.wind ? 0.7 : 0.3; s.heat = !s.storm && !s.rain && !snowy(s) && (se.climate.t0 >= 20) && dchance(s, 'heat', 0.3);
-  if (s.storm) s.lastStorm = s.day; s.wetStreak = (s.storm || s.rain) ? (s.wetStreak || 0) + 1 : 0;
+  if (s.storm) s.lastStorm = s.day; s.wetStreak = (s.storm || s.rain) ? (s.wetStreak || 0) + 1 : 0; morningSun(s);
   s.hail = s.storm && !snowy(s) && dchance(s, 'hail', 0.2); s.thunder = (s.storm || s.rain) && !snowy(s) && temperature(s) > 5 && dchance(s, 'thunder', s.storm ? 0.35 : 0.1);
   const mp = ((s.day + (s.seed % 29)) % 29.5) / 29.5; s.moon = mp < 0.08 || mp > 0.92 ? 'new' : Math.abs(mp - 0.5) < 0.08 ? 'full' : mp < 0.5 ? 'waxing' : 'waning';
   s.aurora = se.climate.t1 < -5 && !s.storm && !s.rain && !s.fog && temperature(s) < 2 && dchance(s, 'aurora', 0.12);
@@ -2067,6 +2068,7 @@ function nightAndBody(s, burn, done, lines) {
   }
   if ((s.rain || s.storm) && s.firewood > 0 && !(s.crafts.woodshed >= 1 && !(poorly(s, 'woodshed') && s.storm)) && !has(s, 'Tarp') && !(s.shelterType === 'cabin' || s.shelterType === 'rock')) { s.firewood = round1(Math.max(0, s.firewood - (s.storm ? 1.5 : 0.7))); lines.push(['The woodpile got soaked. Some of it will not burn.', 'muted']); }
   if (s.storm && s.shelterType === 'tarp') s.stats.tarpstorm = true;
+  { const sp = (s.sys && s.sys.campSpot) || {}; if (sp.bugs && T > 12 && !s.storm && !s.wind) { if (!fire) { s.morale -= 2; if (drand(s, 'bugs') < 0.5) lines.push(['The insects came off the still water at dusk and did not stop all night. No smoke to keep them off.', 'muted']); } else if (drand(s, 'bugs') < 0.15) lines.push(['The smoke kept most of the insects off. Most.', 'muted']); } }
   if ((s.storm || s.wind) && s.sys && s.sys.campSpot && s.sys.campSpot.snag && chance(s, s.storm ? 0.05 : 0.012)) { if (chance(s, 0.35)) { addCond(s, { name: 'Bruised shoulder from a falling limb', days: 4, dmg: 0.6 }); s.health -= 4; lines.push(['A dead limb came down off the snag over camp in the night and caught your shoulder.', 'bad']); } else { if (s.shelterLvl > 0) s.shelterCond = Math.max(0.1, (s.shelterCond ?? 1) - 0.2); lines.push(['A dead limb came down off the snag over camp in the night' + (s.shelterLvl > 0 ? ' and through the roof.' : ', a yard from your head.'), 'warn']); } }
   if (s.storm && s.sys && s.sys.cairns && s.sys.cairns.some(c => c.loose)) { const n0 = s.sys.cairns.length; s.sys.cairns = s.sys.cairns.filter(c => !(c.loose && chance(s, 0.35))); if (s.sys.cairns.length < n0) lines.push([n0 - s.sys.cairns.length === 1 ? 'The wind brought down a cairn you stacked in a hurry.' : 'The wind brought down the cairns you stacked in a hurry.', 'muted']); }
   if (s.shelterLvl > 0) {
@@ -2099,7 +2101,7 @@ function nightAndBody(s, burn, done, lines) {
   s.raw = s.raw.filter(x => x.left > 0);
   if (s.crafts.cache >= 2) { s.cacheCond = Math.max(0, (s.cacheCond ?? 0.8) - 0.006 - (s.storm ? 0.05 : s.rain || s.snowfall ? 0.015 : 0)); }
   const cached = s.crafts.cache >= 2 && (s.cacheCond ?? 0.8) > 0.2; const offalPull = 1 + Math.min(1, ((s.sys && s.sys.offal) || 0) / 4); // a gut pile at camp brings them in
-  const spot = (s.sys && s.sys.campSpot) || {}; const raidP = (spot.trail ? 1.4 : 1) * offalPull * (cached ? (s.cachePlace === 'camp' ? 0.025 : 0.008) * (1.9 - 1.5 * (s.cacheCond ?? 0.8)) : 0.045) * (s.raw.length ? 2 : 1) * (s.fireInside || !fire ? 1.3 : 1);
+  const spot = (s.sys && s.sys.campSpot) || {}; const raidP = (spot.trail ? 1.4 : 1) * (spot.berries ? 1.2 : 1) * offalPull * (cached ? (s.cachePlace === 'camp' ? 0.025 : 0.008) * (1.9 - 1.5 * (s.cacheCond ?? 0.8)) : 0.045) * (s.raw.length ? 2 : 1) * (s.fireInside || !fire ? 1.3 : 1);
   const meat = s.stores.filter(x => ['fish', 'game', 'organ', 'fat'].includes(DATA.foods[x.id].kind));
   if ((meat.length || s.raw.length) && se.predators.length && chance(s, raidP)) {
     let lost = 0; const kw = (x) => x.id === 'fat' ? 1.5 : DATA.foods[x.id].kind === 'organ' ? 1.1 : 0.6; const wipe = rnd(s) < (cached ? 0.1 : 0.2) + ((s.cacheCond ?? 0.8) < 0.4 ? 0.1 : 0); const frac = 0.12 + rnd(s) * 0.18; for (const x of meat) { const l = wipe ? x.por : round1(x.por * Math.min(0.6, frac * kw(x))); x.por = round1(x.por - l); lost += l * DATA.foods[x.id].kcal; } s.raw = s.raw.filter((x, i) => { if (wipe || i % 2 === 0) { lost += x.por * DATA.foods[x.id].kcal; return false; } return true; });
@@ -2133,7 +2135,7 @@ function nightAndBody(s, burn, done, lines) {
   const bmr = C.bmrPerLb * s.weight * (1 - C.adapt * lossFrac);
   if (rough) s.shelterLvl = 0;
   let coldMod = (has(s, 'Sleeping bag') && !rough ? 0.55 + Math.min(0.25, (s.bagHoles || 0) * 0.06) : 1) * [1, 0.8, 0.65, 0.5][s.shelterLvl] * (1 + (1 - (s.shelterCond ?? 1)) * 0.6) * (fire ? (s.fireInside ? (green ? 0.7 : 0.6) : (green ? 0.9 : hearth ? 0.76 : 0.8)) * (s.tended ? 0.9 : 1) : (hearth && hadFire && !rough ? 0.9 : 1)) * (1 + s.wet * 0.5) * (1 - 0.15 * sealOf(s)) * (1 - (rough ? 0 : bedWarmth(s))) * (fire && !s.fireInside && s.crafts.reflector >= 1 && s.shelterLvl <= 1 ? (poorly(s, 'reflector') ? 0.94 : 0.88) : 1) * (WALLED.includes(s.shelterType) && snowLoadOf(s) >= 0.5 && snowLoadOf(s) <= 2 ? 0.93 : 1) * (s.shelterType === 'cabin' && s.sys && s.sys.gaps ? 1.08 : 1) * (1 + 0.2 * (1 - clothesOf(s))) * (s.sys && s.sys.mat && s.shelterType && (s.wind || s.storm) ? (s.sys.mat === 'tight' ? 0.9 : 0.97) : 1);
-  { const sp = (s.sys && s.sys.campSpot) || {}; if (!rough && (s.wind || s.storm)) { if (sp.exposed) coldMod *= 1.1; if (sp.windbreak) coldMod *= 0.94; } }
+  { const sp = (s.sys && s.sys.campSpot) || {}; if (!rough && (s.wind || s.storm)) { if (sp.exposed) coldMod *= 1.1; if (sp.windbreak) coldMod *= 0.94; } if (sp.hollow && !s.wind && !s.storm && !s.rain && !s.fog && T < 6) coldMod *= 1.08; /* cold air pools in the hollow */ }
   if (s.crafts.mittens >= 1 && T < 0) { const sys = sysOf(s); sys.mittWear = (sys.mittWear || 0) + 0.012; if (sys.mittWear >= 1 && !sys.mittHoles) { sys.mittHoles = true; lines.push(['Your mittens have worn through at the fingertips. They keep out much less cold until they are mended.', 'warn']); } }
   if (s.crafts.mittens >= 1 && !(s.sys && s.sys.mittHoles)) coldMod *= s.sys && s.sys.softMittens ? (s.sys.looseMitts ? 0.9 : 0.87) : s.sys && s.sys.looseMitts ? 0.93 : 0.9; if (has(s, 'Bivy bag')) coldMod *= 0.9; if (has(s, 'Blanket')) coldMod *= 0.92; if (has(s, 'Ground sheet')) coldMod *= 0.95; if (has(s, 'Hammock') && T > 0) coldMod *= 0.95;
   const cold = Math.max(0, C.coldBase - T) * C.coldPerDeg * coldMod;
@@ -3434,6 +3436,10 @@ function spotOf(p) {
   const s = { waterM: Math.round(m(water)), trail: !!(W.trail && dist(p, W.trail) < W.trail.r + 60), windbreak: near(260, live) >= 4, snag: near(90, x => x.kind === 'snag') > 0, woodM: null };
   s.exposed = !W.desert && m(p.x - W.shoreX(p.y)) < 45 && !s.windbreak;
   const wood = W.trees.filter(x => !x.gone && (x.kind === 'snag' || x.kind === 'log')).map(x => dist(x, p)).sort((a, b) => a - b)[0]; s.woodM = wood == null ? null : Math.round(m(wood));
+  s.hollow = (W.wet || []).some(z => dist(z, p) < z.r * 0.9) || !!(W.bog && dist(p, W.bog) < W.bog.r + 140); /* low, damp ground: cold air drains into it on still nights */
+  s.sun = !W.trees.some(x => !x.gone && x.kind !== 'log' && x.age !== 'sapling' && x.x > p.x + 10 && x.x < p.x + 200 && Math.abs(x.y - p.y) < 70); /* nothing tall to the east: the morning sun gets in */
+  s.bugs = water * 1 < 330 && (!!(W.pond && dist(p, W.pond) < W.pond.r + 260) || !!(W.bog && dist(p, W.bog) < W.bog.r + 260) || (W.wet || []).some(z => dist(z, p) < z.r + 120)); /* still water breeds them */
+  s.berries = W.bushes.filter(b => b.kind === 'berries' && dist(b, p) < 220).length >= 2;
   s.bad = water * 1 < 115 ? 'Too close to the water. The ground is wet, and the first storm puts the lake through camp.' : (W.bog && dist(p, W.bog) < W.bog.r) ? 'Bog. Everything you own would be wet by morning.' : (W.cliff && dist(p, W.cliff) < 70) ? 'Right under the rock face. Loose stone comes down off it.' : null;
   return s;
 }
@@ -3445,6 +3451,10 @@ function spotNotes(s) {
   if (s.exposed) n.push(['Open to the lake. Every wind off the water comes straight through.', 'warn']);
   if (s.trail) n.push(['On a game trail. Animals will come through, and so will whatever hunts them.', 'warn']);
   if (s.snag) n.push(['A dead tree stands over the spot. In a wind it drops limbs.', 'warn']);
+  if (s.hollow) n.push(['Low, damp ground. On still, clear nights the cold air drains into it and frost settles here first.', 'warn']);
+  if (s.sun) n.push(['Open to the east. The first sun reaches camp and dries things out.', 'good']);
+  if (s.bugs) n.push(['Still water close by. In warm weather the biting insects will be bad; a smoky fire keeps them off.', 'warn']);
+  if (s.berries) n.push(['Berry bushes around. Good picking, and bears know it too.', 'warn']);
   return n;
 }
 function openMakeCamp() {
@@ -3457,7 +3467,7 @@ function openMakeCamp() {
     sh.append($(`<div class="needs" style="display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 8px">${[
       chip(s.waterM <= 150, `water ${s.waterM} m`), chip(s.woodM != null && s.woodM <= 120, s.woodM == null ? 'no dry wood near' : `dry wood ${s.woodM} m`),
       chip(s.windbreak ? true : s.exposed ? false : null, s.windbreak ? 'sheltered' : s.exposed ? 'open to the wind' : 'some shelter'), chip(!s.bad, s.bad ? 'flood or hazard' : 'dry ground'),
-      ...(s.trail ? [chip(false, 'game trail')] : []), ...(s.snag ? [chip(false, 'dead tree over it')] : [])].join('')}</div>`));
+      ...(s.trail ? [chip(false, 'game trail')] : []), ...(s.snag ? [chip(false, 'dead tree over it')] : []), ...(s.hollow ? [chip(false, 'cold hollow')] : []), ...(s.sun ? [chip(true, 'morning sun')] : []), ...(s.bugs ? [chip(false, 'insects')] : []), ...(s.berries ? [chip(null, 'berries, and bears')] : [])].join('')}</div>`));
     const why = $(`<details><summary class="muted" style="font-size:13px">Why</summary><div class="rows"></div></details>`); for (const [txt, k] of spotNotes(s)) why.querySelector('.rows').append($(`<div class="row"><span class="tone-${k}">${esc(txt)}</span></div>`)); sh.append(why);
     sh.append($(`<div class="muted" style="font-size:13px">Half an hour to clear the ground and ring a fire pit. You can move camp later, but it costs a day of carrying.</div>`));
     const go = $(`<button class="act primary"><b>Make camp here</b><small>½ h</small></button>`); go.onclick = () => { close(); makeCampHere(s); };
@@ -3784,6 +3794,8 @@ function goalText() {
   if (c.water === 'scarce' && (S.water || 0) < 1) return 'Fetch water';
   if (S.shelterLvl === 0) { const m = E.shelterMissing(S); return m && m.length ? 'Lean-to: get ' + m[0] : 'Build the lean-to'; }
   if (S.shelterLvl && st.shelterCond < 0.5) return 'Patch the roof'; if (S.shelterLvl && S.sys && S.sys.leaky && (S.rain || S.storm || (t => t.rain || t.storm)(E.tomorrow(S)))) return 'Patch the leak in the roof';
+  if (S.shelterLvl && S.sys && S.sys.damage) return { frame: 'Re-lash the loose frame', walls: 'Re-chink the walls', roof: 'Fix the sagging roof' }[S.sys.damage] || 'Repair the shelter';
+  if (S.sys && E.bedDampOf(S) >= 0.5 && !(S.rain || S.storm || S.snowfall || S.fog)) return 'Damp bedding: air it out';
   if (S.firewood < 2) return 'Woodpile is low';
   if (st.storeKcal < 800) return 'Find food';
   const fresh = S.stores.filter(x => !x.smoked && !x.dried && !x.where && ['fish', 'game'].includes(D.foods[x.id].kind)).reduce((a, x) => a + x.por, 0);
@@ -6860,6 +6872,12 @@ function openHow() {
       <div><b>Every job is in your hands.</b> Cast, set the hook when the float dips, and keep the line in the tension band. Stalk with the wind in your face, draw, and release in the window; a poor shot leaves a blood trail to follow. Swing the axe on the beat, size the snare loop, read the mushroom before you pick it, gut the kill where it fell and carry it home in loads. The season's real odds sit underneath all of it.</div>
       <div><b>Food spoils.</b> Clean a catch at camp the day you get it. To keep meat or fish, dry it on a rack or in the smoker until it snaps when you bend it; smoke alone only buys a few days. Hang the cache a walk from camp or every bear will know where it is; one built in a hurry, or left to weather, gets torn open. Raw hides go off in about a week unless dried in the smoke, mice chew cordage left lying, and a woodpile without a roof soaks through.</div>
       <div><b>Small things add up.</b> Spruce tea for scurvy, broth from cracked bones, meat dried on a rack or in the smoker until it snaps, tallow rendered from fat, and pemmican from the two that keeps for years, set lines that fish while you sleep, snowshoes once the snow is deep, mittens from hides. Lean meat with no fat leads to protein overload, so fat matters. Pick through the old camp for salvage, dig cattails at the beaver pond, climb to the berry slope.</div>
+      <div class="sect">Your hands</div>
+      <div><b>How you do it is what you get.</b> Knap at a slant, not square on. Stitch at an even pace; rush and the stitch lies slack. Scrape a hide with slow strokes, but move off a clean spot before it thins. Bend an arrow shaft only when it is warm. Back a fish out of the net tail first. Pluck toward the tail. Skin with steady pulls. Feel along the leg for the joint. Keep a smoker to thin blue smoke and fat to a simmer. Start melting snow with a little water in the pot.</div>
+      <div><b>Bring a tree down where you mean to.</b> Read its lean and the wind, pick a fall away from camp and other trees, and step clear the moment it cracks.</div>
+      <div><b>Shelters are built in stages and tested by weather.</b> Lay a roof from the bottom up or it leaks. Damp bedding holds no warmth; air it on a dry day. After a storm the game tells you what broke, and the repair is for that part. The camp page shows how the shelter holds up.</div>
+      <div><b>Lay out your camp.</b> Cook and gut away from your bed and downwind, dig the latrine well away from the water. Storms come mostly from one side, the same all run.</div>
+      <div><b>Practised hands.</b> Do a job well three times running and you can do it the usual way, at about your usual standard.</div>
       <div class="sect">Keeping going</div>
       <div><b>Will is a skill.</b> Most runs here do not end in starvation; people go home. What carries the longest runs is routine: a varied day with something to show for it, a project on the go, a word to the camera, the letter once a week, a warm dry camp, a real meal, an hour by the fire with their hands busy. Each one takes some of the day's weight off your will; an idle, cold, hungry day takes all of it. The Body screen shows what held you up yesterday.</div>
       <div><b>The rare things can happen to you.</b> Anything rare in here can happen: the bear on the kill, the sea lion in the net, mice in the sleeping bag, a molar cracked on jerky, the axe the tide took, water rising into the shelter after a week of rain, fire creeping into the duff, baboons in camp, a sow with cubs in the berries, wolves circling at night.</div>
