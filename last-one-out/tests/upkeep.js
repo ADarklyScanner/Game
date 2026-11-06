@@ -111,6 +111,10 @@ const nights = (mk, n, f) => { let hit = 0; for (let i = 0; i < n; i++) { const 
   const windy = door => { let h = 0; for (let i = 0; i < 40; i++) { const c = camp('US-S6', 900 + i, ['Knife']); c.day = 60; E.beginDay(c); c.event = null; c.fire = false; c.firewood = 0; c.wind = true; c.storm = c.rain = false; c.sys.door = door; const h0 = c.health; E.endDay(c); h += h0 - c.health; } return h; };
   check('a door away from the wind is warmer on a windy night', windy('lee') < windy('fire'), [windy('lee'), windy('fire')]);
 }
+{ // the old camp's better odds count
+  let plain = 0, ruin = 0; for (let i = 0; i < 300; i++) { const a = camp('US-S2', 1000 + i); E.act(a, 'search'); plain += a.found.length; const b = camp('US-S2', 1000 + i); E.act(b, 'search', { mod: 2.2, extra: { ruin: true } }); ruin += b.found.length; }
+  check('picking through the old camp finds more than the shore', ruin > plain * 1.5, [plain, ruin]);
+}
 { // something alive in a snare is a real choice
   check('the snare event exists', !!E.EVENTS.snarepred && E.EVENTS.snarepred.options.length === 3);
 }

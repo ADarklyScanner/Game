@@ -223,6 +223,11 @@ summary { cursor: pointer; color: var(--muted); font-size: 13px; }
 .acts .card .actbtn.tile .ch { font: 500 11px/1.3 var(--mono); color: var(--paper-soft); background: rgba(60,48,30,.08); border-radius: 8px; padding: 1px 6px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .acts .card .actbtn.tile .ch.o { color: var(--paper-ink); }
 .acts .card .actbtn.tile.dim .ai { opacity: .35; } .acts .card .actbtn.tile.dim .ch.r { color: var(--paper-red); }
+.act.design { display: flex; flex-direction: column; align-items: stretch; gap: 4px; text-align: left; }
+.act.design .stats { display: flex; flex-wrap: wrap; gap: 10px; } .pips { display: inline-flex; align-items: center; gap: 2px; font: 500 11px var(--mono); } .pips em { font-style: normal; opacity: .7; margin-right: 3px; } .pips i { width: 7px; height: 7px; border-radius: 2px; border: 1px solid currentColor; opacity: .5; } .pips i.on { background: currentColor; opacity: .9; }
+.act.design .needs { display: flex; flex-wrap: wrap; gap: 4px; } .need { font: 500 11.5px/1.3 var(--mono); padding: 1px 7px; border-radius: 9px; border: 1px solid rgba(90,74,50,.35); }
+.need.ok { background: rgba(75,106,52,.14); border-color: rgba(75,106,52,.45); } .need.miss { border: 1.5px dashed #983828; color: #983828; } .need.time { opacity: .75; }
+.season .sitechips { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 2px 0 4px; } .season .sc { font: 500 11.5px/1.3 var(--mono); opacity: .85; } .season .sc.pips i { width: 6px; height: 6px; }
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .acts .card .cap { font: italic 15px var(--display); color: var(--paper-soft); padding: 7px 0 0; }
 .acts .card .actbtn b { flex: 1 1 auto; font: 400 19px/1.15 var(--display); text-transform: none; letter-spacing: 0; color: var(--paper-ink); }
@@ -408,12 +413,12 @@ function matList(s) { const kitCord = (has(s, 'Paracord') || has(s, 'Rope')); re
 const SHELTER_NAMES = ['No real shelter', 'Lean-to or tarp', 'Debris hut', 'Cabin or rock wall'];
 // the kinds of shelter you can build. lvl is how warm it sleeps; wear is how fast weather takes it apart.
 const SHELTERS = {
-  tarp: { name: 'Tarp camp', lvl: 1, bill: { poles: 4, boughs: 2, cordage: 2, sessions: 1 }, needGear: 'Tarp', wear: 1.6, inside: true, fireIn: false, desc: 'Up in an afternoon. Flaps all night and wears fast.' },
-  leanto: { name: 'Lean-to', lvl: 1, bill: { poles: 6, boughs: 10, cordage: 2, sessions: 1 }, wear: 1.3, inside: true, fireIn: false, desc: 'Open to the fire, back to the wind. The first real roof.' },
-  hut: { name: 'Debris hut', lvl: 2, bill: { poles: 10, boughs: 16, moss: 8, cordage: 4, sessions: 2 }, wear: 1, inside: false, fireIn: false, desc: 'Warm and dark. No room to work and no fire inside.' },
-  rock: { name: 'Rock shelter', lvl: 3, bill: { stone: 12, poles: 6, moss: 6, cordage: 2, sessions: 3 }, wear: 0.25, inside: true, fireIn: true, safeFire: true, desc: 'Walled in under the overhang. A fire inside, and the rock holds the heat.' },
-  snowcave: { name: 'Snow cave', lvl: 2, bill: { boughs: 6, sessions: 2 }, needSnow: true, wear: 1.1, inside: true, fireIn: false, desc: 'Dug into a deep drift, boughs on the floor. Near freezing inside whatever the wind does outside. A thaw sags the roof.' },
-  cabin: { name: 'Cabin', lvl: 3, bill: { logs: 20, moss: 10, cordage: 4, sessions: 4, tool: 'cutter' }, wear: 0.35, inside: true, fireIn: true, safeFire: false, desc: 'Log walls. A fire inside wants a chimney, or the roof goes up.' },
+  tarp: { stats: { warmth: 1, dry: 2, wind: 0, strong: 1 }, name: 'Tarp camp', lvl: 1, bill: { poles: 4, boughs: 2, cordage: 2, sessions: 1 }, needGear: 'Tarp', wear: 1.6, inside: true, fireIn: false, desc: 'Up in an afternoon. Flaps all night and wears fast.' },
+  leanto: { stats: { warmth: 1, dry: 1, wind: 1, strong: 1 }, name: 'Lean-to', lvl: 1, bill: { poles: 6, boughs: 10, cordage: 2, sessions: 1 }, wear: 1.3, inside: true, fireIn: false, desc: 'Open to the fire, back to the wind. The first real roof.' },
+  hut: { stats: { warmth: 2, dry: 2, wind: 2, strong: 2 }, name: 'Debris hut', lvl: 2, bill: { poles: 10, boughs: 16, moss: 8, cordage: 4, sessions: 2 }, wear: 1, inside: false, fireIn: false, desc: 'Warm and dark. No room to work and no fire inside.' },
+  rock: { stats: { warmth: 3, dry: 3, wind: 3, strong: 3 }, name: 'Rock shelter', lvl: 3, bill: { stone: 12, poles: 6, moss: 6, cordage: 2, sessions: 3 }, wear: 0.25, inside: true, fireIn: true, safeFire: true, desc: 'Walled in under the overhang. A fire inside, and the rock holds the heat.' },
+  snowcave: { stats: { warmth: 3, dry: 1, wind: 3, strong: 1 }, name: 'Snow cave', lvl: 2, bill: { boughs: 6, sessions: 2 }, needSnow: true, wear: 1.1, inside: true, fireIn: false, desc: 'Dug into a deep drift, boughs on the floor. Near freezing inside whatever the wind does outside. A thaw sags the roof.' },
+  cabin: { stats: { warmth: 3, dry: 3, wind: 3, strong: 3 }, name: 'Cabin', lvl: 3, bill: { logs: 20, moss: 10, cordage: 4, sessions: 4, tool: 'cutter' }, wear: 0.35, inside: true, fireIn: true, safeFire: false, desc: 'Log walls. A fire inside wants a chimney, or the roof goes up.' },
 };
 const UPGRADES = { none: ['tarp', 'leanto', 'hut', 'snowcave', 'rock', 'cabin'], tarp: ['hut', 'snowcave', 'rock', 'cabin'], leanto: ['hut', 'snowcave', 'rock', 'cabin'], hut: ['rock', 'cabin'], snowcave: ['rock', 'cabin'], rock: [], cabin: [] };
 /* deep snow: a drift you can dig a room into, about a week after the first snow */
@@ -1422,7 +1427,13 @@ function doAction(s, id, lines, mod, opts) {
     case 'whittle': { s.morale += 3; s.skill.craft = Math.min(1.5, s.skill.craft + 0.02); const r2 = rnd(s); if (r2 < 0.25 && s.mats.bone > 0 && blade(s) && s.hooks < 8) { s.mats.bone -= 1; s.hooks += 1; lines.push(['Whittled a gorge hook from a sliver of bone while the rain came down.', 'info']); } else if (r2 < 0.45 && s.firewood >= 0.5) { s.firewood = round1(s.firewood - 0.3); s.mats.tinder += 1; lines.push(['Split a stick off the woodpile and shaved it into feather sticks for tinder.', 'info']); } else lines.push(['Sat in the doorway and carved a spoon you did not need.', 'muted']); break; }
     case 'repair': { const k = repairMat(s); s.mats[k] -= k === 'poles' ? 2 : 4; s.shelterCond = X.good === false ? Math.max(s.shelterCond ?? 1, 0.8) : 1; s.morale += 2; lines.push([X.good === false ? 'Patched the worst of it in a hurry. It will need doing again soon.' :k === 'moss' ? 'Re-chinked the walls and packed the roof. Tight again.' : 'Re-thatched the roof and lashed the loose poles. Sound again.', 'good']); break; }
     case 'forage': {
-      const pool = foragePool(s); const pf = s.patch && s.patch.forage != null ? s.patch.forage : 1; const p = 0.62 * se.mult.forage * s.skill.forage * (snowy(s) ? 0.6 : 1) * pf; s.patch = s.patch || {}; s.patch.forage = Math.max(0.25, pf - 0.04);
+      const pool = foragePool(s); const pf = s.patch && s.patch.forage != null ? s.patch.forage : 1;
+      if (X.total) { /* by hand: what you picked as you walked, and whether you left enough to come back to */
+        s.patch = s.patch || {}; const frac = X.picked / X.total; s.patch.forage = frac > 0.6 ? Math.max(0.25, pf - 0.1 * frac) : Math.min(1, pf + 0.02);
+        const por = X.picked ? Math.max(1, Math.round(X.picked * 0.55 * Math.min(1.4, se.mult.forage) * pf * (snowy(s) ? 0.6 : 1))) : 0;
+        if (por) { const t = pickW(s, pool); addFood(s, t, por); lines.push([`Picked ${low(DATA.foods[t].name)} as you walked (${Math.round(por * DATA.foods[t].kcal)} kcal).`, 'good']); s.morale += 1; s.skill.forage = Math.min(1.3, s.skill.forage + 0.02); } else lines.push(['Walked the slope and came back with nothing in your hands.', 'muted']);
+        lines.push([frac > 0.6 ? 'You stripped it. This patch will be thin for a while.' : 'You left plenty. It will come back.', 'muted']); break; }
+      const p = 0.62 * se.mult.forage * s.skill.forage * (snowy(s) ? 0.6 : 1) * pf; s.patch = s.patch || {}; s.patch.forage = Math.max(0.25, pf - 0.04);
       if (chance(s, p)) { const t = pickW(s, pool); const por = 1 + Math.floor(rnd(s) * 3); addFood(s, t, por); lines.push([`Found ${low(DATA.foods[t].name)} (${Math.round(por * DATA.foods[t].kcal)} kcal).`, 'good']); s.morale += 1; }
       else lines.push(['Wandered for a couple of hours. Not much out there.', 'muted']);
       if (chance(s, 0.3)) gain('tinder', 1, 'Pocketed some dry bark');
@@ -1588,7 +1599,7 @@ function doAction(s, id, lines, mod, opts) {
       if (has(s, 'Sharpening stone')) { s.axeEdge = 1; lines.push(['Put a fresh edge on the axe.', 'info']); } else { s.axeEdge = Math.max(s.axeEdge, 0.75); lines.push(['Honed the axe on a flat river stone, wet. A working edge, not a fine one.', 'info']); } break; }
     case 'fix_axe': { const sys = sysOf(s); const wrap = s.mats.hide >= 1; if (wrap) s.mats.hide -= 1; sys.wrapped = wrap; sys.haft = wrap ? 1 : 0.8; sys.axeOff = false; lines.push([wrap ? 'Carved a hardwood wedge, drove it into the eye and bound the neck in a strip of wet rawhide. It will shrink tight as it dries.' : 'Carved a new hardwood wedge and drove it into the eye. The head is tight again, for now.', 'good']); break; }
     case 'search': {
-      const p = se.found.rate * Math.pow(0.82, s.stats.found);
+      const p = se.found.rate * Math.pow(0.82, s.stats.found) * (mod || 1) * (X.cover != null ? 0.5 + X.cover : 1); /* the old camp's better odds (mod) were never applied; a well-swept shore turns up more */
       if (chance(s, p)) {
         const cls = pickW(s, se.found.classes); const ex = (se.found.examples[cls] || []);
         const name = ex.length ? ex[Math.floor(rnd(s) * ex.length)] : cls;
@@ -2508,6 +2519,11 @@ function summaryText() {
 function placeOf() { const ahead = S.rivals.filter(r => r.days > S.day || (r.place === 1 && r.days === S.day)).length; return ahead + 1; }
 
 // ------------------------------------------------------------ setup screen
+/* the place at a glance: how cold, what water, what food (pips, never colour alone) */
+function siteChips(se) { const c = se.climate, m = se.base || se.mult; const pip = v => { const n = v >= 1.25 ? 3 : v >= 0.85 ? 2 : 1; return [0, 1, 2].map(i => `<i class="${i < n ? 'on' : ''}"></i>`).join(''); };
+  const cold = c.freeze != null && c.freeze <= 1 ? 'frozen from day one' : c.freeze != null ? `freezes about day ${c.freeze}` : c.snow != null ? `snow about day ${c.snow}` : c.t1 >= 8 ? 'mild throughout' : 'cool, no freeze';
+  const water = c.water === 'scarce' ? 'water is scarce' : { lake: 'a lake', river: 'a river', stream: 'streams', pond: 'ponds' }[c.water] || c.water;
+  return `<span class="sc">${cold}</span><span class="sc">${water}${c.coast ? ' and the sea' : ''}</span><span class="sc pips"><em>fish</em>${pip(m.fish)}</span><span class="sc pips"><em>game</em>${pip(m.hunt)}</span><span class="sc pips"><em>plants</em>${pip(m.forage)}</span>`; }
 function renderSetup() {
   // easiest first: by difficulty level, then by how long a typical player lasts there (longest first)
   const level = placeLevel;
@@ -2536,6 +2552,7 @@ function renderSetup() {
     const b = $(`<button class="season${open ? '' : ' locked'}" role="listitem" aria-pressed="${se.key === setup.season}"${open ? '' : ' aria-disabled="true"'}>
       <b>${esc(se.name)} · ${esc(se.location)}</b><span class="diff ${dc}">${dl}</span>
       <span class="desc">${esc(se.blurb)}</span>
+      <span class="sitechips">${siteChips(se)}</span>
       <span class="stats"><span><em class="num">${realMedian(se)} days</em>median rival</span><span><em class="num">${win} days</em>longest-lasting rival</span>${typical ? `<span><em class="num">~${typical} days</em>a typical player</span>` : ''}</span>
       ${tags ? `<span class="tags">${tags}</span>` : ''}${open ? '' : `<span class="lockline">Locked. Last ${UNLOCK_DAYS} days, or outlast half the field, in a ${esc(groupName(lv - 1).toLowerCase())} place to open it.</span>`}</button>`);
     b.onclick = () => { if (!open) return; setup.season = se.key; list.querySelectorAll('.season').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); };
@@ -3431,7 +3448,7 @@ function interactionsHere() {
     if (push('fish', 'Cast a line', () => startFish(false)) && atRiver()) { const st = E.stockOf(S, 'river'); out[out.length - 1].sub = `river · ${Math.round(Math.min(0.95, E.fishOdds(S, 'river')) * 100)}%${E.stockWord(st) ? ' · ' + E.stockWord(st) : ''}`; } if (near(W.netSpot, 80)) { push('setnet', null, startNet); push('checknet'); }
     push('ice_hole'); push('raft_fish'); push('beach_raft');
     push('bait', null, () => startCollect('bait', 'worm')); push('setlines'); if (bed) push('shellfish', null, () => startCollect('shellfish', 'shell', bed)); if (!atRiver()) push('seaweed', null, () => startCollect('seaweed', 'weed')); push('dig_clay', null, () => startCollect('dig_clay', 'clay'));
-    if (W.debris.some(d => !d.taken && near(d, 40))) push('search', 'Pick it up'); else push('search', W.desert ? 'Search the pool edge' : 'Walk the shore'); push('stones', null, () => startCollect('stones', 'stone'));
+    if (W.debris.some(d => !d.taken && near(d, 40))) push('search', 'Pick it up'); else push('search', W.desert ? 'Search the pool edge' : 'Walk the shore', startSearch); push('stones', null, () => startCollect('stones', 'stone'));
   }
   if (poolNear(60)) push('water');
   if (!W.desert && (atShore() || (W.pond && near(W.pond, W.pond.r + 50)))) push('water', 'Fetch water');
@@ -3457,7 +3474,7 @@ function interactionsHere() {
   if (pile) { const room = E.carryCap(S) - kgNow; const fits = BULKY.some(k => (pile.m[k] || 0) > 0 && E.WEIGHT[k] * Math.min(1, pile.m[k]) <= room); out.unshift(fits ? { label: 'Load up from the stack', sub: `${packText(pile.m)} · ${Math.round(E.loadOf(pile.m))} kg here, room for ${Math.round(room)} kg`, primary: true, fn: () => loadFromPile(pile) } : { label: 'Stack is here', sub: `${packText(pile.m)} · your pack is too full; unload at camp first`, dim: true, fn: () => banner([['Nothing more will fit. Carry this load home first.', 'muted']]) }); }
   if (kgNow > 0.5 && !pile) out.push({ label: 'Stack your load here', sub: `${packText(S.pack)} · come back for it`, fn: dropLoad });
   if (W.cacheAway && S.cachePlace === 'away' && near(W.cacheAway, 60)) { push('repair_cache'); if (W.cacheSignDay !== S.day) { W.cacheSignDay = S.day; const cl = E.cacheSign(S, true); if (cl) worldToast([[cl, 'muted']], W.player.x, W.player.y - 10); } }
-  if (!out.length && !atShore() && !onTrail()) push('forage', 'Forage around here');
+  if (!out.length && !atShore() && !onTrail()) push('forage', 'Forage around here', startForage);
   if (!W.inside) push('dew');
   if (dist(W.player, W.camp) > 300) { push('shadow_stick'); push('moss_check'); }
   if (W.bushes.some(b => near(b, 60))) push('inspect');
@@ -3855,6 +3872,30 @@ function startCollect(id, kind, at) {
   miniUI(`<div class="mtext">${kind === 'nettle' ? 'Pinch the tops with the knife, not your fingers. ' : kind === 'cone' ? 'Pull the cones and shake the nuts out. ' : ''}Tap each of the ${n} ${noun} to pick ${n === 1 ? 'it' : 'them'} up${per > 1.05 ? ` (about ${Math.round(total)} in all)` : ''}.</div>`); lastActs = ''; refreshActs();
 }
 /* a knowledge puzzle: read the cap, cut one open, check your field notes. What you learn by eating stays in the notes */
+/* forage: walk a strip of ground; tap the good clumps as you pass them; leave some and the patch comes back */
+function startForage() {
+  autoResolve(); const N = 8, good = new Set([0, 1, 2, 4, 5, 7].map(i => (i + Math.floor(Math.random() * 3)) % N)); const xs = Array.from({ length: N }, (_, i) => 30 + i * 34 + Math.random() * 8); let t = 0, picked = 0, worked = false; const got = new Set();
+  const finish = () => { if (!mini) return; endMini(); doAct('forage', { picked, total: good.size }); }; const quit = () => { if (mini) endMini(); };
+  const svg = pad(`<rect x="0" y="62" width="300" height="38" fill="#6f6a45" opacity=".5"/><path d="M0 64 Q75 58 150 64 T300 62" stroke="#8a845a" stroke-width="3" fill="none"/>${xs.map((x, i) => `<g class="fg" data-i="${i}" transform="translate(${x.toFixed(0)} 58)">${good.has(i) ? '<circle r="8" fill="#5e8a3a"/><circle cx="-4" cy="-3" r="2.2" fill="#b3c95a"/><circle cx="3" cy="-4" r="2" fill="#c7d86a"/>' : '<circle r="8" fill="#7b6f52"/><path d="M-5 -2 L5 2 M-4 3 L4 -3" stroke="#57503c" stroke-width="1.4"/>'}</g>`).join('')}<g id="walker"><circle r="5" fill="#e8e0d0"/><path d="M0 5 v12" stroke="#e8e0d0" stroke-width="2"/></g>`, 300, 100);
+  const tryTap = (x) => { const i = xs.findIndex((q, k) => !got.has(k) && Math.abs(q - x) < 16); if (i < 0) return; const wx = t / 9 * 300; if (Math.abs(xs[i] - wx) > 46) { padText('Too far. Wait until you are beside it.'); return; } worked = true; got.add(i); const g = svg && svg.querySelector(`.fg[data-i="${i}"]`);
+    if (good.has(i)) { picked++; sfx.play('tap'); buzz(8); if (g) g.setAttribute('opacity', '.35'); padText(`${picked} picked. ${picked > good.size * 0.6 ? 'Leave some, or this patch is done for weeks.' : 'Leave some for the patch.'}`); } else { sfx.play('stick'); if (g) g.setAttribute('opacity', '.25'); padText('Old and woody. Left it.'); } };
+  if (svg) svg.onpointerdown = (e) => tryTap(svg.toLocal(e).x);
+  mini = { type: 'craft', deadline: W.t + 20, update(dt) { t += dt; const w = svg && svg.querySelector('#walker'); if (w) w.setAttribute('transform', `translate(${Math.min(300, t / 9 * 300).toFixed(1)} 40)`); if (t >= 9.2) { if (worked) finish(); else { quit(); banner([['You walked the slope and picked nothing. No time lost.', 'muted']], 2500); } } },
+    acts: [{ label: 'Head back', sub: 'stop here', fn: () => worked ? finish() : quit() }], cancel: () => worked ? finish() : quit() };
+  padText('Walk the slope. Tap the green clumps as you come beside them. Leave some.'); lastActs = ''; refreshActs();
+}
+/* walk the shore: sweep the sand with your hand; the more you turn over, the better the odds something is there */
+function startSearch() {
+  autoResolve(); const C = 10, R = 3, seen = new Set(); let drag = false, worked = false;
+  const finish = () => { if (!mini) return; endMini(); doAct('search', { cover: seen.size / (C * R) }); }; const quit = () => { if (mini) endMini(); };
+  const svg = pad(`<rect x="0" y="0" width="300" height="90" fill="#cbb98e"/>${Array.from({ length: 60 }, () => `<circle cx="${(Math.random() * 300).toFixed(0)}" cy="${(Math.random() * 90).toFixed(0)}" r="${(0.6 + Math.random()).toFixed(1)}" fill="#a8956a"/>`).join('')}<g id="swept"></g>`, 300, 90);
+  const sweep = (p) => { const cx = Math.floor(p.x / 30), cy = Math.floor(p.y / 30); if (cx < 0 || cy < 0 || cx >= C || cy >= R) return; const k = cx + ',' + cy; if (seen.has(k)) return; seen.add(k); worked = true;
+    if (svg) svg.querySelector('#swept').insertAdjacentHTML('beforeend', `<rect x="${cx * 30}" y="${cy * 30}" width="30" height="30" fill="#9e8c62" opacity=".55"/>${Math.random() < 0.3 ? `<circle cx="${cx * 30 + 8 + Math.random() * 14}" cy="${cy * 30 + 8 + Math.random() * 14}" r="2.5" fill="#e8e2d2"/>` : ''}`);
+    padText(`${Math.round(seen.size / (C * R) * 100)}% of the strip turned over.`); if (seen.size >= C * R) setTimeout(finish, 250); };
+  if (svg) { svg.onpointerdown = (e) => { drag = true; svg.setPointerCapture(e.pointerId); sweep(svg.toLocal(e)); }; svg.onpointermove = (e) => { if (drag) sweep(svg.toLocal(e)); }; svg.onpointerup = () => { drag = false; }; }
+  mini = { type: 'craft', deadline: W.t + 30, update() {}, acts: [{ label: 'Done looking', sub: 'take what you found', fn: () => worked ? finish() : quit() }], cancel: () => worked ? finish() : quit() };
+  padText(W.desert ? 'Drag your hand through the silt at the pool edge.' : 'Drag your hand across the wrack line. Turn the sand over.'); lastActs = ''; refreshActs();
+}
 function startMushroom(bush) {
   autoResolve(); const [look, risky] = bush.look; const i = MUSH_LOOKS.indexOf(bush.look); const name = MUSH_NAMES[i] || 'Mushrooms'; const known = ((S.sys || {}).known || {})[look];
   let sure = Math.random() < 0.6 + 0.3 * (S.skill.forage - 1), cut = false;
@@ -4195,15 +4236,19 @@ function openCachePlace() {
 }
 function openShelterChoice() {
   sheet((sh, close) => {
-    sh.append($(`<h2>${S.shelterType ? 'Upgrade the shelter' : 'What to build'}</h2>`)); sh.append($(`<div class="muted" style="font-size:13px">You have: ${esc(E.matList(S) || 'nothing')}. Any of these designs works here. Each one lists what it still needs.</div>`));
+    sh.append($(`<h2>${S.shelterType ? 'Upgrade the shelter' : 'What to build'}</h2>`)); sh.append($(`<div class="muted" style="font-size:13px">Each design shows how it holds up and what you have of what it needs.</div>`));
     let door = (S.sys && S.sys.door) || 'lee';
     const dr = $(`<div><div class="rules" role="group" aria-label="Door"><span class="muted" style="font-size:13px;align-self:center">Door faces</span><button class="rule" data-d="lee">Away from the wind</button><button class="rule" data-d="fire">The fire</button></div><div class="muted doornote" style="font-size:12.5px"></div></div>`);
     const drawDoor = () => { dr.querySelectorAll('.rule').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.d === door))); dr.querySelector('.doornote').textContent = door === 'lee' ? 'Back to the weather: less draught on windy nights.' : 'Open to the fire: more of its heat in a lean-to or tarp, but the wind gets in.'; };
-    dr.querySelectorAll('.rule').forEach(b => b.onclick = () => { door = b.dataset.d; drawDoor(); }); sh.append(dr); drawDoor(); 
-    for (const k of E.shelterOptions(S)) { const sd = E.SHELTERS[k]; const bl = E.billFor(S, k); const bill = Object.entries(bl).filter(([m, n]) => m !== 'sessions' && m !== 'tool' && n > 0).map(([m, n]) => `${n} ${E.MATS[m][0].toLowerCase()}`).join(', ') + (bl.tool ? ', an axe or saw' : '') + ` · ${bl.sessions} session${bl.sessions > 1 ? 's' : ''}` + (bl !== sd.bill ? ' · pegged with the auger' : '');
-      const warm = ['', 'cool', 'warm', 'warmest'][sd.lvl];
-      const b = $(`<button class="act ${S.shelterGoal === k ? 'picked' : ''}"><b>${esc(sd.name)}</b><span class="o">${warm}</span><small>${esc(sd.desc)} Needs ${esc(bill)}.</small></button>`);
-      b.onclick = () => { E.chooseShelter(S, k, door); save(); close(); lastActs = ''; refreshActs(); banner([[`Plan: ${sd.name}. Bring in ${bill.split(' · ')[0]}.`, 'info']]); }; sh.append(b); }
+    dr.querySelectorAll('.rule').forEach(b => b.onclick = () => { door = b.dataset.d; drawDoor(); }); sh.append(dr); drawDoor();
+    const pips = (n, label) => `<span class="pips" title="${label} ${n} of 3"><em>${label}</em>${[0, 1, 2].map(i => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`;
+    for (const k of E.shelterOptions(S)) { const sd = E.SHELTERS[k]; const bl = E.billFor(S, k); const st = sd.stats || { warmth: sd.lvl, dry: sd.lvl, wind: sd.lvl, strong: sd.lvl };
+      const need = Object.entries(bl).filter(([m, n]) => m !== 'sessions' && m !== 'tool' && n > 0);
+      const chips = need.map(([m, n]) => { const have = Math.floor(S.mats[m] || 0); const ok = have >= n || S.shelterGoal === k && S.shelterPaid; return `<span class="need ${ok ? 'ok' : 'miss'}">${ok ? '✓' : '!'} ${esc(E.MATS[m][0].toLowerCase())} ${ok ? n : `${have}/${n}`}</span>`; }).join('')
+        + (bl.tool ? `<span class="need ${E.cutter(S) ? 'ok' : 'miss'}">${E.cutter(S) ? '✓' : '!'} axe or saw</span>` : '') + `<span class="need time">${bl.sessions} session${bl.sessions > 1 ? 's' : ''}</span>` + (bl !== sd.bill ? `<span class="need time">${E.SHELTERS[k] && k === 'snowcave' ? 'dug with the shovel' : 'pegged with the auger'}</span>` : '');
+      const b = $(`<button class="act design ${S.shelterGoal === k ? 'picked' : ''}"><b>${esc(sd.name)}</b><span class="stats">${pips(st.warmth, 'warm')}${pips(st.dry, 'dry')}${pips(st.wind, 'wind')}${pips(st.strong, 'strong')}</span><small>${esc(sd.desc)}</small><span class="needs">${chips}</span></button>`);
+      const bill = need.map(([m, n]) => `${n} ${E.MATS[m][0].toLowerCase()}`).join(', ');
+      b.onclick = () => { E.chooseShelter(S, k, door); save(); close(); lastActs = ''; refreshActs(); banner([[`Plan: ${sd.name}. Bring in ${bill || 'nothing more'}.`, 'info']]); }; sh.append(b); }
     if (S.shelterGoal) { const c = $(`<button class="act"><b>Drop the plan</b><small>Unused materials come back</small></button>`); c.onclick = () => { Engine.dropPlan(S); save(); close(); lastActs = ''; refreshActs(); }; sh.append(c); }
   });
 }

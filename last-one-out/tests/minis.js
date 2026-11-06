@@ -5,7 +5,7 @@ const { loadGame } = require('./load-game'); const E = loadGame(process.env.GAME
 const SRC = process.env.GAME_FILE || path.join(__dirname, '..', 'index.html'); const TMP = '/tmp/last-one-out-minis.html';
 const html = fs.readFileSync(SRC, 'utf8'); const hook = 'window.claude?.hot?.snapshot?.(() => ({ game: S }));';
 if (!html.includes(hook)) throw new Error('hook point not found');
-fs.writeFileSync(TMP, html.replace(hook, 'window.__m = { startLash, startHunt, startFish, startNet, startSteps, startTaps, startCordage, startSharpen, mini: () => mini, S: () => S, acts: () => mini ? mini.acts.map(a => a.label) : [], press: l => { const a = mini && mini.acts.find(x => x.label === l); if (a) { if (a.down) a.down(); if (a.fn) a.fn(); if (a.up) a.up(); return true; } return false; } };\n' + hook));
+fs.writeFileSync(TMP, html.replace(hook, 'window.__m = { startLash, startHunt, startFish, startNet, startSteps, startTaps, startCordage, startSharpen, startForage, startSearch, mini: () => mini, S: () => S, acts: () => mini ? mini.acts.map(a => a.label) : [], press: l => { const a = mini && mini.acts.find(x => x.label === l); if (a) { if (a.down) a.down(); if (a.fn) a.fn(); if (a.up) a.up(); return true; } return false; } };\n' + hook));
 const KEY = 'last-one-out-v1'; const save = s => JSON.stringify(s, (k, v) => v === Infinity ? 1e9 : v);
 let fails = 0, passes = 0; const check = (name, ok, detail) => { if (ok) passes++; else { fails++; console.log('FAIL', name, detail ?? ''); } };
 function base() { const s = E.newGame('US-S6', ['Knife', 'Ferro rod', 'Axe', 'Fishing gear', 'Bow and arrows', 'Gillnet', 'Paracord'], { seed: 41, weight: 200 }); s.campChosen = true; E.beginDay(s); s.event = null; s.storm = s.rain = s.fog = s.snowfall = false; s.hours = 2; s.phase = 0; Object.assign(s.mats, { poles: 20, cordage: 20, boughs: 20 }); return s; }
@@ -49,6 +49,17 @@ function base() { const s = E.newGame('US-S6', ['Knife', 'Ferro rod', 'Axe', 'Fi
   await p.evaluate(() => window.__m.press('Do it the usual way')); await p.waitForTimeout(200); check('the usual way finishes the job at once', await p.evaluate(() => !window.__m.mini()));
   await fresh(); await p.evaluate(() => { window.__m.S().sys.handsMem = { mend: { reps: 0, streak: 1 } }; window.__m.startSteps('mend', { steps: ['Stitch', 'Pull'], need: 8, intro: 'x' }); });
   check('a new hand gets no shortcut', !(await p.evaluate(() => window.__m.acts())).includes('Do it the usual way'));
+  // forage by hand: the walk ends by itself and the engine hears what you picked
+  await fresh(); { const h0 = await p.evaluate(() => window.__m.S().hours); await p.evaluate(() => window.__m.startForage()); await p.waitForTimeout(10500);
+    check('the forage walk ends by itself', await p.evaluate(() => !window.__m.mini())); check('walking it without picking costs nothing', await p.evaluate(h0 => window.__m.S().hours === h0, h0)); }
+  await fresh(); { await p.evaluate(() => window.__m.startForage()); await p.waitForTimeout(300); const box = await p.evaluate(() => { const r = document.querySelector('#mini svg').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
+    for (let k = 0; k < 40 && await p.evaluate(() => !!window.__m.mini()); k++) { await p.mouse.click(box.x + box.w * Math.min(0.97, k / 40 + 0.02), box.y + box.h * 0.58); await p.waitForTimeout(220); }
+    await p.waitForTimeout(500); const L = await p.evaluate(() => window.__m.S().today.lines.map(l => l[0]).join(' ')); check('foraging by hand reports what you picked and what you left', /as you walked|nothing in your hands/.test(L) && /left plenty|stripped it/.test(L), L.slice(-200)); }
+  // the shore: sweeping more sand is a search; touching none is nothing
+  await fresh(); { const h0 = await p.evaluate(() => window.__m.S().hours); await p.evaluate(() => { window.__m.startSearch(); window.__m.press('Done looking'); }); check('a search with no sweeping costs nothing', await p.evaluate(h0 => window.__m.S().hours === h0 && !window.__m.mini(), h0)); }
+  await fresh(); { await p.evaluate(() => window.__m.startSearch()); await p.waitForTimeout(200); const box = await p.evaluate(() => { const r = document.querySelector('#mini svg').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
+    await p.mouse.move(box.x + 5, box.y + box.h * 0.5); await p.mouse.down(); for (let k = 0; k <= 30; k++) await p.mouse.move(box.x + box.w * k / 30, box.y + box.h * (0.2 + 0.6 * (k % 2))); await p.mouse.up();
+    await p.evaluate(() => window.__m.press('Done looking')); await p.waitForTimeout(300); check('a swept shore is searched', await p.evaluate(() => window.__m.S().today.done.includes('search'))); }
   check('no page errors', !errs.length, errs.slice(0, 3));
   await b.close(); console.log(fails ? `${fails} mini-game check(s) failed, ${passes} passed.` : `All ${passes} mini-game checks passed.`); process.exitCode = fails ? 1 : 0;
 })();
