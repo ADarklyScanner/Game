@@ -194,6 +194,8 @@ summary { cursor: pointer; color: var(--muted); font-size: 13px; }
 .hud .vt.w i b { background: rgba(230,222,200,.45); }
 .hud .vt.low i b { background: #d9874a; } .hud .vt.bad { color: #f0b49a; } .hud .vt.bad i b { background: #c8553a; }
 .hud .vt small { font-size: 12px; opacity: .75; }
+.hud .vt > span { display: inline-flex; align-items: center; gap: 4px; } .hud .vt .hi { width: 14px; height: 14px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: .85; }
+.hud .vt em { font: 400 10.5px var(--mono); font-style: normal; opacity: .6; margin-left: 2px; }
 .hud .chip { background: rgba(20,18,14,.55); color: var(--hud-ink); font: 500 13px var(--mono); border-radius: 4px; padding: 3px 8px; backdrop-filter: none; }
 .hud .chip.cond { background: rgba(20,18,14,.55); color: #f2d2a8; font-weight: 600; }
 .hud .chip.goal { background: rgba(20,18,14,.45); color: var(--hud-soft); font-style: normal; }
@@ -209,6 +211,19 @@ summary { cursor: pointer; color: var(--muted); font-size: 13px; }
 @media (min-width: 560px) { .acts .card { margin-left: auto; margin-right: auto; } }
 .acts .card .actbtn { background: none; color: var(--paper-ink); border: 0; border-bottom: 1px solid #cbbfa4; border-radius: 0; width: 100%; min-width: 0; padding: 9px 0 8px; display: flex; flex-direction: row; justify-content: space-between; align-items: baseline; gap: 12px; text-align: left; backdrop-filter: none; box-shadow: none; }
 .acts .card .actbtn:last-child { border-bottom: 0; }
+.acts .card.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 10px; max-height: 40vh; }
+.acts .card.tiles .cap { grid-column: 1 / -1; padding: 0 2px; }
+.acts .card .actbtn.tile { flex-direction: column; align-items: center; justify-content: flex-start; text-align: center; gap: 3px; min-height: 88px; padding: 9px 4px 8px; border: 1px solid #cbbfa4; border-radius: 6px; background: rgba(255,255,255,.28); }
+.acts .card .actbtn.tile:last-child { border-bottom: 1px solid #cbbfa4; }
+.acts .card .actbtn.tile .ai { width: 30px; height: 30px; flex: 0 0 auto; fill: none; stroke: var(--paper-ink); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.acts .card .actbtn.tile b { flex: 0 0 auto; font: 500 15.5px/1.1 var(--display); }
+.acts .card .actbtn.tile.primary { border-color: #b5652f; box-shadow: inset 0 0 0 1px #b5652f; background: rgba(181,101,47,.08); }
+.acts .card .actbtn.tile.primary b::before { display: none; }
+.acts .card .actbtn.tile .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; max-width: 100%; }
+.acts .card .actbtn.tile .ch { font: 500 11px/1.3 var(--mono); color: var(--paper-soft); background: rgba(60,48,30,.08); border-radius: 8px; padding: 1px 6px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acts .card .actbtn.tile .ch.o { color: var(--paper-ink); }
+.acts .card .actbtn.tile.dim .ai { opacity: .35; } .acts .card .actbtn.tile.dim .ch.r { color: var(--paper-red); }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .acts .card .cap { font: italic 15px var(--display); color: var(--paper-soft); padding: 7px 0 0; }
 .acts .card .actbtn b { flex: 1 1 auto; font: 400 19px/1.15 var(--display); text-transform: none; letter-spacing: 0; color: var(--paper-ink); }
 .acts .card .actbtn small { font: 500 14px/1.25 var(--mono); color: var(--paper-soft); text-align: right; flex: 0 1 auto; max-width: 58%; }
@@ -2404,7 +2419,7 @@ function cueFor(lines) {
   if (lines.some(l => l[1] === 'warn')) return 'warn';
   return null;
 }
-function floatNum(i, text, cls) { const v = app.querySelectorAll('.vital')[i]; if (!v || reduced) return; const r = v.getBoundingClientRect(); const f = $(`<span class="float ${cls}" style="position:fixed;left:${Math.round(r.right - 8)}px;top:${Math.round(r.top + 6)}px;right:auto;transform:translateX(-100%)">${esc(text)}</span>`); document.body.append(f); setTimeout(() => f.remove(), 1200); } /* on the page, not inside the vital: the next HUD refresh would wipe it */
+function floatNum(i, text, cls) { const v = app.querySelectorAll('.vt')[i]; /* the vitals are .vt since the HUD redesign; .vital found nothing, so the numbers never showed */ if (!v || reduced) return; const r = v.getBoundingClientRect(); const f = $(`<span class="float ${cls}" style="position:fixed;left:${Math.round(r.right - 8)}px;top:${Math.round(r.top + 6)}px;right:auto;transform:translateX(-100%)">${esc(text)}</span>`); document.body.append(f); setTimeout(() => f.remove(), 1200); } /* on the page, not inside the vital: the next HUD refresh would wipe it */
 function snap() { const st = E.status(S); return { kcal: st.storeKcal, h: S.health, m: S.morale, w: S.weight }; }
 function diffFloats(a) {
   const b = snap();
@@ -3133,11 +3148,13 @@ function updateHud() {
   const daily = (S.history && S.history.length && S.history[S.history.length - 1].tdee) || 2600; const fd = st.storeKcal / daily;
   const food = st.storeKcal < 50 ? 'No food' : fd < 1 ? 'Food <1 day' : `Food ${halves(Math.floor(fd * 2) / 2)} day${fd >= 1.5 ? 's' : ''}`;
   hudEl.querySelector('#h-vitals').innerHTML = `
-    <div class="vt w${cls(wbar)}" title="${(lf * 100).toFixed(0)}% of your starting weight lost">${S.weight.toFixed(0)} lb<i><b style="width:${Math.max(4, 100 - lf / 0.3 * 100)}%"></b></i></div>
-    <div class="vt h${cls(hb)}">Health ${Math.round(S.health)}<i><b style="width:${S.health}%"></b></i></div>
-    <div class="vt m${cls(mb)}">Will ${Math.round(S.morale)}<i><b style="width:${S.morale}%"></b></i></div>
-    <div class="vt f" title="${fmt(st.storeKcal)} kcal stored"><span>${food}${st.rawKcal ? `<small> + catch</small>` : ''}</span><i><b style="width:${Math.min(100, fd / 7 * 100)}%"></b></i></div>`;
+    <div class="vt w${cls(wbar)}" title="${(lf * 100).toFixed(0)}% of your starting weight lost" aria-label="Weight ${S.weight.toFixed(0)} pounds"><span>${HI.w}${S.weight.toFixed(0)} lb</span><i><b style="width:${Math.max(4, 100 - lf / 0.3 * 100)}%"></b></i></div>
+    <div class="vt h${cls(hb)}" aria-label="Health ${Math.round(S.health)}"><span>${HI.h}${Math.round(S.health)}<em>health</em></span><i><b style="width:${S.health}%"></b></i></div>
+    <div class="vt m${cls(mb)}" aria-label="Will ${Math.round(S.morale)}"><span>${HI.m}${Math.round(S.morale)}<em>will</em></span><i><b style="width:${S.morale}%"></b></i></div>
+    <div class="vt f" title="${fmt(st.storeKcal)} kcal stored"><span>${HI.f}${food}${st.rawKcal ? `<small> + catch</small>` : ''}</span><i><b style="width:${Math.min(100, fd / 7 * 100)}%"></b></i></div>`;
 }
+/* HUD icons: weight, health, will, food (never colour alone: an icon and a number) */
+const HI = { w: '<svg class="hi" viewBox="0 0 24 24"><path d="M5 20h14l-2-11H7zM12 9a2.5 2.5 0 1 0 .01 0"/></svg>', h: '<svg class="hi" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-9.6A4 4 0 0 1 12 8a4 4 0 0 1 7 2.4C19 15.6 12 20 12 20z"/></svg>', m: '<svg class="hi" viewBox="0 0 24 24"><path d="M12 21c-4 0-6-2.6-6-5.6 0-3.2 2.6-4.6 3.4-8 1.6 1.4 2 3 1.8 4.6 1.6-1 2.4-3 2.2-5.6C16.6 8.4 18 11.6 18 15.2 18 18.6 15.6 21 12 21z"/></svg>', f: '<svg class="hi" viewBox="0 0 24 24"><path d="M4 9h16M5 9l1 9a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-9"/></svg>' };
 function banner(lines, keep) {
   if (!bannerEl) return;
   for (const [t, k] of lines) { const el = $(`<div class="msg tone-${k}">${esc(t)}</div>`); bannerEl.append(el); setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 500); }, keep || (2600 + Math.min(3800, t.length * 38))); }
@@ -3541,6 +3558,71 @@ for (const k in TOOL_ICON) TOOL_ICON[k] = paintIcon(TOOL_ICON[k]); iconDefs();
 let rollSel = null, rollOpen = true, rollSig = '';
 // one job as a button, keeping the hold and press-and-release kinds that mini-games use
 const niceSub = s => (s || '').replace(/\b(\d+)\.5 ?h\b/g, (m, a) => (a === '0' ? '½' : a + '½') + '\u00a0h').replace(/\b(\d+) ?h\b/g, '$1\u00a0h').replace(/\b(\d+) ?min\b/g, '$1\u00a0min');
+// ------------------------------------------------------------ action tiles (UI spec 4.2): icon, a short label, chips for time and odds
+/* one line-icon set, 24 x 24, drawn in the ink colour: what each job is at a glance */
+const AI = {
+  fire: 'M12 21c-4 0-6-2.6-6-5.6 0-3.2 2.6-4.6 3.4-8 1.6 1.4 2 3 1.8 4.6 1.6-1 2.4-3 2.2-5.6C16.6 8.4 18 11.6 18 15.2 18 18.6 15.6 21 12 21z',
+  drop: 'M12 3.5c3 4.2 5.5 7.4 5.5 10.6A5.5 5.5 0 0 1 6.5 14.1C6.5 10.9 9 7.7 12 3.5z',
+  axe: 'M5 20L15 8M13 6.5c2-2.6 5.4-2.8 6.6-1.2 1.2 1.6-.4 4.6-3.2 5.4z',
+  saw: 'M3 15l15-9 3 5-15 9zM6 16l1-2M9 14.2l1-2M12 12.4l1-2M15 10.6l1-2',
+  pole: 'M7 3v18M12 3v18M17 3v18',
+  bough: 'M4 20L19 5M8 16l-3-1M8 16l1 3M11 13l-3-1M11 13l1 3M14 10l-3-1M14 10l1 3M17 7l-3-1M17 7l1 3',
+  bark: 'M6 5c4 0 8 1 12 0v4c-4 1-8 0-12 0zM6 9c0 4 1 7 0 10M18 9c0 4-1 7 0 10',
+  tinder: 'M5 18c3-2 4-6 7-8M9 19c2-3 5-5 9-6M7 14c1-3 3-6 6-8',
+  fish: 'M3 12c3-4 8-5 12-2l4-3v10l-4-3c-4 3-9 2-12-2zM15.5 11.2v.1',
+  hook: 'M14 3v11a4 4 0 0 1-8 0v-2l3 2',
+  net: 'M4 4l16 16M8 4l12 12M12 4l8 8M4 8l12 12M4 12l8 8M20 4L4 20M16 4L4 16M12 4l-8 8M20 8L8 20M20 12l-8 8',
+  snare: 'M12 3v8M12 11c-4 0-6 2.4-6 5s2.4 5 6 5 6-2.4 6-5-2-5-6-5z',
+  bow: 'M7 3c7 3 7 15 0 18M7 3v18M4 12h15M17 10l2 2-2 2',
+  paw: 'M8.5 13c1.8 0 3.5 2 3.5 4.2 0 1.6-1.3 2.3-3.5 2.3S5 18.8 5 17.2C5 15 6.7 13 8.5 13zM5 10.5v.1M8 8v.1M11.5 8.5v.1M13 11.5v.1',
+  knife: 'M3 21l9-9M12 12l7.5-7.5c1.2 2.4.4 5.2-1.8 7.4L14 15.5z',
+  pot: 'M4 9h16M5 9l1 9a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-9M9 5c0 1 1 1.5 1 2.5M13 5c0 1 1 1.5 1 2.5',
+  leaf: 'M5 19C5 10 10 5 19 5c0 9-5 14-14 14zM5 19l8-8',
+  berry: 'M9 14a3 3 0 1 0 .01 0zM15 14a3 3 0 1 0 .01 0zM12 9.5a3 3 0 1 0 .01 0zM12 6.5V3l3 1',
+  root: 'M12 3v6M8 9h8l-2 4h-4zM10 13c-1 3-3 5-4 7M12 13v8M14 13c1 3 3 5 4 7',
+  shroom: 'M4 12c0-4.5 3.6-7.5 8-7.5s8 3 8 7.5zM10 12v6a2 2 0 0 0 4 0v-6',
+  stone: 'M4 16c0-5 3.5-8.5 8-8.5s8 3.5 8 8.5c0 2-1.5 3-3 3H7c-1.5 0-3-1-3-3z',
+  moss: 'M5 17c-1.6 0-2-2.6-.4-3.2C4 11 6.4 9.6 8.4 10.4 9.2 8 12.4 7.4 14 9.2c1.6-1 4.4 0 4.4 2.4 1.8.4 2 3.4 0 3.8z',
+  clay: 'M6 9h12l-1.5 9a2 2 0 0 1-2 2h-5a2 2 0 0 1-2-2zM8 9c0-2 1.8-3.5 4-3.5S16 7 16 9',
+  tent: 'M3 20L12 4l9 16zM12 4v16M9 20l3-6 3 6',
+  hammer: 'M14 4l6 6-3 3-6-6zM12 9l-8 8 3 3 8-8',
+  moon: 'M18 15A7 7 0 0 1 9 6a7 7 0 1 0 9 9z',
+  heart: 'M12 20s-7-4.4-7-9.6A4 4 0 0 1 12 8a4 4 0 0 1 7 2.4C19 15.6 12 20 12 20z',
+  eye: 'M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6zM12 9.5a2.5 2.5 0 1 0 .01 0z',
+  compass: 'M12 3a9 9 0 1 0 .01 0zM15 9l-2 4.5L9 15l2-4.5z',
+  cord: 'M5 5c4 0 4 4 7 4s3-4 7-4M5 12c4 0 4 4 7 4s3-4 7-4M5 19h14',
+  rain: 'M6 13a4 4 0 0 1 1-7.8A5 5 0 0 1 17 6a3.5 3.5 0 0 1 1 7zM8 16l-1 3M12 16l-1 3M16 16l-1 3',
+  snow: 'M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9.5 4.5L12 7l2.5-2.5M9.5 19.5L12 17l2.5 2.5',
+  spade: 'M12 3v10M8 13h8l-1 6a3 3 0 0 1-6 0z',
+  hide: 'M6 4c2 2 4 2 6 1 2 1 4 1 6-1l-1 6 2 4-3 1-1 5H9l-1-5-3-1 2-4z',
+  sky: 'M4 15a4 4 0 0 1 3-6.8A5.5 5.5 0 0 1 18 9a3.5 3.5 0 0 1 .5 6zM15 4.5l1-1.5M19 6.5l1.5-.5',
+  book: 'M5 4h7v16H5zM12 4h7v16h-7M8 8h2M15 8h2',
+  dot: 'M12 9a3 3 0 1 0 .01 0z',
+};
+function actIcon(id = '', label = '') {
+  const t = id + ' ' + label.toLowerCase();
+  const k = /check_roof|clear_roof/.test(t) ? 'tent' : /light_fire|tend_fire|star_fire|fire_in|fire_out|smoke|dry_food|render|charcloth|harden/.test(t) ? 'fire' : /dew|water|ice_hole|boil|melt_ice/.test(t) ? 'drop' : /catch_rain/.test(t) ? 'rain' : /melt_snow|snowshoe/.test(t) ? 'snow'
+    : /cut_logs|firewood|fix_axe|sharpen/.test(t) ? 'axe' : /cut_poles|craft_platform|craft_rack|raft/.test(t) ? 'pole' : /boughs|bed\b|^bed/.test(t) ? 'bough' : /\bbark/.test(t) ? 'bark' : /tinder/.test(t) ? 'tinder'
+    : /setnet|checknet|craft_net/.test(t) ? 'net' : /setlines|hook|handline|leader|lure/.test(t) ? 'hook' : /fish/.test(t) ? 'fish' : /snare|deadfall|checktraps|trapline/.test(t) ? 'snare'
+    : /hunt|bow|arrow|tiller/.test(t) ? 'bow' : /track|scout/.test(t) ? 'paw' : /clean|dress|stoneblade|whittle/.test(t) ? 'knife' : /cook|broth|tea|pemmican|eat/.test(t) ? 'pot'
+    : /greens|nettle|forage|seaweed|inspect/.test(t) ? 'leaf' : /berr|rosehip/.test(t) ? 'berry' : /roots|cattail/.test(t) ? 'root' : /mushroom/.test(t) ? 'shroom' : /stones|cairn|hearth|chimney/.test(t) ? 'stone'
+    : /moss|caulk/.test(t) ? 'moss' : /clay|pot/.test(t) ? 'clay' : /shelter|tarp|go inside|go outside|camp here|move camp|sleep rough|brace/.test(t) ? 'tent' : /craft|repair|mend|build|cache|woodshed|stove|bridge|reflector/.test(t) ? 'hammer'
+    : /rest|sleep|turn in/.test(t) ? 'moon' : /photo|camera|letter/.test(t) ? 'heart' : /read_sky|sky/.test(t) ? 'sky' : /shadow|moss_check|climb|compass/.test(t) ? 'compass' : /cordage|belt/.test(t) ? 'cord'
+    : /latrine|bury|dig|scrub/.test(t) ? 'spade' : /hide|mittens/.test(t) ? 'hide' : /journal/.test(t) ? 'book' : /search|wreck|look/.test(t) ? 'eye' : 'dot';
+  return `<svg class="ai" viewBox="0 0 24 24" aria-hidden="true"><path d="${AI[k]}"/></svg>`;
+}
+/* two words or so for the tile; the full label stays on the button for screen readers and for the record */
+const SHORT = { photo: 'Photograph', talk_camera: 'Talk it out', read_letter: 'The letter', dig_latrine: 'Latrine', check_roof: 'Check roof', clear_roof: 'Clear roof', light_fire: 'Light fire', tend_fire: 'Tend fire', star_fire: 'Star fire', melt_snow: 'Melt snow', melt_ice: 'Melt ice', catch_rain: 'Catch rain', change_dry: 'Dry clothes', cut_poles: 'Poles', cut_logs: 'Logs', firewood: 'Firewood', checktraps: 'Trapline', setlines: 'Set lines', checknet: 'Check net', setnet: 'Set net', ice_hole: 'Ice hole', shadow_stick: 'Find north', moss_check: 'Moss side', read_sky: 'Read sky', render_fat: 'Render fat', dry_food: 'Dry meat', craft_charcloth: 'Char cloth', harden_stakes: 'Harden stakes', repair_cache: 'Mend cache', whittle: 'Whittle', inspect: 'Look closely' };
+function shortLabel(a) { if (a.id && SHORT[a.id]) return SHORT[a.id]; const L = a.label || ''; if (L.length <= 14) return L; const w = L.replace(/^(Gather|Pick|Look at the|Look at|Cut|Make|Build|Go|Set|Check|Lay|Rig the|Melt|Fetch|Break a hole in the)\s+/i, (m) => /^(Pick|Cut|Build|Set|Check|Lay|Melt|Fetch)/i.test(m) ? m : '').split(' '); const s = w.slice(0, 2).join(' '); return s.charAt(0).toUpperCase() + s.slice(1); }
+function tileChips(sub) {
+  const parts = String(sub || '').split(' · ').map(x => x.trim()).filter(Boolean); const out = [];
+  const time = parts.find(x => /^\d+(\.\d+)?\s*(h|min)\b|^\d+½?\s*h\b/.test(x)); const odds = parts.find(x => /^\d+%/.test(x)); const rest = parts.filter(x => x !== time && x !== odds);
+  if (time) out.push(`<span class="ch t">${esc(time)}</span>`); if (odds) out.push(`<span class="ch o">${esc(odds)}</span>`); if (rest[0]) out.push(`<span class="ch r">${esc(rest[0].length > 26 ? rest[0].slice(0, 25) + '…' : rest[0])}</span>`);
+  return out.join('');
+}
+
+function tileButton(a, sub) { const s = niceSub(sub ?? a.sub); const b = actButton(a, sub); b.classList.add('tile'); b.setAttribute('aria-label', a.label + (s ? ', ' + s : ''));
+  b.innerHTML = `<span class="vh">${esc(a.label)}</span>${actIcon(a.id, a.label)}<b>${esc(shortLabel(a))}</b>${s ? `<span class="chips">${tileChips(s)}</span>` : ''}`; return b; }
 function actButton(a, sub) {
   const s = niceSub(sub ?? a.sub);
   const b = $(`<button class="actbtn ${a.primary ? 'primary' : ''} ${a.dim ? 'dim' : ''}"><b>${esc(a.label)}</b>${s ? `<small>${esc(s)}</small>` : ''}</button>`);
@@ -3564,11 +3646,11 @@ function refreshActs() {
   if (flat && S && S.event && !mini && !W.over && list.length) actsEl.append(eventVignette(S.event.id));
   if (flat) list.forEach(a => actsEl.append(actButton(a)));
   else {
-    const card = $(`<div class="card"></div>`);
+    const card = $(`<div class="card tiles"></div>`);
     for (const [k] of TOOLS) { const rows = groups[k] || []; if (!rows.length) continue;
       const head = a => a.sub && !a.dim ? a.sub.split(' · ')[0] : null; const heads = rows.map(head).filter(h => h && /^[a-z][a-z ]{1,22}$/i.test(h)); const cap = rows.length >= 2 ? heads.find(h => heads.filter(x => x === h).length >= 2) : null;
       if (cap) { const c = $(`<div class="cap">${esc(cap.charAt(0).toUpperCase() + cap.slice(1))}</div>`); c.dataset.tool = k; if (k !== rollSel) c.hidden = true; card.append(c); }
-      for (const a of rows) { const b = actButton(a, cap && head(a) === cap ? a.sub.split(' · ').slice(1).join(' · ') : a.sub); b.dataset.tool = k; if (k !== rollSel) b.hidden = true; card.append(b); } }
+      for (const a of rows) { const b = tileButton(a, cap && head(a) === cap ? a.sub.split(' · ').slice(1).join(' · ') : a.sub); b.dataset.tool = k; if (k !== rollSel) b.hidden = true; card.append(b); } }
     if (!rollOpen) card.hidden = true;
     const roll = $(`<div class="roll"></div>`);
     for (const [k, name] of TOOLS) if (groups[k]) { const b = $(`<button class="tool${k === rollSel ? ' sel' : ''}" data-tool="${k}" aria-label="${name}" aria-pressed="${k === rollSel && rollOpen}">${TOOL_ICON[k]}<span>${name}</span></button>`); b.onclick = (e) => { e.stopPropagation(); if (rollSel === k) rollOpen = !rollOpen; else { rollSel = k; rollOpen = true; } lastActs = ''; refreshActs(); sfx.play('tap'); }; roll.append(b); }
@@ -3913,14 +3995,15 @@ function startFire() {
 }
 // shelter: lash the joints where the poles cross. Repair uses the same frame with fewer joints.
 function startLash(id, joints, text, shape) {
-  autoResolve(); const finish = (good) => { if (!mini) return; endMini(); doAct(id, { good }); };
+  autoResolve(); const finish = (good) => { if (!mini) return; endMini(); handsDone(id, good); doAct(id, { good }); }; let worked = false;
   const rack = shape === 'rack'; /* a drying rack: two uprights and the crossbars the strips hang from */
   const pts = (rack ? [[70, 30], [230, 30], [70, 55], [230, 55], [150, 30]] : [[40, 80], [150, 30], [260, 80], [95, 55], [205, 55], [150, 80]]).slice(0, joints); let done = 0; const got = new Set();
   const frame = rack ? 'M 70 92 L 70 18 M 230 92 L 230 18 M 60 30 L 240 30 M 60 55 L 240 55' : 'M 40 80 L 150 30 L 260 80 M 40 80 L 260 80 M 95 55 L 95 80 M 205 55 L 205 80 M 150 30 L 150 80';
   const svg = pad(`<path d="${frame}" stroke="#9b8b6c" stroke-width="5" stroke-linecap="round" fill="none"/>${rack ? '<path d="M 100 30 L 100 46 M 125 30 L 125 44 M 175 30 L 175 47 M 200 30 L 200 43 M 110 55 L 110 70 M 190 55 L 190 69" stroke="#8c4f43" stroke-width="4" stroke-linecap="round"/>' : ''}${pts.map((p, i) => `<circle class="joint" data-i="${i}" cx="${p[0]}" cy="${p[1]}" r="11" fill="rgba(255,255,255,.15)" stroke="#fff" stroke-width="1.5"/>`).join('')}`, 300, 100);
-  if (svg) svg.onpointerdown = (e) => { const p = svg.toLocal(e); pts.forEach((q, i) => { if (!got.has(i) && Math.hypot(q[0] - p.x, q[1] - p.y) < 18) { got.add(i); done++; sfx.play('stick'); buzz(10); const c = svg.querySelector(`.joint[data-i="${i}"]`); c.setAttribute('fill', '#c5b595'); c.setAttribute('r', '8'); padText(`${done} of ${pts.length} lashed.`); if (done === 1 && mini) { mini.acts = [{ label: 'Finish now', sub: 'a rushed job', fn: () => finish(false) }]; lastActs = ''; } if (done >= pts.length) { sfx.play('good'); setTimeout(() => finish(true), 300); } } }); };
+  if (svg) svg.onpointerdown = (e) => { const p = svg.toLocal(e); pts.forEach((q, i) => { if (!got.has(i) && Math.hypot(q[0] - p.x, q[1] - p.y) < 18) { got.add(i); done++; sfx.play('stick'); buzz(10); const c = svg.querySelector(`.joint[data-i="${i}"]`); c.setAttribute('fill', '#c5b595'); c.setAttribute('r', '8'); padText(`${done} of ${pts.length} lashed.`); if (!worked && mini) { worked = true; mini.acts = [{ label: 'Finish now', sub: 'a rushed job', fn: () => finish(false) }]; lastActs = ''; } if (done >= pts.length) { sfx.play('good'); setTimeout(() => finish(true), 300); } } }); };
   const quit = () => { if (mini) endMini(); };
-  mini = { type: 'lash', deadline: W.t + 40, update() {}, acts: [{ label: 'Not now', sub: 'no time spent', fn: quit }], cancel: () => done === 0 ? quit() : finish(false) /* time ran out: nothing done is nothing built; part done is a rushed job, even if every point was tapped */ };
+  { const k = headStart(id, pts.length - 1); for (let i = 0; i < k; i++) { got.add(i); done++; const c = svg && svg.querySelector(`.joint[data-i="${i}"]`); if (c) { c.setAttribute('fill', '#c5b595'); c.setAttribute('r', '8'); } } if (k) text += ' Your hands remember the start.'; }
+  mini = { type: 'lash', deadline: W.t + 40, update() {}, acts: [{ label: 'Not now', sub: 'no time spent', fn: quit }, ...usualWay(id, ok => finish(ok))], cancel: () => !worked ? quit() : finish(false) /* time ran out: nothing done is nothing built; part done is a rushed job, even if every point was tapped */ };
   padText(text); lastActs = ''; refreshActs();
 }
 function startBuild() { const g = S.shelterGoal; const n = { tarp: 4, leanto: 5, hut: 6, rock: 6, cabin: 6 }[g] || 5; startLash('shelter', n, g === 'rock' ? 'Tap each stone course to seat it against the rock.' : g === 'cabin' ? 'Tap each corner notch to seat the log.' : 'Tap each joint to lash it. Every one, or it comes down in the first blow.'); }
@@ -3975,36 +4058,44 @@ function startSharpen() {
 }
 // ------------------------------------------------------------ hands-on crafting: the newer crafts, done by hand
 // alternate two moves in rhythm (twist / wet, coil / smooth, stitch / pull). A slip or two is fine; more is a sloppy job
+/* hands remember (mini-game brief 3.4, and body memory): each good result at a craft starts the next one a step further on, up to three;
+   three good results in a row offer "the usual way", which skips the hands-on part and comes out well most of the time */
+function handsOf(id) { const sys = S.sys || (S.sys = {}); const h = sys.handsMem || (sys.handsMem = {}); return h[id] || (h[id] = { reps: 0, streak: 0 }); }
+function handsDone(id, good) { const h = handsOf(id); if (good) { h.reps = Math.min(9, h.reps + 1); h.streak++; } else h.streak = 0; }
+function headStart(id, max) { return Math.max(0, Math.min(3, max, handsOf(id).reps)); }
+function usualWay(id, done) { const h = handsOf(id); if (h.streak < 3 || S.wet > 0.6 || S.health < 50) return []; return [{ label: 'Do it the usual way', sub: 'quick · not always as good', fn: () => done(Math.random() < 0.85) }]; }
 function startSteps(id, o) {
-  autoResolve(); let good = 0, slips = 0, next = o.steps[0]; const need = o.need || 6;
-  const finish = (rushed) => { if (!mini) return; endMini(); doAct(id, Object.assign({ good: !rushed && slips <= 1 }, o.extra || {}), 1, o.inside); }; const quit = () => { if (mini) endMini(); };
+  autoResolve(); const need = o.need || 6; let good = headStart(id, need - 1), slips = 0, next = o.steps[good % o.steps.length], worked = false;
+  const finish = (rushed) => { if (!mini) return; endMini(); const g = !rushed && slips <= 1; handsDone(id, g); doAct(id, Object.assign({ good: g }, o.extra || {}), 1, o.inside); }; const quit = () => { if (mini) endMini(); };
   const svg = pad(`<g id="stp"></g>`, 300, 70);
   const draw = () => { if (!svg) return; let h = ''; for (let i = 0; i < need; i++) h += `<circle cx="${30 + i * (240 / (need - 1))}" cy="35" r="${i < good ? 9 : 6}" fill="${i < good ? (o.col || '#c5b595') : 'rgba(255,255,255,.18)'}"/>`; svg.querySelector('#stp').innerHTML = h; };
-  const press = (what) => { if (mini) mini.acts = mini.acts.filter(a => a.label !== 'Not now'); if (what === next) { good++; next = o.steps[good % o.steps.length]; sfx.play('tap'); draw(); padText(`${good} of ${need}. Now ${next.toLowerCase()}.`); if (good >= need) { sfx.play('good'); setTimeout(() => finish(false), 250); } } else { slips++; good = Math.max(0, good - 1); next = o.steps[good % o.steps.length]; sfx.play('bad'); buzz(20); draw(); padText((o.slip || 'Out of rhythm.') + ' Lost a step.'); } if (mini) mini.acts.forEach(a => { a.primary = a.label === next; }); lastActs = ''; };
-  mini = { type: 'craft', deadline: W.t + 45, update() {}, acts: [...o.steps.map((st, i) => ({ label: st, sub: o.subs ? o.subs[i] : '', primary: i === 0, fn: () => press(st) })), { label: 'Not now', sub: 'no time spent', fn: quit }], cancel: () => good === 0 && slips === 0 ? quit() : finish(true) };
-  draw(); padText(o.intro); lastActs = ''; refreshActs();
+  const press = (what) => { worked = true; if (mini) mini.acts = mini.acts.filter(a => a.label !== 'Not now' && a.label !== 'Do it the usual way'); if (what === next) { good++; next = o.steps[good % o.steps.length]; sfx.play('tap'); draw(); padText(`${good} of ${need}. Now ${next.toLowerCase()}.`); if (good >= need) { sfx.play('good'); setTimeout(() => finish(false), 250); } } else { slips++; good = Math.max(0, good - 1); next = o.steps[good % o.steps.length]; sfx.play('bad'); buzz(20); draw(); padText((o.slip || 'Out of rhythm.') + ' Lost a step.'); } if (mini) mini.acts.forEach(a => { a.primary = a.label === next; }); lastActs = ''; };
+  mini = { type: 'craft', deadline: W.t + 45, update() {}, acts: [...o.steps.map((st, i) => ({ label: st, sub: o.subs ? o.subs[i] : '', primary: i === 0, fn: () => press(st) })), { label: 'Not now', sub: 'no time spent', fn: quit }, ...usualWay(id, ok => { slips = ok ? 0 : 9; finish(false); })], cancel: () => !worked ? quit() : finish(true) };
+  if (mini.acts[0]) mini.acts.forEach(a => { a.primary = a.label === next; });
+  draw(); padText(o.intro + (good ? ' Your hands remember the start.' : '')); lastActs = ''; refreshActs();
 }
 // long strokes back and forth across the pad (scraping a hide, working clay into seams). Too fast and it goes wrong
 function startStrokes(id, o) {
-  autoResolve(); let lastX = null, lastT = 0, run = 0, strokes = 0, dir = 0, rough = 0, roughNow = false; const need = o.need || 6;
-  const finish = (rushed) => { if (!mini) return; endMini(); doAct(id, { good: !rushed && rough <= 1 }, 1, o.inside); }; const quit = () => { if (mini) endMini(); };
+  autoResolve(); const need = o.need || 6; let lastX = null, lastT = 0, run = 0, strokes = headStart(id, need - 1), dir = 0, rough = 0, roughNow = false, worked = false;
+  const finish = (rushed) => { if (!mini) return; endMini(); const g = !rushed && rough <= 1; handsDone(id, g); doAct(id, { good: g }, 1, o.inside); }; const quit = () => { if (mini) endMini(); };
   const svg = pad(`${o.art}<circle id="tool" cx="150" cy="${o.y || 45}" r="7" fill="#fff" opacity=".85"/>`, 300, 90);
   if (svg) { svg.onpointerdown = (e) => { lastX = svg.toLocal(e).x; lastT = performance.now(); svg.setPointerCapture(e.pointerId); };
     svg.onpointermove = (e) => { if (lastX == null) return; const x = svg.toLocal(e).x; const dx = x - lastX; const now = performance.now(); const v = Math.abs(dx) / Math.max(8, now - lastT) * 1000; lastT = now;
       if (Math.abs(dx) > 1) { const nd = Math.sign(dx); if (v > 1400 && !roughNow) { roughNow = true; rough++; sfx.play('bad'); buzz(15); padText(o.rough || 'Too hard. Slow, even strokes.'); }
-        if (nd !== dir && run > 90) { strokes++; run = 0; roughNow = false; sfx.play('stick'); padText(`${strokes} of ${need}.`); if (strokes === 1 && mini) { mini.acts = [{ label: 'Good enough', sub: '', fn: () => finish(strokes < need) }]; lastActs = ''; } if (strokes >= need) { sfx.play('good'); setTimeout(() => finish(false), 300); } } dir = nd; run += Math.abs(dx); lastX = x; svg.querySelector('#tool').setAttribute('cx', Math.max(20, Math.min(280, x))); } };
+        if (nd !== dir && run > 90) { strokes++; run = 0; roughNow = false; sfx.play('stick'); padText(`${strokes} of ${need}.`); if (!worked && mini) { worked = true; mini.acts = [{ label: 'Good enough', sub: '', fn: () => finish(strokes < need) }]; lastActs = ''; } if (strokes >= need) { sfx.play('good'); setTimeout(() => finish(false), 300); } } dir = nd; run += Math.abs(dx); lastX = x; svg.querySelector('#tool').setAttribute('cx', Math.max(20, Math.min(280, x))); } };
     svg.onpointerup = () => { lastX = null; }; }
-  mini = { type: 'craft', deadline: W.t + 45, update() {}, acts: [{ label: 'Not now', sub: 'no time spent', fn: quit }], cancel: () => strokes === 0 ? quit() : finish(true) };
+  mini = { type: 'craft', deadline: W.t + 45, update() {}, acts: [{ label: 'Not now', sub: 'no time spent', fn: quit }, ...usualWay(id, ok => { rough = ok ? 0 : 9; finish(false); })], cancel: () => !worked ? quit() : finish(true) };
   padText(o.intro); lastActs = ''; refreshActs();
 }
 // tap each point: lashing, setting stones, laying boughs. Every one counts
 function startTaps(id, pts, art, text, o = {}) {
-  autoResolve(); let done = 0; const got = new Set();
-  const finish = (good) => { if (!mini) return; endMini(); doAct(id, Object.assign({ good }, o.extra || {}), 1, o.inside); };
+  autoResolve(); let done = 0, worked = false; const got = new Set();
+  const finish = (good) => { if (!mini) return; endMini(); handsDone(id, good); doAct(id, Object.assign({ good }, o.extra || {}), 1, o.inside); };
   const svg = pad(`${art}${pts.map((p, i) => `<circle class="tp" data-i="${i}" cx="${p[0]}" cy="${p[1]}" r="11" fill="rgba(255,255,255,.15)" stroke="#fff" stroke-width="1.5"/>`).join('')}`, 300, o.h || 100);
-  if (svg) svg.onpointerdown = (e) => { const q = svg.toLocal(e); pts.forEach((p, i) => { if (!got.has(i) && Math.hypot(p[0] - q.x, p[1] - q.y) < 18) { got.add(i); done++; sfx.play('stick'); buzz(10); const c = svg.querySelector(`.tp[data-i="${i}"]`); c.setAttribute('fill', o.col || '#c5b595'); c.setAttribute('r', '8'); padText(`${done} of ${pts.length}.`); if (done === 1 && mini) { mini.acts = [{ label: 'Finish now', sub: 'a rushed job', fn: () => finish(false) }]; lastActs = ''; } if (done >= pts.length) { sfx.play('good'); setTimeout(() => finish(true), 300); } } }); };
+  if (svg) svg.onpointerdown = (e) => { const q = svg.toLocal(e); pts.forEach((p, i) => { if (!got.has(i) && Math.hypot(p[0] - q.x, p[1] - q.y) < 18) { got.add(i); done++; sfx.play('stick'); buzz(10); const c = svg.querySelector(`.tp[data-i="${i}"]`); c.setAttribute('fill', o.col || '#c5b595'); c.setAttribute('r', '8'); padText(`${done} of ${pts.length}.`); if (!worked && mini) { worked = true; mini.acts = [{ label: 'Finish now', sub: 'a rushed job', fn: () => finish(false) }]; lastActs = ''; } if (done >= pts.length) { sfx.play('good'); setTimeout(() => finish(true), 300); } } }); };
   const quit = () => { if (mini) endMini(); };
-  mini = { type: 'craft', deadline: W.t + 40, update() {}, acts: [{ label: 'Not now', sub: 'no time spent', fn: quit }], cancel: () => done === 0 ? quit() : finish(false) /* nothing done is nothing built; part done is a rushed job */ };
+  mini = { type: 'craft', deadline: W.t + 40, update() {}, acts: [{ label: 'Not now', sub: 'no time spent', fn: quit }, ...usualWay(id, ok => finish(ok))], cancel: () => !worked ? quit() : finish(false) /* nothing done is nothing built; part done is a rushed job */ };
+  { const k = headStart(id, pts.length - 1); for (let i = 0; i < k; i++) { got.add(i); done++; const c = svg && svg.querySelector(`.tp[data-i="${i}"]`); if (c) { c.setAttribute('fill', o.col || '#c5b595'); c.setAttribute('r', '8'); } } if (k) text += ' Your hands remember the start.'; }
   padText(text); lastActs = ''; refreshActs();
 }
 // tillering: shave the stiffer limb until both bend the same. Take too much and the bow goes weak

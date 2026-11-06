@@ -42,6 +42,13 @@ function base() { const s = E.newGame('US-S6', ['Knife', 'Ferro rod', 'Axe', 'Fi
     check('abandoning cordage untouched makes none', await p.evaluate(c0 => window.__m.S().mats.cordage === c0, c0)); }
   await fresh(); { await p.evaluate(() => { window.__m.S().axeEdge = 0.3; window.__m.startSharpen(); window.__m.mini().cancel(); }); await p.waitForTimeout(200);
     check('abandoning sharpening untouched leaves the edge', await p.evaluate(() => window.__m.S().axeEdge === 0.3)); }
+  // hands remember: a craft done well before starts further on; three good in a row offer the usual way
+  await fresh(); await p.evaluate(() => { window.__m.S().sys.handsMem = { mend: { reps: 2, streak: 3 } }; window.__m.startSteps('mend', { steps: ['Stitch', 'Pull'], need: 8, intro: 'x' }); });
+  check('a practised craft starts further on', /remember the start/.test(await p.evaluate(() => (document.querySelector('#padtext') || {}).textContent || '')));
+  check('and offers the usual way', (await p.evaluate(() => window.__m.acts())).includes('Do it the usual way'));
+  await p.evaluate(() => window.__m.press('Do it the usual way')); await p.waitForTimeout(200); check('the usual way finishes the job at once', await p.evaluate(() => !window.__m.mini()));
+  await fresh(); await p.evaluate(() => { window.__m.S().sys.handsMem = { mend: { reps: 0, streak: 1 } }; window.__m.startSteps('mend', { steps: ['Stitch', 'Pull'], need: 8, intro: 'x' }); });
+  check('a new hand gets no shortcut', !(await p.evaluate(() => window.__m.acts())).includes('Do it the usual way'));
   check('no page errors', !errs.length, errs.slice(0, 3));
   await b.close(); console.log(fails ? `${fails} mini-game check(s) failed, ${passes} passed.` : `All ${passes} mini-game checks passed.`); process.exitCode = fails ? 1 : 0;
 })();
