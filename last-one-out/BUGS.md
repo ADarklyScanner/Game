@@ -190,6 +190,9 @@ Checked and left as they are: a wrong-sized snare is still set (it catches less,
 | 128 | The +/- numbers by the vitals never showed: they looked for the old `.vital` class after the HUD was redesigned to `.vt` | They look for `.vt` (and sit on the page, so a refresh does not wipe them) |
 | 129 | "Pick through the ruin" passed 2.2x odds that the search rule never used | Applied |
 | 130 | Thread crafts could be drummed as fast as you can tap | Rushing the next move tangles the thread and costs a step |
+| 131 | The page-play test pressed Build shelter through the open design picker hundreds of times, stacking pickers until the page froze (a player cannot, the picker covers the button) | The test answers an open picker as a player would, or closes it |
+| 132 | Every shelter session was the same lashing tap, so a rushed build had no lasting cost except in a cabin | Each session is its own stage (frame, shingle, dig, vent, stack, chink); a rushed stage leaves a weaker shelter and, under a roof of boughs or poles, a leak that wets you on rainy nights until patched |
+| 133 | Snare and deadfall sets on the map were forgotten at the start of each day, so after the first day checking the trapline skipped the walk | Sets are saved with the game and stay on the map while the snares are out |
 
 ### Test-side problems (not game bugs)
 

@@ -428,7 +428,7 @@ const UPGRADES = { none: ['tarp', 'leanto', 'hut', 'snowcave', 'rock', 'cabin'],
 function deepSnow(s) { const c = season(s).climate; return snowy(s) && c.snow != null && s.day >= c.snow + 6; }
 function shelterOptions(s) { return UPGRADES[s.shelterType || 'none'].filter(k => (!SHELTERS[k].needGear || has(s, SHELTERS[k].needGear)) && (!SHELTERS[k].needSnow || deepSnow(s))); }
 /* door: 'lee' puts your back to the wind (less draught on windy nights); 'fire' opens it to the fire (more of its heat, more of the wind) */
-function chooseShelter(s, k, door) { if (!shelterOptions(s).includes(k)) return false; if (door) sysOf(s).door = door; if (s.shelterGoal !== k) { refundPlan(s, 1); s.shelterGoal = k; s.shelterWork = 0; s.shelterPaid = false; } return true; }
+function chooseShelter(s, k, door) { if (!shelterOptions(s).includes(k)) return false; if (door) sysOf(s).door = door; if (s.shelterGoal !== k) { refundPlan(s, 1); s.shelterGoal = k; s.shelterWork = 0; s.shelterPaid = false; if (s.sys && s.sys.buildFlaws) s.sys.buildFlaws = 0; } return true; }
 // giving up a paid plan gives back what has not gone into it yet; moving or losing it saves about half
 function refundPlan(s, frac) { if (!s.shelterGoal || !s.shelterPaid) return; const b = shelterBill(s) || {}; for (const k of ['poles', 'logs', 'boughs', 'moss', 'cordage', 'stone']) if (b[k]) s.mats[k] += Math.floor(b[k] * frac * (1 - (s.shelterWork || 0) / Math.max(1, b.sessions || 1) * 0.5)); s.shelterPaid = false; s.shelterWork = 0; }
 function dropPlan(s) { refundPlan(s, 1); s.shelterGoal = null; }
@@ -1067,7 +1067,7 @@ function available(s, id) {
     case 'render_fat': { if (!s.fire) return r(false, 'Needs a fire'); if (!s.stores.some(x => x.id === 'fat' && !x.rendered)) return r(false, 'No raw fat'); const pot = potLike(s) || has(s, 'Frying pan'); return r(true, '', pot ? 'slowly, in the pot' : 'on a flat stone · loses a third'); }
     case 'craft_rack': return s.crafts.rack >= 1 ? (sysOf(s).rackRoof ? r(false, 'Built') : s.mats.boughs >= 4 ? r(true, '', 'roof the rack with 4 boughs') : r(false, 'Built. 4 boughs would roof it')) : s.mats.poles < 3 ? r(false, 'Needs 3 poles') : s.mats.cordage < lash(s, 2) ? r(false, 'Needs 2 cordage') : r(true, '', has(s, 'Tarp') || s.mats.boughs >= 4 ? '3 poles, 2 cordage, a roof' : '3 poles, 2 cordage · no roof without 4 boughs');
     case 'dry': return s.wet < 0.2 ? r(false, 'You are dry') : !s.fire ? r(false, 'Needs a fire') : r(true, '', 'warm up and dry your clothes');
-    case 'repair': { if (!s.shelterLvl) return r(false, 'Nothing to patch'); if (s.shelterCond >= 0.85) return r(false, 'The shelter is sound'); const k = repairMat(s); return !k ? r(false, s.shelterType === 'cabin' || s.shelterType === 'rock' ? 'Needs 4 moss or 2 poles' : 'Needs 4 boughs or 2 poles') : r(true, '', `${Math.round(s.shelterCond * 100)}% sound · ${k === 'poles' ? '2 poles' : '4 ' + MATS[k][0].toLowerCase()}`); }
+    case 'repair': { if (!s.shelterLvl) return r(false, 'Nothing to patch'); if (s.shelterCond >= 0.85 && !(s.sys && s.sys.leaky)) return r(false, 'The shelter is sound'); const k = repairMat(s); return !k ? r(false, s.shelterType === 'cabin' || s.shelterType === 'rock' ? 'Needs 4 moss or 2 poles' : 'Needs 4 boughs or 2 poles') : r(true, '', `${Math.round(s.shelterCond * 100)}% sound · ${k === 'poles' ? '2 poles' : '4 ' + MATS[k][0].toLowerCase()}`); }
     case 'sharpen': return !chopper(s) ? r(false, 'No axe') : s.axeEdge > 0.8 ? r(false, 'The edge is fine') : has(s, 'Sharpening stone') ? r(true, '', '') : s.mats.stone < 1 ? r(false, 'Needs a sharpening stone or a flat stone') : s.axeEdge >= 0.7 ? r(false, 'As sharp as a river stone will get it') : r(true, '', 'on a flat stone · a rough edge');
     case 'fix_axe': { if (!(has(s, 'Axe') || has(s, 'Hatchet'))) return r(false, 'No axe'); const off = s.sys && s.sys.axeOff; if (!off && haftOf(s) >= 0.6) return r(false, 'The head is tight'); if (!blade(s) && off) return r(false, 'Needs a knife to carve a wedge'); return r(true, '', s.mats.hide >= 1 ? 'a new wedge and a wet rawhide wrap' : 'a new wedge'); }
     case 'search': return r(true, '', pct(se.found.rate * Math.pow(0.82, s.stats.found) * (s.day - s.lastStorm <= 1 ? 2 : 1)) + ' to find salvage' + (s.day - s.lastStorm <= 1 ? ' · storm wrack' : ''));
@@ -1378,7 +1378,8 @@ function doAction(s, id, lines, mod, opts) {
     }
     case 'track': {
       const w = s.wounded; s.wounded = null;
-      const cover = s.snowfall ? 0.6 : (s.rain || s.storm) ? 0.75 : 1; if (cover < 1) lines.push([s.snowfall ? 'Fresh snow is filling the tracks as you follow them.' : 'The rain is washing the blood off the leaves.', 'muted']);
+      if (X.lost) { s.hours = round1(s.hours + 0.5); s.phase = phaseOf(s); lines.push(['You followed old prints for half an hour before you saw your mistake and came back to the blood.', 'warn']); } /* a wrong turn at the fork costs time and the trail grows colder */
+      const cover = (s.snowfall ? 0.6 : (s.rain || s.storm) ? 0.75 : 1) * (X.lost ? 0.6 : 1); if (cover < 1 && !X.lost) lines.push([s.snowfall ? 'Fresh snow is filling the tracks as you follow them.' : 'The rain is washing the blood off the leaves.', 'muted']);
       if (chance(s, w.p * mod * cover)) { const f = DATA.foods[w.id]; s.carcass = { hour: s.hours, id: w.id, por: round1(f.por * 0.9), big: false, dressed: false, day: s.day, fat: f.fat, organ: f.organ }; lines.push([`Followed the blood and found the ${low(f.name)} dead in the brush.`, 'good']); s.skill.hunt = Math.min(1.6, s.skill.hunt + 0.03); }
       else lines.push(['The trail petered out. It is gone.', 'bad']);
       break;
@@ -1392,7 +1393,11 @@ function doAction(s, id, lines, mod, opts) {
     }
     case 'deadfalls': { const nset = X.good === false ? 1 : 3; /* the stone would not balance: only one of the three would stand */ s.mats.stone -= nset; s.deadfalls = Math.min(12, s.deadfalls + nset); lines.push([nset < 3 ? `The stone kept falling off the trigger. Got 1 deadfall to stand (${s.deadfalls} out).` : `Carved triggers and set 3 deadfalls (${s.deadfalls} out).`, nset < 3 ? 'muted' : 'info']); injuryRisk(0.004, 'knife slipped into your thumb'); break; }
     case 'checktraps': {
-      const got = s.trapsCatch.splice(0);
+      const fishIds = new Set(se.pools.fish.map(x => x[0])); const leave = Math.max(0, Math.min(X.leave || 0, s.trapsCatch.filter(f => !fishIds.has(f)).length)); const kept = [], got = [];
+      for (const f of s.trapsCatch) (kept.length < leave && !fishIds.has(f) ? kept : got).push(f); s.trapsCatch = kept; /* what is in a set you did not reach stays there, for now */
+      if (s.sys && s.sys.sprung) { const left = X.total ? Math.round(s.sys.sprung * (1 - Math.min(1, (X.checked || 0) / X.total))) : 0; const fixed = s.sys.sprung - left; s.sys.sprung = left;
+        if (fixed) lines.push([`Reset ${fixed} sprung loop${fixed > 1 ? 's' : ''} at the right height.`, 'info']); if (left) lines.push([`${left} sprung loop${left > 1 ? 's' : ''} you did not reach will catch nothing tonight.`, 'warn']); }
+      if (s.sys && s.sys.robbed) s.sys.robbed = 0; if (kept.length) lines.push([`${kept.length === 1 ? 'Something is' : 'Things are'} still in the sets you did not reach.`, 'muted']);
       if (got.length) { for (const f of got) addRaw(s, f, lines, 'Trap:'); s.morale += 2; s.skill.trap = Math.min(1.6, s.skill.trap + 0.04); if (got.includes('squirrel') && chance(s, 0.03)) injuryRisk(1, 'squirrel bite to the finger, through to the bone'); }
       else lines.push([pick1(s, ['Walked the trapline. All empty.', 'Every snare empty. One was sprung and dragged, nothing in it.', 'Nothing in the traps. Fresh tracks past two of them.']), 'muted']);
       if (s.sys && s.sys.snaresBuried) { s.sys.snaresBuried = false; lines.push(['Dug the snares out of the drift and reset each loop at the right height.', 'info']); }
@@ -1428,7 +1433,7 @@ function doAction(s, id, lines, mod, opts) {
     case 'fire_in': { s.fireInside = true; lines.push([SHELTERS[s.shelterType].safeFire || s.crafts.chimney >= 2 || s.crafts.stove >= 1 ? 'Moved the fire in under the roof. The walls hold the heat.' : 'Moved the fire inside. The smoke finds its own way out, mostly.', 'info']); break; }
     case 'fire_out': { s.fireInside = false; lines.push(['Moved the fire back out to the ring.', 'muted']); break; }
     case 'whittle': { s.morale += 3; s.skill.craft = Math.min(1.5, s.skill.craft + 0.02); const r2 = rnd(s); if (r2 < 0.25 && s.mats.bone > 0 && blade(s) && s.hooks < 8) { s.mats.bone -= 1; s.hooks += 1; lines.push(['Whittled a gorge hook from a sliver of bone while the rain came down.', 'info']); } else if (r2 < 0.45 && s.firewood >= 0.5) { s.firewood = round1(s.firewood - 0.3); s.mats.tinder += 1; lines.push(['Split a stick off the woodpile and shaved it into feather sticks for tinder.', 'info']); } else lines.push(['Sat in the doorway and carved a spoon you did not need.', 'muted']); break; }
-    case 'repair': { const k = repairMat(s); s.mats[k] -= k === 'poles' ? 2 : 4; s.shelterCond = X.good === false ? Math.max(s.shelterCond ?? 1, 0.8) : 1; s.morale += 2; lines.push([X.good === false ? 'Patched the worst of it in a hurry. It will need doing again soon.' :k === 'moss' ? 'Re-chinked the walls and packed the roof. Tight again.' : 'Re-thatched the roof and lashed the loose poles. Sound again.', 'good']); break; }
+    case 'repair': { const k = repairMat(s); s.mats[k] -= k === 'poles' ? 2 : 4; s.shelterCond = X.good === false ? Math.max(s.shelterCond ?? 1, 0.8) : 1; s.morale += 2; if (X.good !== false && s.sys && s.sys.leaky) { s.sys.leaky = false; lines.push(['Found the weak spot in the roof and layered it over properly.', 'good']); } lines.push([X.good === false ? 'Patched the worst of it in a hurry. It will need doing again soon.' :k === 'moss' ? 'Re-chinked the walls and packed the roof. Tight again.' : 'Re-thatched the roof and lashed the loose poles. Sound again.', 'good']); break; }
     case 'forage': {
       const pool = foragePool(s); const pf = s.patch && s.patch.forage != null ? s.patch.forage : 1;
       if (X.total) { /* by hand: what you picked as you walked, and whether you left enough to come back to */
@@ -1478,9 +1483,11 @@ function doAction(s, id, lines, mod, opts) {
     }
     case 'shelter': {
       const b = shelterBill(s); const g = SHELTERS[s.shelterGoal]; if (s.shelterGoal === 'cabin' && !s.shelterPaid) sysOf(s).fit = 1; if (s.shelterGoal === 'cabin' && X.good === false) { const sys = sysOf(s); sys.fit = Math.max(0.5, Math.round(((sys.fit ?? 1) - 0.15) * 100) / 100); lines.push(['That notch is loose. The log rocks in it.', 'muted']); }
+      if (X.good === false && s.shelterGoal !== 'cabin') { const sys = sysOf(s); sys.buildFlaws = (sys.buildFlaws || 0) + 1; lines.push([s.shelterGoal === 'snowcave' ? 'Rushed. The roof is thin there.' : 'Rushed. That part will show.', 'muted']); }
       if (!s.shelterPaid) { for (const k of ['poles', 'logs', 'boughs', 'moss', 'cordage', 'stone']) if (b[k]) s.mats[k] -= b[k]; s.shelterPaid = true; }
       s.shelterWork++;
-      if (s.shelterWork >= b.sessions) { if (s.shelterGoal === 'rock') s.stats.rock = true; if (s.shelterGoal === 'cabin') s.stats.cabin = true; s.shelterType = s.shelterGoal; s.shelterLvl = g.lvl; { const sys = sysOf(s); sys.seal = 0; sys.gaps = false; sys.snowLoad = 0; if (s.shelterType !== 'cabin') delete sys.fit; sys.cabinDay = s.shelterType === 'cabin' ? s.day : 0; } s.flueRisk = 0; s.shelterGoal = null; s.shelterWork = 0; s.shelterPaid = false; s.shelterCond = 1; s.fireInside = false; s.morale += 8; lines.push([`${g.name} finished.`, 'good']); }
+      if (s.shelterWork >= b.sessions) { if (s.shelterGoal === 'rock') s.stats.rock = true; if (s.shelterGoal === 'cabin') s.stats.cabin = true; s.shelterType = s.shelterGoal; s.shelterLvl = g.lvl; { const sys = sysOf(s); sys.seal = 0; sys.gaps = false; sys.snowLoad = 0; if (s.shelterType !== 'cabin') delete sys.fit; sys.cabinDay = s.shelterType === 'cabin' ? s.day : 0; } s.flueRisk = 0; s.shelterGoal = null; s.shelterWork = 0; s.shelterPaid = false; s.shelterCond = 1; s.fireInside = false; s.morale += 8; lines.push([`${g.name} finished.`, 'good']);
+        { const sys = sysOf(s); const fl = sys.buildFlaws || 0; if (fl) sys.buildFlaws = 0; if (fl || sys.leaky) sys.leaky = fl > 0 && s.shelterType !== 'snowcave'; if (fl) { s.shelterCond = Math.max(0.6, 1 - 0.2 * fl); lines.push([s.shelterType === 'snowcave' ? 'The roof is thin where you rushed the digging. It will not last as long.' : 'Rushed in places, though. There is a weak spot in the roof that rain will find. Patching it closes it.', 'warn']); } } }
       else lines.push([`Worked on the ${low(g.name)} (${s.shelterWork} of ${b.sessions}).`, 'info']);
       if (chopper(s)) s.axeEdge = Math.max(0, s.axeEdge - 0.04);
       injuryRisk(0.005, 'gashed hand on a split pole');
@@ -1899,11 +1906,13 @@ function nightAndBody(s, burn, done, lines) {
     if (s.net.catch.length > 4) s.net.catch.splice(0, s.net.catch.length - 4);
     if (chance(s, 0.025 * (s.storm ? 4 : s.wind ? 2.5 : 1))) { s.net.torn = true; s.net.catch = []; lines.push([s.storm || s.wind ? 'The weather tore the net.' : 'Something tore the net.', 'bad']); }
   }
-  if (s.trapsCatch.length) { const before = s.trapsCatch.length; s.trapsCatch = s.trapsCatch.filter(() => !chance(s, 0.15)); if (s.trapsCatch.length < before) lines.push([pick1(s, ['Something got to a snared animal before you did: tufts of fur, blood on the snow and a snapped wire.', 'Fresh fox tracks round the trapline in the morning. One of the snares is empty and pulled flat.']), 'muted']); }
+  if (s.trapsCatch.length) { const before = s.trapsCatch.length; s.trapsCatch = s.trapsCatch.filter(() => !chance(s, 0.15)); if (s.trapsCatch.length < before) { if (s.sys) s.sys.robbed = (s.sys.robbed || 0) + before - s.trapsCatch.length; } if (s.trapsCatch.length < before) lines.push([pick1(s, ['Something got to a snared animal before you did: tufts of fur, blood on the snow and a snapped wire.', 'Fresh fox tracks round the trapline in the morning. One of the snares is empty and pulled flat.']), 'muted']); }
   const trapP = 0.018 * se.mult.trap * s.skill.trap * (snowy(s) ? 1.25 : 1) * stockOf(s, 'trap') * (s.sys && s.sys.snaresBuried ? 0.3 : 1); const tc0 = s.trapsCatch.length;
   const good = Math.min(s.snares, (s.sys && s.sys.goodSnares) || 0); if (s.sys && s.sys.goodSnares) s.sys.goodSnares = good; // snares on a run the animals really use catch half again as often
   const poorN = Math.min(s.snares - good, (s.sys && s.sys.poorSnares) || 0); if (s.sys && s.sys.poorSnares) s.sys.poorSnares = poorN; /* loops the wrong size: an animal pushes through or backs out */
-  for (let k = 0; k < s.snares; k++) if (chance(s, trapP * (k < good ? 1.5 : k >= s.snares - poorN ? 0.6 : 1))) s.trapsCatch.push(pickW(s, se.pools.trap));
+  const flat = Math.min(s.snares, (s.sys && s.sys.sprung) || 0); /* sprung loops lie flat until someone walks out and resets them */
+  for (let k = 0; k < s.snares; k++) if (chance(s, k >= s.snares - flat ? 0 : trapP * (k < good ? 1.5 : k >= s.snares - poorN ? 0.6 : 1))) s.trapsCatch.push(pickW(s, se.pools.trap));
+  if (s.snares) { let sp = 0; for (let k = s.trapsCatch.length - tc0; k < s.snares - flat; k++) if (drand(s, 'sprung' + k) < (s.storm || s.wind ? 0.16 : 0.08)) sp++; if (sp) sysOf(s).sprung = flat + sp; } /* wind, a deer's leg, a branch: some loops get knocked down empty */
   const small = se.pools.trap.filter(x => DATA.foods[x[0]].por < 3);
   for (let k = 0; k < s.deadfalls; k++) if (chance(s, trapP * 0.55)) s.trapsCatch.push(pickW(s, small.length ? small : se.pools.trap));
   const smallFish = se.pools.fish.filter(x => DATA.foods[x[0]].por <= 3);
@@ -2003,8 +2012,9 @@ function nightAndBody(s, burn, done, lines) {
     let wear = 0; if (s.storm) wear += s.braced ? 0.1 : 0.35; if (s.rain) wear += 0.06; if (s.snowfall && s.shelterType !== 'snowcave') wear += 0.1; if (s.wind && s.shelterType !== 'snowcave') wear += 0.08; wear += s.shelterType === 'snowcave' ? 0 : snowRoof(s, T, lines);
     if (s.shelterType === 'snowcave') { if (T > 0 || s.rain) { wear += 0.22; lines.push([s.rain ? 'Rain on the snow cave. The roof is dripping and has dropped a hand\u2019s width.' : 'A thaw. The roof of the snow cave drips and sags lower.', 'warn']); } else if (!snowy(s)) wear += 0.5; } /* snow does not mind wind or more snow; warmth and rain undo it */
     s.shelterCond = Math.max(0, s.shelterCond - wear * expo);
-    if (s.shelterCond <= 0) { refundPlan(s, 0.5); if (s.sys) s.sys.snowLoad = 0; const was = s.shelterType; s.shelterType = (was === 'cabin' || was === 'rock' || was === 'hut') ? 'leanto' : null; s.shelterLvl = s.shelterType ? 1 : 0; s.shelterGoal = null; s.shelterWork = 0; s.shelterPaid = false; s.shelterCond = 1; s.fireInside = false; lines.push([s.shelterType ? 'The roof came down in the night. What is left is a lean-to.' : 'Wind tore the shelter apart. You are back under the sky.', 'bad']); s.morale -= 8; }
+    if (s.shelterCond <= 0) { refundPlan(s, 0.5); if (s.sys) s.sys.snowLoad = 0; const was = s.shelterType; s.shelterType = (was === 'cabin' || was === 'rock' || was === 'hut') ? 'leanto' : null; if (s.sys && s.sys.leaky) s.sys.leaky = false; s.shelterLvl = s.shelterType ? 1 : 0; s.shelterGoal = null; s.shelterWork = 0; s.shelterPaid = false; s.shelterCond = 1; s.fireInside = false; lines.push([s.shelterType ? 'The roof came down in the night. What is left is a lean-to.' : 'Wind tore the shelter apart. You are back under the sky.', 'bad']); s.morale -= 8; }
     else if (s.shelterCond < 0.5 && (s.rain || s.storm || s.snowfall)) { s.wet = Math.min(1, s.wet + (has(s, 'Ground sheet') || has(s, 'Bivy bag') ? 0.12 : 0.3)); s.morale -= 2; lines.push(['Drips through the roof all night. It needs patching.', 'warn']); }
+    else if (s.sys && s.sys.leaky && (s.rain || s.storm)) { s.wet = Math.min(1, s.wet + (has(s, 'Ground sheet') || has(s, 'Bivy bag') ? 0.05 : 0.15)); s.morale -= 1; lines.push(['Rain found the weak spot in the roof and dripped on you half the night. Patch it.', 'warn']); }
     else if (s.shelterCond < 0.5 && wear > 0) lines.push(['The shelter is sagging. It wants patching before the next storm.', 'warn']);
     else if (s.shelterCond < 0.4 && chance(s, 0.5)) lines.push(['A pole has split along the grain over your head. It creaks when the wind leans on it.', 'muted']);
   }
@@ -2255,7 +2265,7 @@ function foundWreck(s) {
 function moveCamp(s, metres) {
   const c = moveCampCost(s, metres); const L = [];
   if (s.shelterType) { const b = billFor(s, s.shelterType) || {}; for (const k of ['poles', 'logs', 'boughs', 'moss', 'stone', 'cordage']) if (b[k] && k !== 'stone') s.mats[k] += Math.floor(b[k] / 2); L.push([`Took the ${low(SHELTERS[s.shelterType].name)} down and carried what was worth carrying.`, 'info']); }
-  refundPlan(s, 0.5); s.shelterType = null; s.shelterLvl = 0; s.shelterGoal = null; s.shelterWork = 0; s.shelterPaid = false; s.shelterCond = 1; s.fireInside = false; s.fire = false; s.flueRisk = 0; if (s.sys) { s.sys.snowLoad = 0; delete s.sys.fit; }
+  refundPlan(s, 0.5); s.shelterType = null; s.shelterLvl = 0; s.shelterGoal = null; s.shelterWork = 0; s.shelterPaid = false; s.shelterCond = 1; s.fireInside = false; s.fire = false; s.flueRisk = 0; if (s.sys) { s.sys.snowLoad = 0; delete s.sys.fit; if (s.sys.leaky) s.sys.leaky = false; if (s.sys.buildFlaws) s.sys.buildFlaws = 0; }
   for (const k of ['smoker', 'woodshed', 'chimney']) s.crafts[k] = 0; if (s.crafts.rack) { s.crafts.rack = 0; sysOf(s).rackRoof = false; } if (s.crafts.hearth) s.crafts.hearth = 0; if (s.sys) { s.sys.fouling = 0; s.sys.latrineDay = null; } if (s.crafts.reflector) s.crafts.reflector = 0; if (s.crafts.platform) s.crafts.platform = 0; if (s.sys) s.sys.snowLoad = 0; if (s.sys) { s.sys.seal = 0; s.sys.soot = 0; s.sys.bed = 0; } for (const x of s.stores) delete x.where; if (s.sys) s.sys.smoking = 0; if (s.cachePlace === 'camp') { s.crafts.cache = 0; s.cachePlace = null; }
   s.hours = round1(s.hours + c.hours); s.today.burn += C.burnPerHour.heavy * Math.min(c.hours, 10); s.today.done.push('move_camp');
   if (s.hours > dayHours(s)) { s.moveDebt = round1(s.hours - dayHours(s)); s.hours = dayHours(s); L.push([`${c.trips} trips and it is still not done. You will finish in the morning.`, 'warn']); }
@@ -3114,7 +3124,7 @@ function dayStart() {
   const R = S.regrow || (S.regrow = {}); const ready = (key) => !(R[key] > S.day);
   for (const b of W.bushes) b.used = !ready('b' + b.k); W.mossSpots.forEach((m, i) => { m.used = !ready('m' + i); });
   for (const t of W.trees) { if (t.gone) continue; if (t.cut) { for (const u of ['poles', 'logs', 'firewood', 'boughs', 'bark', 'tinder', 'pinenuts']) t.used[u] = true; continue; } t.used = {}; for (const u of TREE_PARTS) if (!ready('t' + t.k + ':' + u)) t.used[u] = true; t.flipped = !ready('g' + t.k); }
-  for (const b of W.beds) b.used = !ready('s' + b.k); for (const t of W.tracks) t.set = false;
+  for (const b of W.beds) b.used = !ready('s' + b.k); for (const t of W.tracks) t.set = false; { const at = (S.sys && S.sys.setAt) || []; const keep = (S.snares || 0) + (S.deadfalls || 0) > 0 ? at : []; for (const [i, df] of keep) if (W.tracks[i]) { W.tracks[i].set = true; W.tracks[i].deadfall = !!df; } if (S.sys && at.length && !keep.length) S.sys.setAt = []; }
   W.animals = []; W.debris = [];
   const huntable = se.pools.hunt.length; W.dayF = dayFactor(); W.cellsDay = -1; W.cellsDone = null; ensureCells(true);
   W.nextAnimal = W.t + 60 + rnd() * 90;
@@ -3368,7 +3378,13 @@ function openMakeCamp() {
   const s = spotOf(W.player);
   sheet((sh, close) => {
     sh.append($(`<h2>Make camp here?</h2>`));
-    const rows = $(`<div class="rows"></div>`); for (const [txt, k] of spotNotes(s)) rows.append($(`<div class="row"><span class="tone-${k}">${esc(txt)}</span></div>`)); sh.append(rows);
+    /* the site report (UI spec 4.1): the site at a glance, with the reasons one tap away */
+    const chip = (ok, txt) => `<span class="need ${ok === true ? 'ok' : ok === false ? 'miss' : 'time'}">${ok === true ? '\u2713 ' : ok === false ? '! ' : ''}${esc(txt)}</span>`;
+    sh.append($(`<div class="needs" style="display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 8px">${[
+      chip(s.waterM <= 150, `water ${s.waterM} m`), chip(s.woodM != null && s.woodM <= 120, s.woodM == null ? 'no dry wood near' : `dry wood ${s.woodM} m`),
+      chip(s.windbreak ? true : s.exposed ? false : null, s.windbreak ? 'sheltered' : s.exposed ? 'open to the wind' : 'some shelter'), chip(!s.bad, s.bad ? 'flood or hazard' : 'dry ground'),
+      ...(s.trail ? [chip(false, 'game trail')] : []), ...(s.snag ? [chip(false, 'dead tree over it')] : [])].join('')}</div>`));
+    const why = $(`<details><summary class="muted" style="font-size:13px">Why</summary><div class="rows"></div></details>`); for (const [txt, k] of spotNotes(s)) why.querySelector('.rows').append($(`<div class="row"><span class="tone-${k}">${esc(txt)}</span></div>`)); sh.append(why);
     sh.append($(`<div class="muted" style="font-size:13px">Half an hour to clear the ground and ring a fire pit. You can move camp later, but it costs a day of carrying.</div>`));
     const go = $(`<button class="act primary"><b>Make camp here</b><small>½ h</small></button>`); go.onclick = () => { close(); makeCampHere(s); };
     const no = $(`<button class="act"><b>Keep looking</b></button>`); no.onclick = close; sh.append(go); sh.append(no);
@@ -3433,7 +3449,7 @@ function interactionsHere() {
     if (tired) { nightJobs(push, out, av, false); return overflow(out); }
     push('light_fire', null, startFire); push('clean', null, startClean);
     if (!S.shelterGoal) { if (E.shelterOptions(S).length) out.push({ label: S.shelterType ? 'Upgrade shelter' : 'Build shelter', sub: S.shelterType ? 'pick what to build next' : 'pick a design', fn: openShelterChoice }); }
-    else if (push('shelter', null, startBuild)) out[out.length - 1].sub = E.available(S, 'shelter').odds;
+    else if (push('shelter', null, startBuild)) out[out.length - 1].sub = E.available(S, 'shelter').odds + ` · next: ${STAGE_NAME[buildStage()] || 'build'}`;
     else { const miss = E.shelterMissing(S); if (miss && miss.length) out.push({ label: `${E.SHELTERS[S.shelterGoal].name}`, sub: 'Needs ' + miss.join(', '), fn: openShelterChoice, dim: true }); }
     push('change_dry'); push('cook'); push('melt_snow'); push('melt_ice'); push('catch_rain'); push('star_fire'); push('photo'); push('cut_belt'); if (S.cachePlace === 'camp') push('repair_cache'); push('fire_in'); push('fire_out'); push('mend', null, () => startCraft('mend')); push('work_hide', null, () => startCraft('work_hide')); push('smoke_clothes'); push('read_sky'); push('shape_pot', null, () => startCraft('shape_pot')); push('fire_pots', null, () => startCraft('fire_pots')); push('clear_roof'); push('splint', null, () => startCraft('splint')); push('dig_latrine'); push('bed', null, () => startCraft('bed')); push('bury'); push('scrub'); push('check_roof'); push('caulk', null, () => startCraft('caulk')); push('fix_axe'); push('repair', null, startRepair); push('boil'); push('needle_tea'); push('bone_broth'); push('dry'); if (push('smoke', 'Hot smoke', () => doAct('smoke', { mode: 'hot' }))) { const ref = out[out.length - 1]; push('smoke', 'Cold smoke', () => doAct('smoke', { mode: 'cold' })); if (out[out.length - 1] !== ref) out[out.length - 1].sub = 'a smoulder, no flame · slower, less wood, does not cook it'; } push('dry_food'); push('render_fat'); push('talk_camera'); push('cordage', null, startCordage); push('sharpen', null, startSharpen); push('rest');
     { const ready = Object.keys(E.ACTIONS).some(k => k.startsWith('craft_') && av(k).ok); out.push({ label: 'Craft…', sub: ready ? '' : 'see what each thing needs', fn: () => openBuild(false) }); }
@@ -3689,7 +3705,7 @@ function goalText() {
   if (!S.fire) return S.firewood < 1 ? 'Fire tonight: cut firewood' : S.mats.tinder < 1 ? 'Fire tonight: gather tinder' : !E.igniter(S) ? 'Fire tonight: carve a bow drill' : 'Fire tonight: light it';
   if (c.water === 'scarce' && (S.water || 0) < 1) return 'Fetch water';
   if (S.shelterLvl === 0) { const m = E.shelterMissing(S); return m && m.length ? 'Lean-to: get ' + m[0] : 'Build the lean-to'; }
-  if (S.shelterLvl && st.shelterCond < 0.5) return 'Patch the roof';
+  if (S.shelterLvl && st.shelterCond < 0.5) return 'Patch the roof'; if (S.shelterLvl && S.sys && S.sys.leaky && (S.rain || S.storm || (t => t.rain || t.storm)(E.tomorrow(S)))) return 'Patch the leak in the roof';
   if (S.firewood < 2) return 'Woodpile is low';
   if (st.storeKcal < 800) return 'Find food';
   const fresh = S.stores.filter(x => !x.smoked && !x.dried && !x.where && ['fish', 'game'].includes(D.foods[x.id].kind)).reduce((a, x) => a + x.por, 0);
@@ -3835,11 +3851,19 @@ function startHunt(animal) {
   mini.acts = idleActs();
   if (animal) p.dir = Math.atan2(animal.y - p.y, animal.x - p.x); p.aim = true; const sc = animal ? scentOf(animal) : 'cross'; miniUI(animal ? `<div class="mtext">${sc === 'down' ? 'The wind is at your back. It will smell you any second.' : sc === 'up' ? 'Wind in your face. It cannot smell you.' : 'Crosswind. Keep low.'} Draw when it is close.</div>` : '<div class="mtext">Nothing in sight. Draw and wait for something to step out.</div>'); lastActs = ''; refreshActs();
 }
+/* tracking (mini-game brief 4.2): walk the drops; partway the trail forks, and you read the sign to choose */
 function startTrack() {
-  autoResolve(); let found = 0; const p = W.player;
-  const finish = () => { if (!mini) return; endMini(); doAct('track', {}, 1 + found * 0.12); };
-  mini = { type: 'track', free: true, deadline: W.t + 45, update() { for (const b of W.blood) if (!b.seen && dist(b, p) < 30) { b.seen = true; found++; sfx.play('tap'); if (mini && mini.acts[0]) { mini.acts[0].sub = `${found} of ${W.blood.length} drops`; lastActs = ''; } } if (W.blood.every(b => b.seen)) finish(); },
-    acts: [{ label: 'Give up the trail', sub: `${found} of ${W.blood.length} drops`, fn: finish }], cancel: finish };
+  autoResolve(); let found = 0, forked = false, lost = false; const p = W.player; const forkAt = Math.min(3, Math.max(1, W.blood.length - 2));
+  const finish = () => { if (!mini) return; endMini(); doAct('track', { lost }, 1 + found * 0.12); };
+  const RIGHT = ['Blood on the underside of the leaves, low, and a scuff where it stumbled.', 'Bright drops on the stones, and hair caught on a snag at shoulder height.', 'The prints are deep and uneven, the steps short. It is hurt.'];
+  const WRONG = ['Prints, but the edges have crumbled and dried. Older.', 'A clean track, long even strides. Something healthy went this way.', 'Droppings beside the trail, but no blood anywhere near them.'];
+  const giveUp = () => ({ label: 'Give up the trail', sub: `${found} of ${W.blood.length} drops`, fn: finish });
+  const fork = () => { forked = true; const right = RIGHT[Math.floor(Math.random() * RIGHT.length)], wrong = WRONG[Math.floor(Math.random() * WRONG.length)]; const leftIsRight = Math.random() < 0.5;
+    const pick = ok => { lost = !ok; mini.acts = [giveUp()]; miniUI(`<div class="mtext">${ok ? 'The blood again. On you go.' : 'Nothing. No blood for a long way. You lost time on that.'} Walk to the next drop.</div>`); sfx.play(ok ? 'tap' : 'bad'); lastActs = ''; };
+    mini.acts = [{ label: 'Bear left', sub: leftIsRight ? right : wrong, fn: () => pick(leftIsRight) }, { label: 'Bear right', sub: leftIsRight ? wrong : right, fn: () => pick(!leftIsRight) }, giveUp()];
+    miniUI('<div class="mtext">The trail splits. Read the sign.</div>'); lastActs = ''; refreshActs(); };
+  mini = { type: 'track', free: true, deadline: W.t + 60, update() { for (const b of W.blood) if (!b.seen && dist(b, p) < 30) { b.seen = true; found++; sfx.play('tap'); if (!forked && found >= forkAt && W.blood.length > 2) { fork(); return; } if (mini && mini.acts[mini.acts.length - 1]) { mini.acts[mini.acts.length - 1].sub = `${found} of ${W.blood.length} drops`; lastActs = ''; } } if (W.blood.every(b => b.seen)) finish(); },
+    acts: [giveUp()], cancel: finish };
   miniUI('<div class="mtext">Walk from one blood drop to the next.</div>'); lastActs = ''; refreshActs();
 }
 // chopping: swing on the beat
@@ -4065,12 +4089,38 @@ function startLash(id, joints, text, shape) {
   mini = { type: 'lash', deadline: W.t + 40, update() {}, acts: [{ label: 'Not now', sub: 'no time spent', fn: quit }, ...usualWay(id, ok => finish(ok))], cancel: () => !worked ? quit() : finish(false) /* time ran out: nothing done is nothing built; part done is a rushed job, even if every point was tapped */ };
   padText(text); lastActs = ''; refreshActs();
 }
-function startBuild() { const g = S.shelterGoal; const n = { tarp: 4, leanto: 5, hut: 6, rock: 6, cabin: 6 }[g] || 5; startLash('shelter', n, g === 'rock' ? 'Tap each stone course to seat it against the rock.' : g === 'cabin' ? 'Tap each corner notch to seat the log.' : 'Tap each joint to lash it. Every one, or it comes down in the first blow.'); }
+/* shelter stages (mini-game brief 5.4): each session of a build is its own job, and a job done badly shows up later as a named fault */
+const BUILD_STAGES = { tarp: ['frame'], leanto: ['frame'], hut: ['frame', 'shingle'], snowcave: ['dig', 'vent'], rock: ['stack', 'frame', 'chink'], cabin: ['notch', 'notch', 'notch', 'chink'] };
+function buildStage() { const st = BUILD_STAGES[S.shelterGoal] || ['frame']; const n = (E.shelterBill(S) || {}).sessions || 1, w = S.shelterWork || 0;
+  return n <= 1 ? st[0] : w >= n - 1 ? st[st.length - 1] : st[Math.min(st.length - 2, w)]; } /* the last session is always the finishing job */
+const STAGE_NAME = { frame: 'lash the frame', shingle: 'shingle the roof', dig: 'dig it out', vent: 'open an air hole', stack: 'stack the wall', chink: 'chink the gaps', notch: 'notch and lay logs' };
+function startBuild() {
+  const g = S.shelterGoal; const st = buildStage();
+  if (st === 'shingle') return startShingle();
+  if (st === 'chink') return startStrokes('shelter', { need: 6, art: `<rect x="20" y="18" width="260" height="14" rx="3" fill="#7a6a52"/><rect x="20" y="38" width="260" height="14" rx="3" fill="#6f5f48"/><rect x="20" y="58" width="260" height="14" rx="3" fill="#7a6a52"/>`, y: 35, intro: 'Press moss into the gaps between the courses: long, even strokes.', rough: 'Too hard. The moss tears out again.' });
+  if (st === 'dig') return startStrokes('shelter', { need: 7, art: `<path d="M20 84 Q150 0 280 84Z" fill="#e8ece8"/><ellipse cx="150" cy="70" rx="40" ry="16" fill="#c9d2d6"/>`, y: 66, intro: 'Dig the room out of the drift: long scoops, not jabs, or the roof goes thin.', rough: 'Too hard. The roof is getting thin there.' });
+  if (st === 'vent') return startTaps('shelter', [[150, 20]], `<path d="M20 92 Q150 4 280 92Z" fill="#e8ece8"/><ellipse cx="150" cy="80" rx="30" ry="10" fill="#2a3036"/>`, 'Push a stick up through the roof for an air hole. Sleep sealed in without one and the air goes bad.', {});
+  if (st === 'stack') return startTaps('shelter', [[60, 74], [110, 74], [160, 74], [210, 74], [85, 54], [135, 54], [185, 54]], `<rect x="20" y="84" width="260" height="8" fill="#685b4a"/><path d="M250 90 L250 10 L290 10 L290 90Z" fill="#6a6a62"/>`, 'Set each stone so it sits on two below it, the wall leaning into the rock.', { col: '#8a8d86' });
+  const n = { tarp: 4, leanto: 5, hut: 6, rock: 6, cabin: 6 }[g] || 5;
+  startLash('shelter', n, g === 'rock' ? 'Lash the frame poles where they meet the stone.' : g === 'cabin' ? 'Tap each corner notch to seat the log.' : 'Tap each joint to lash it. Every one, or it comes down in the first blow.');
+}
+/* shingling: lay the boughs from the bottom up, each over the one below; out of order and rain runs in behind */
+function startShingle() {
+  autoResolve(); const rows = [80, 66, 52, 38, 24]; const placed = []; let errors = 0, worked = false;
+  const finish = (good) => { if (!mini) return; endMini(); handsDone('shingle', good); doAct('shelter', { good }); }; const quit = () => { if (mini) endMini(); };
+  const svg = pad(`<path d="M30 92 L150 14 L270 92" stroke="#8a6a44" stroke-width="4" fill="none"/>${rows.map((y, i) => `<rect class="sh" data-i="${i}" x="${(40 + (92 - y) * 0.9).toFixed(0)}" y="${y - 6}" width="${(220 - (92 - y) * 1.8).toFixed(0)}" height="12" rx="5" fill="rgba(255,255,255,.12)" stroke="#fff" stroke-dasharray="3 3"/>`).join('')}`, 300, 100);
+  if (svg) svg.onpointerdown = (e) => { const q = svg.toLocal(e); const i = rows.findIndex((y, k) => !placed.includes(k) && Math.abs(q.y - y) < 8); if (i < 0) return;
+    if (!worked) { worked = true; mini.acts = [{ label: 'Finish now', sub: 'a rushed job', fn: () => finish(false) }]; lastActs = ''; }
+    const wrong = placed.length !== i; if (wrong) errors++; placed.push(i); const r = svg.querySelector(`.sh[data-i="${i}"]`); r.setAttribute('fill', wrong ? '#7d6a3a' : '#5d7a3a'); r.removeAttribute('stroke-dasharray'); r.setAttribute('stroke', wrong ? '#c86a4a' : '#3d5a2a'); sfx.play(wrong ? 'bad' : 'stick'); buzz(wrong ? 20 : 8);
+    padText(wrong ? 'That layer went on before the one below it. Rain will run in behind it.' : `${placed.length} of ${rows.length} layers, each over the last.`); if (placed.length === rows.length) setTimeout(() => finish(errors === 0), 400); };
+  mini = { type: 'craft', deadline: W.t + 40, update() {}, acts: [{ label: 'Not now', sub: 'no time spent', fn: quit }], cancel: () => worked ? finish(false) : quit() };
+  padText('Lay the boughs from the bottom up, each layer over the one below, like shingles.'); lastActs = ''; refreshActs();
+}
 function startRepair() { startLash('repair', 3, 'Re-lash the loose joints and pack the gaps.'); }
 // snares: drag to size the loop (fist-wide) and set its height (four fingers). Deadfalls: hold the stone balanced on the trigger.
 function startSnare(track, deadfall) {
   autoResolve(); const id = deadfall ? 'deadfalls' : 'snares';
-  const finish = (good) => { if (!mini) return; endMini(); track.set = true; track.deadfall = !!deadfall; track.poor = !good; doAct(id, { good }); }; const quit = () => { if (mini) endMini(); }; let touched = false;
+  const finish = (good) => { if (!mini) return; endMini(); track.set = true; track.deadfall = !!deadfall; track.poor = !good; { const i = W.tracks.indexOf(track); const sys = E.sysOf(S); sys.setAt = (sys.setAt || []).filter(x => x[0] !== i).concat([[i, deadfall ? 1 : 0]]).slice(-12); } doAct(id, { good }); }; const quit = () => { if (mini) endMini(); }; let touched = false;
   if (!deadfall) {
     let w = 40, h = 30, drag = null;
     const svg = pad(`<line x1="20" y1="88" x2="280" y2="88" stroke="#685b4a" stroke-width="3"/><path d="M 60 88 L 60 20 M 60 34 L 50 24 M 60 34 L 70 24" stroke="#85745b" stroke-width="4" stroke-linecap="round" fill="none"/><ellipse id="ghost" cx="150" cy="60" rx="14" ry="17" fill="none" stroke="rgba(255,255,255,.25)" stroke-dasharray="3 3"/><line id="lead" x1="60" y1="34" x2="150" y2="60" stroke="#e6e0d4" stroke-width="1.2"/><ellipse id="loop" cx="150" cy="58" rx="20" ry="24" fill="none" stroke="#e6e0d4" stroke-width="2"/>`, 300, 100);
@@ -4098,13 +4148,28 @@ function startNet() {
   lastActs = ''; refreshActs();
 }
 // the trapline: walk to each set and look
+/* the trapline (brief 4.2): walk the line; each set has its state, and you only take and reset what you reach */
 function startTrapline() {
   autoResolve(); const sets = W.tracks.filter(t => t.set); if (!sets.length) { doAct('checktraps'); return; }
-  const seen = new Set(); const p = W.player;
-  const finish = () => { if (!mini) return; endMini(); doAct('checktraps', { good: seen.size >= sets.length }); };
-  mini = { type: 'track', free: true, deadline: W.t + 60, update() { for (const t of sets) if (!seen.has(t) && dist(t, p) < 34) { seen.add(t); sfx.play('tap'); buzz(8); mini.acts[0].sub = `${seen.size} of ${sets.length} checked`; lastActs = ''; } if (seen.size >= sets.length) finish(); },
+  const fishIds = new Set(E.season(S).pools.fish.map(x => x[0])); const caught = S.trapsCatch.filter(f => !fishIds.has(f)); const sys = S.sys || {};
+  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const order = shuffle(sets.slice()); const st = new Map(order.map(t => [t, { got: [], robbed: 0, sprung: 0 }]));
+  caught.forEach((f, i) => st.get(order[i % order.length]).got.push(f));
+  const rest = order.filter(t => !st.get(t).got.length); let ri = 0; const next = () => rest.length ? rest[ri++ % rest.length] : order[ri++ % order.length];
+  for (let i = 0; i < (sys.robbed || 0); i++) st.get(next()).robbed++; for (let i = 0; i < (sys.sprung || 0); i++) st.get(next()).sprung++;
+  const sign = Math.min(0.85, 0.35 + 0.25 * (E.stockOf ? E.stockOf(S, 'trap') : 1));
+  const say = t => { const x = st.get(t); const nm = f => E.DATA.foods[f].name.toLowerCase();
+    if (x.got.length) return [`${x.got.map(nm).join(' and ').replace(/^./, c => c.toUpperCase())} in the ${t.deadfall ? 'deadfall' : 'snare'}.`, 'good'];
+    if (x.robbed) return ['Fur, blood and a snapped wire. A fox got here first.', 'bad'];
+    if (x.sprung) return [`${x.sprung > 1 ? x.sprung + ' loops' : 'The loop'} knocked flat, empty. Reset.`, 'info'];
+    if (sys.snaresBuried) return ['Buried in the drift. Dug out and reset.', 'info'];
+    return Math.random() < sign ? ['Empty, but fresh sign on the trail. Leave it.', 'muted'] : ['Empty, and no sign for days. A poor spot.', 'muted']; };
+  const seen = new Set(); const p = W.player; let reached = 0;
+  const finish = () => { if (!mini) return; endMini(); const leave = order.filter(t => !seen.has(t)).reduce((n, t) => n + st.get(t).got.length, 0); doAct('checktraps', { good: seen.size >= sets.length, total: sets.length, checked: seen.size, leave }); };
+  const tally = () => `<div class="mtext">Walk the line. ${seen.size} of ${sets.length} sets checked${reached ? `, ${reached} with something in` : ''}.</div>`;
+  mini = { type: 'track', free: true, deadline: W.t + 60, update() { for (const t of sets) if (!seen.has(t) && dist(t, p) < 34) { seen.add(t); const line = say(t); if (st.get(t).got.length) { reached++; sfx.play('good'); buzz(20); } else { sfx.play('tap'); buzz(8); } worldToast([line], t.x, t.y - 20); miniUI(tally()); mini.acts[0].sub = `${seen.size} of ${sets.length} checked`; lastActs = ''; } if (seen.size >= sets.length && !mini.ending) { mini.ending = true; setTimeout(finish, 900); } },
     acts: [{ label: 'Head back', sub: `0 of ${sets.length} checked`, fn: finish }], cancel: finish };
-  miniUI('<div class="mtext">Walk the line. Check every set.</div>'); lastActs = ''; refreshActs();
+  miniUI(tally()); lastActs = ''; refreshActs();
 }
 // sharpening: long strokes along the stone
 function startSharpen() {
@@ -5089,7 +5154,7 @@ function drawInterior(dpr, cw, ch, ph) {
   cx.beginPath(); cx.moveTo(px - 20, py - 26); cx.lineTo(px - 26 + k, py - 2); cx.moveTo(px + 20, py - 26); cx.lineTo(px + 26 - k, py - 2); cx.stroke();
   cx.fillStyle = '#c9a070'; cx.beginPath(); cx.roundRect(px - 22 + k, py - 6, 44, 6, 3); cx.fill();
   if (busy === 'cord' && mini.acts.some(a => /Twist|Fold/.test(a.label))) { cx.strokeStyle = '#c9b58a'; cx.lineWidth = 3; cx.beginPath(); cx.moveTo(px - 22, py - 4); cx.quadraticCurveTo(px, py - 14 + k, px + 22, py - 4); cx.stroke(); }
-  if ((S.shelterCond ?? 1) < 0.5 && (S.rain || S.storm)) { cx.fillStyle = 'rgba(200,225,245,.8)'; for (let i = 0; i < 6; i++) { const x = cw * (0.15 + i * 0.14), y = ((t * (120 + i * 20) + i * 97) % (floorY + 40)); cx.beginPath(); cx.ellipse(x, y, 2, 4, 0, 0, 6.28); cx.fill(); if (y > floorY + 30 && Math.random() < 0.02) sfx.play('drip'); } cx.fillStyle = 'rgba(80,120,150,.25)'; for (let i = 0; i < 6; i++) { cx.beginPath(); cx.ellipse(cw * (0.15 + i * 0.14), floorY + 44, 12, 4, 0, 0, 6.28); cx.fill(); } }
+  if (((S.shelterCond ?? 1) < 0.5 || S.sys && S.sys.leaky) && (S.rain || S.storm)) { cx.fillStyle = 'rgba(200,225,245,.8)'; for (let i = 0; i < 6; i++) { const x = cw * (0.15 + i * 0.14), y = ((t * (120 + i * 20) + i * 97) % (floorY + 40)); cx.beginPath(); cx.ellipse(x, y, 2, 4, 0, 0, 6.28); cx.fill(); if (y > floorY + 30 && Math.random() < 0.02) sfx.play('drip'); } cx.fillStyle = 'rgba(80,120,150,.25)'; for (let i = 0; i < 6; i++) { cx.beginPath(); cx.ellipse(cw * (0.15 + i * 0.14), floorY + 44, 12, 4, 0, 0, 6.28); cx.fill(); } }
   // night tint
   if (W.night) { cx.fillStyle = 'rgba(5,12,35,.5)'; cx.fillRect(0, 0, cw, ch); }
   cx.font = '600 11px ' + (W.mono || 'monospace'); cx.textAlign = 'left'; cx.fillStyle = 'rgba(255,255,255,.5)'; cx.fillText(E.shelterName(S).toUpperCase() + (S.fireInside && S.fire ? ' · FIRE INSIDE' : ''), 14, ch - 14);
@@ -6112,7 +6177,7 @@ function pageCamp(sh, close) {
     sh.append($(`<div class="rows">
       ${S.gear.includes('Axe') || S.gear.includes('Hatchet') ? `<div class="row"><span>Axe</span><span>${S.sys && S.sys.axeOff ? 'head off the handle' : `${S.axeEdge > 0.8 ? 'sharp' : S.axeEdge > 0.5 ? 'getting dull' : 'dull'} · ${E.haftOf(S) < 0.35 ? 'head loose' : 'head tight'}`}</span></div>` : ''}
       <div class="row"><span>Fire</span><span>${S.fire ? 'Burning' : 'Out'} · <span class="num">${Math.round(S.firewood)}</span> days of wood · ${st.igniter === 'ferro' ? 'ferro rod' : st.igniter === 'bowdrill' ? 'bow drill' : 'no way to light one'} · ${S.mats.tinder > 0 ? `${S.mats.tinder} tinder${E.tinderDamp(S) > 0.2 ? ', damp' : ''}` : 'no tinder'}</span></div>
-      <div class="row"><span>Shelter</span><span>${esc(st.shelter)}${S.shelterLvl ? ` · ${Math.round(st.shelterCond * 100)}% sound` : ''}${S.shelterLvl < 3 ? ` · next: ${esc(E.SHELTER_NAMES[S.shelterLvl + 1])}` : ''}</span></div>
+      <div class="row"><span>Shelter</span><span>${esc(st.shelter)}${S.shelterLvl ? ` · ${Math.round(st.shelterCond * 100)}% sound${S.sys && S.sys.leaky ? ', a leak in the roof' : ''}` : ''}${S.shelterLvl < 3 ? ` · next: ${esc(E.SHELTER_NAMES[S.shelterLvl + 1])}` : ''}</span></div>
       <div class="row"><span>Water</span><span>${(() => { const wt = E.waterToday(S); return wt.ok ? ({ edge: 'Drank at the water today', walk: 'Drank at the water today', boiled: 'Boiled water today', kept: 'From the pot at camp today', rain: 'Rainwater today', carried: 'Carried water today' }[wt.how] || 'Drank today') : (S.sys && S.sys.dry ? `No water for ${S.sys.dry} day${S.sys.dry > 1 ? 's' : ''}` : 'Not yet today'); })()} · ${S.boiled > 0 ? 'Boiled' : E.season(S).climate.water === 'scarce' ? `${S.water || 0} days in hand` : 'Drinking it raw'}${S.potWater ? ` · ${S.potWater} pot${S.potWater > 1 ? 's' : ''} at camp` : ''}${S.wet > 0.4 ? ' · you are wet' : ''}</span></div>
       <div class="row"><span>Net</span><span>${S.net ? (S.net.torn ? 'Torn' : 'Set') : E.available(S, 'setnet').ok ? 'Not set' : '—'}</span></div>
       <div class="row"><span>Traps</span><span>${traps.join(', ') || 'None out'}</span></div>

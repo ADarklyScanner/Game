@@ -115,6 +115,31 @@ const nights = (mk, n, f) => { let hit = 0; for (let i = 0; i < n; i++) { const 
   let plain = 0, ruin = 0; for (let i = 0; i < 300; i++) { const a = camp('US-S2', 1000 + i); E.act(a, 'search'); plain += a.found.length; const b = camp('US-S2', 1000 + i); E.act(b, 'search', { mod: 2.2, extra: { ruin: true } }); ruin += b.found.length; }
   check('picking through the old camp finds more than the shore', ruin > plain * 1.5, [plain, ruin]);
 }
+{ // the trapline: loops get knocked flat, flat loops catch nothing, and you take and reset only what you reach
+  let flatted = 0; for (let i = 0; i < 40; i++) { const t = camp('US-S6', 300 + i); t.snares = 10; t.wind = true; E.endDay(t); if (t.sys && t.sys.sprung) flatted++; }
+  check('some snares are knocked flat in a windy night', flatted > 5, flatted);
+  let caughtFlat = 0; for (let i = 0; i < 60; i++) { const t = camp('US-S6', 400 + i); t.snares = 4; E.sysOf(t).sprung = 4; t.trapsCatch = []; E.endDay(t); caughtFlat += t.trapsCatch.length; }
+  check('flat loops catch nothing', caughtFlat === 0, caughtFlat);
+  const h = camp('US-S6', 31); h.snares = 6; E.sysOf(h).sprung = 4; h.trapsCatch = ['hare', 'squirrel']; E.act(h, 'checktraps', { extra: { total: 4, checked: 2, leave: 1 } });
+  check('half the line walked resets half the flat loops', h.sys.sprung === 2, h.sys.sprung);
+  check('a catch in a set you did not reach stays there', h.trapsCatch.length === 1, h.trapsCatch);
+  const b = camp('US-S6', 32); b.snares = 6; E.sysOf(b).sprung = 3; b.trapsCatch = ['hare']; E.act(b, 'checktraps');
+  check('checking the whole line resets every loop and takes everything', b.sys.sprung === 0 && b.trapsCatch.length === 0, [b.sys.sprung, b.trapsCatch]);
+}
+{ // a rushed stage of a build leaves a leak: rain finds it, a proper patch closes it
+  const h = camp('US-S6', 21); Object.assign(h.mats, { poles: 20, boughs: 30, moss: 20, cordage: 10 }); E.chooseShelter(h, 'hut', 'lee');
+  E.act(h, 'shelter', { extra: { good: true } }); E.act(h, 'shelter', { extra: { good: false } });
+  check('a rushed roof leaves a leak', h.shelterType === 'hut' && h.sys.leaky === true && h.shelterCond < 0.85, [h.shelterType, h.sys.leaky, h.shelterCond]);
+  h.rain = true; h.shelterCond = 0.8; const n = JSON.stringify(E.endDay(h) || h.log || ''); check('rain comes through the leak at night', /weak spot in the roof/.test(n) || /weak spot in the roof/.test(JSON.stringify(h)), n.slice(0, 200));
+  E.beginDay(h); h.event = null; check('a leak is worth patching even when the rest is sound', E.available(h, 'repair').ok !== false, E.available(h, 'repair'));
+  h.mats.boughs = 10; h.shelterCond = 0.9; E.act(h, 'repair', { extra: { good: true } }); check('a proper patch closes the leak', h.sys.leaky === false);
+  const c = camp('US-S6', 22); Object.assign(c.mats, { poles: 20, boughs: 30, moss: 20, cordage: 10 }); E.chooseShelter(c, 'hut', 'lee'); E.act(c, 'shelter', { extra: { good: true } }); E.act(c, 'shelter', { extra: { good: true } });
+  check('a careful build has no leak', c.shelterType === 'hut' && !c.sys.leaky && c.shelterCond === 1, [c.sys.leaky, c.shelterCond]);
+}
+{ // a wrong turn at the fork costs time and the trail goes colder
+  const tr = lost => { const t = camp('US-S6', 1500, ['Bow and arrows']); t.wounded = { id: 'hare', p: 0.9 }; const h0 = t.hours; E.act(t, 'track', { extra: { lost } }); return t.hours - h0; };
+  check('following old prints costs half an hour', tr(true) - tr(false) >= 0.49, [tr(true), tr(false)]);
+}
 { // something alive in a snare is a real choice
   check('the snare event exists', !!E.EVENTS.snarepred && E.EVENTS.snarepred.options.length === 3);
 }
