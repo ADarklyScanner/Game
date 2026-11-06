@@ -115,6 +115,12 @@ const nights = (mk, n, f) => { let hit = 0; for (let i = 0; i < n; i++) { const 
   let plain = 0, ruin = 0; for (let i = 0; i < 300; i++) { const a = camp('US-S2', 1000 + i); E.act(a, 'search'); plain += a.found.length; const b = camp('US-S2', 1000 + i); E.act(b, 'search', { mod: 2.2, extra: { ruin: true } }); ruin += b.found.length; }
   check('picking through the old camp finds more than the shore', ruin > plain * 1.5, [plain, ruin]);
 }
+{ // cooking by hand: the hands decide, not the dice
+  const ck = heat => { const c = camp('US-S6', 51); c.stores = [{ id: 'trout', por: 4, left: 5, smoked: false }]; c.fire = true; const m0 = c.morale; const out = JSON.stringify(E.act(c, 'cook', { extra: { heat } }) || c.log || ''); return { out: out + JSON.stringify(c.lastLines || ''), c }; };
+  check('charred by hand is charred', /charred/.test(JSON.stringify(ck('burnt').c)), '');
+  check('cooked right by hand comes out right', /just right/.test(JSON.stringify(ck('right').c)), '');
+  check('taken off early is cold in the middle', /still cold/.test(JSON.stringify(ck('under').c)), '');
+}
 { // the trapline: loops get knocked flat, flat loops catch nothing, and you take and reset only what you reach
   let flatted = 0; for (let i = 0; i < 40; i++) { const t = camp('US-S6', 300 + i); t.snares = 10; t.wind = true; E.endDay(t); if (t.sys && t.sys.sprung) flatted++; }
   check('some snares are knocked flat in a windy night', flatted > 5, flatted);

@@ -5,7 +5,7 @@ const { loadGame } = require('./load-game'); const E = loadGame(process.env.GAME
 const SRC = process.env.GAME_FILE || path.join(__dirname, '..', 'index.html'); const TMP = '/tmp/last-one-out-minis.html';
 const html = fs.readFileSync(SRC, 'utf8'); const hook = 'window.claude?.hot?.snapshot?.(() => ({ game: S }));';
 if (!html.includes(hook)) throw new Error('hook point not found');
-fs.writeFileSync(TMP, html.replace(hook, 'window.__m = { startBuild, startFire, startLash, startHunt, startFish, startNet, startSteps, startTaps, startCordage, startSharpen, startForage, startSearch, mini: () => mini, S: () => S, acts: () => mini ? mini.acts.map(a => a.label) : [], press: l => { const a = mini && mini.acts.find(x => x.label === l); if (a) { if (a.down) a.down(); if (a.fn) a.fn(); if (a.up) a.up(); return true; } return false; } };\n' + hook));
+fs.writeFileSync(TMP, html.replace(hook, 'window.__m = { startFilter, startCook, startBuild, startFire, startLash, startHunt, startFish, startNet, startSteps, startTaps, startCordage, startSharpen, startForage, startSearch, mini: () => mini, S: () => S, acts: () => mini ? mini.acts.map(a => a.label) : [], press: l => { const a = mini && mini.acts.find(x => x.label === l); if (a) { if (a.down) a.down(); if (a.fn) a.fn(); if (a.up) a.up(); return true; } return false; } };\n' + hook));
 const KEY = 'last-one-out-v1'; const save = s => JSON.stringify(s, (k, v) => v === Infinity ? 1e9 : v);
 let fails = 0, passes = 0; const check = (name, ok, detail) => { if (ok) passes++; else { fails++; console.log('FAIL', name, detail ?? ''); } };
 function base() { const s = E.newGame('US-S6', ['Knife', 'Ferro rod', 'Axe', 'Fishing gear', 'Bow and arrows', 'Gillnet', 'Paracord'], { seed: 41, weight: 200 }); s.campChosen = true; E.beginDay(s); s.event = null; s.storm = s.rain = s.fog = s.snowfall = false; s.hours = 2; s.phase = 0; Object.assign(s.mats, { poles: 20, cordage: 20, boughs: 20 }); return s; }
@@ -68,6 +68,20 @@ function base() { const s = E.newGame('US-S6', ['Knife', 'Ferro rod', 'Axe', 'Fi
   check('lighting a fire starts with how you lay it', ['Teepee', 'Log cabin', 'Lean-to lay'].every(l => 0) || (await p.evaluate(() => window.__m.acts())).includes('Log cabin'), await p.evaluate(() => window.__m.acts()));
   await p.evaluate(() => window.__m.press('Teepee')); check('then the strike', await p.evaluate(() => window.__m.mini() && window.__m.mini().type === 'fire'));
   check('no page errors', !errs.length, errs.slice(0, 3));
+  // cooking: taken off early is underdone; left in the coals unturned it chars
+  await fresh(); await p.evaluate(() => { const S = window.__m.S(); S.fire = true; S.stores.push({ id: 'trout', por: 4, left: 5, smoked: false }); window.__m.startCook(); });
+  await p.evaluate(() => window.__m.mini().acts[0].down()); await p.waitForTimeout(800); await p.evaluate(() => window.__m.mini().acts[0].up());
+  check('once the food is over the fire, Not now becomes Take it off', (await p.evaluate(() => window.__m.acts())).includes('Take it off'), await p.evaluate(() => window.__m.acts()));
+  await p.evaluate(() => window.__m.press('Take it off')); await p.waitForTimeout(500);
+  check('taken off early, the middle is cold', await p.evaluate(() => !window.__m.mini() && /still cold/.test(document.body.textContent + JSON.stringify(window.__m.S()))));
+  await fresh(); await p.evaluate(() => { const S = window.__m.S(); S.fire = true; S.stores.push({ id: 'trout', por: 4, left: 5, smoked: false }); window.__m.startCook(); window.__m.mini().acts[0].down(); });
+  await p.waitForTimeout(8500); check('held in the coals and never turned, it chars', await p.evaluate(() => !window.__m.mini() && /charred/.test(document.body.textContent + JSON.stringify(window.__m.S()))));
+  // the water filter: bottom layer first; out of order is gritty, in order is clear
+  for (const order of [[2, 0, 1, 3], [0, 1, 2, 3]]) { await fresh();
+    await p.evaluate(() => { const S = window.__m.S(); S.fire = true; S.potWater = 2; S.boiled = 0; S.gear.push('Pot'); window.__m.startFilter(); });
+    for (const i of order) { const r = await p.evaluate(i => { const b = document.querySelector(`#mini .fl[data-i="${i}"] rect`).getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; }, i); await p.mouse.click(r[0], r[1]); await p.waitForTimeout(80); }
+    await p.waitForTimeout(900); const txt = await p.evaluate(() => document.body.textContent + JSON.stringify(window.__m.S()));
+    if (order[0] === 2) check('a filter built out of order lets sand through', /sand ran through/.test(txt)); else check('a filter built bottom up runs clear', /tastes of nothing/.test(txt)); }
   // the debris hut's second session is shingling: out of order leaves a leak, in order leaves none
   for (const order of [[4, 0, 1, 2, 3], [0, 1, 2, 3, 4]]) { await fresh();
     await p.evaluate(() => { const S = window.__m.S(); Object.assign(S.mats, { poles: 20, boughs: 30, moss: 20, cordage: 10 }); S.shelterGoal = 'hut'; S.shelterWork = 1; S.shelterPaid = true; window.__m.startBuild(); });
