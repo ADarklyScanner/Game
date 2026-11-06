@@ -15,13 +15,13 @@ Design posture from the review: **fire is a tool, not a status** (it hardens poi
 | 5 | Water | Dew collection | **Built Nov 4**: Mop the dew at first light (not in rain, frost or snow): half a day of water in dry country, otherwise a drink or a pot of clean water | |
 | 6 | Water | Ice vs snow | **Built Nov 4**: Melt lake ice (an axe or a stone to break it) at half the wood; snow now costs half a day of wood a pot | |
 | 7 | Water | Rain catchment | **Built Nov 4**: Rig the tarp (or ground sheet) to catch rain: fills the pots with clean water | |
-| 8 | Shelter | Snow cave | Nothing (no snow shelter at all) | Dig into a drift: no materials, warm, collapse and air risks |
-| 9 | Shelter | Shelter orientation | Wind direction exists (windDir) | Choose which way the door faces; wind through the door costs warmth |
-| 10 | Hunting | Scout expansion | Scout exists: one line, helps snares | Say what was found: which animal, how fresh, which way |
-| 11 | Hunting | Kill processing pressure | Ravens take from a carcass left out; bears come to meat | Make the clock on an ungutted kill visible |
-| 12 | Plants | Specific plants | "Greens" with one look-alike | Six named greens; inspect names them |
-| 13 | Plants | Specific mushrooms | Mushrooms with a look-alike description | Named kinds, with the false and true morel as the real test (fictional detail, not a guide) |
-| 14 | Plants | Tree species rewards | Species change the look and some yields | Ash for bows, willow for cordage, birch for bark: small quality changes |
+| 8 | Shelter | Snow cave | **Built Nov 6**: a week after the first snow, dig into a drift (6 boughs, 2 sessions; 1 with a shovel). Inside stays near freezing whatever the cold outside; no fire inside; a thaw or rain sags it | |
+| 9 | Shelter | Shelter orientation | **Built Nov 6**: choose the door when you plan a shelter: away from the wind (less draught on windy nights) or to the fire (more of its heat in a lean-to or tarp, more wind) | |
+| 10 | Hunting | Scout expansion | **Built Nov 6**: scouting names the animal, how fresh the sign is and which way it was heading; that day's hunting odds rise and a blind hunt goes after it | |
+| 11 | Hunting | Kill processing pressure | **Built Nov 6**: on top of the overnight scavengers, a warm kill left more than four hours with the guts in loses meat when you dress it | The HUD reminder still to say it |
+| 12 | Plants | Specific plants | **Built Nov 6**: six named greens on the map; the first pick goes into the field notes | |
+| 13 | Plants | Specific mushrooms | **Built Nov 6**: nine named kinds (game lore, not a guide), with a hollow honeycomb and a stuffed brain-cap as the real test; Cut one open shows the inside; eating teaches you, and the journal's What you know page remembers | |
+| 14 | Plants | Tree species rewards | **Built Nov 6**: a broadleaf sapling makes a springier bow stave than spruce; broadleaf inner bark twists three lengths of cord instead of two | |
 
 ## Higher-impact items
 

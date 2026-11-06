@@ -88,6 +88,29 @@ const nights = (mk, n, f) => { let hit = 0; for (let i = 0; i < n; i++) { const 
   let tornHard = 0, tornSoft = 0; for (let i = 0; i < 200; i++) for (const hard of [true, false]) { const t = camp('AU-S3', 600 + i); t.fishTrap = true; t.crafts.fishtrap = 1; t.storm = true; if (hard) t.sys.hardStakes = true; E.endDay(t); if ((t.sys.trapCond ?? 1) < 0.65) { if (hard) tornHard++; else tornSoft++; } }
   check('hardened stakes tear out less often in a storm', tornHard < tornSoft * 0.8, [tornHard, tornSoft]);
 }
+{ // knowing the land: scout reports, the kill clock, stave wood, inner bark, what eating teaches
+  const sc = camp('US-S6', 61); E.act(sc, 'scout'); const sg = sc.sys.scoutSign; check('scouting names an animal, how fresh and which way', sg && sg.id && /sign: .*heading (north|south|east|west)/.test(sc.today.lines.map(l => l[0]).join(' ')), sc.today.lines.map(l => l[0]));
+  const o0 = (() => { const q = camp('US-S6', 61); return E.huntOdds(q); })(); check('and the day\'s hunting odds go up', E.huntOdds(sc) > o0, [o0, E.huntOdds(sc)]);
+  const kill = late => { const k = camp('US-S1', 62, ['Knife']); k.day = 5; k.carcass = { hour: 2, id: 'deer', por: 100, big: true, dressed: false, day: 5, size: 1 }; k.hours = 2 + late; E.act(k, 'dress'); return k.carcass ? k.carcass.por : 0; };
+  check('a warm kill gutted late loses meat', kill(6) < kill(1), [kill(1), kill(6)]);
+  const st = camp('US-S3', 63, ['Knife']); E.act(st, 'cut_poles', { extra: { tree: { kind: 'deciduous', age: 'sapling' } } }); check('a broadleaf sapling gives a hardwood stave', st.sys.staveWood === 'hard');
+  st.mats.poles = 3; st.mats.cordage = 4; st.crafts.bow = 0; E.act(st, 'craft_bow'); check('and the bow remembers its wood', st.sys.bowWood === 'hard');
+  const soft = camp('US-S3', 64, ['Knife']); soft.sys.bowWood = 'soft'; soft.crafts.bow = 2; soft.sys.tiller = 1; const hard = camp('US-S3', 64, ['Knife']); hard.sys.bowWood = 'hard'; hard.crafts.bow = 2; hard.sys.tiller = 1;
+  check('a hardwood bow casts harder than a spruce one', E.bowPower(hard) > E.bowPower(soft), [E.bowPower(hard), E.bowPower(soft)]);
+  const bb = camp('US-S3', 65); bb.mats.bark = 0; for (let i = 0; i < 2; i++) E.act(bb, 'bark', { extra: { tree: { kind: 'deciduous', age: 'mature' } } }); const c0 = bb.mats.cordage; E.act(bb, 'cordage'); check('inner bark twists three lengths, not two', bb.mats.cordage - c0 === 3, bb.mats.cordage - c0);
+  const m = camp('US-S6', 66); m.stores = [{ id: 'mushrooms', por: 3, left: 5, smoked: false, look: 'grey cap, spongy underside' }]; E.endDay(m); check('eating mushrooms safely puts them in the field notes', m.sys.known && m.sys.known['grey cap, spongy underside'] === 'good', m.sys.known);
+  const g = camp('US-S3', 67); E.act(g, 'greens', { extra: { name: 'Chickweed' } }); check('a named green goes into the notes', g.sys.known && g.sys.known['plant:Chickweed'] === 'good');
+}
+{ // the snow cave and the door
+  const deep = camp('US-S6', 71); deep.shelterType = null; deep.shelterLvl = 0; deep.day = 70; E.beginDay(deep); deep.event = null; check('deep snow offers a snow cave', E.shelterOptions(deep).includes('snowcave'), E.shelterOptions(deep));
+  const early = camp('US-S6', 72); early.shelterType = null; early.shelterLvl = 0; early.day = 3; check('no drift, no snow cave', !E.shelterOptions(early).includes('snowcave'));
+  check('a shovel digs it in one session', E.billFor({ ...deep, gear: ['Shovel'] }, 'snowcave').sessions === 1);
+  const cold = type => { let h = 0; for (let i = 0; i < 40; i++) { const c = camp('US-S6', 800 + i, ['Knife']); c.day = 75; E.beginDay(c); c.event = null; c.fire = false; c.firewood = 0; c.storm = c.rain = false; c.shelterType = type; c.shelterLvl = 2; c.shelterCond = 1; const h0 = c.health; E.endDay(c); h += h0 - c.health; } return h; };
+  check('a snow cave loses less to a hard cold night than a debris hut', cold('snowcave') < cold('hut'), [cold('snowcave'), cold('hut')]);
+  const thaw = camp('US-S6', 73); thaw.day = 75; E.beginDay(thaw); thaw.event = null; thaw.shelterType = 'snowcave'; thaw.shelterLvl = 2; thaw.shelterCond = 1; thaw.rain = true; E.endDay(thaw); check('rain sags a snow cave', thaw.shelterCond < 0.9, thaw.shelterCond);
+  const windy = door => { let h = 0; for (let i = 0; i < 40; i++) { const c = camp('US-S6', 900 + i, ['Knife']); c.day = 60; E.beginDay(c); c.event = null; c.fire = false; c.firewood = 0; c.wind = true; c.storm = c.rain = false; c.sys.door = door; const h0 = c.health; E.endDay(c); h += h0 - c.health; } return h; };
+  check('a door away from the wind is warmer on a windy night', windy('lee') < windy('fire'), [windy('lee'), windy('fire')]);
+}
 { // something alive in a snare is a real choice
   check('the snare event exists', !!E.EVENTS.snarepred && E.EVENTS.snarepred.options.length === 3);
 }
