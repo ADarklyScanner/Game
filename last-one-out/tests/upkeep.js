@@ -132,6 +132,20 @@ const nights = (mk, n, f) => { let hit = 0; for (let i = 0; i < n; i++) { const 
   const a = camp('US-S6', 84); a.mats.wire = 6; E.act(a, 'snares', { extra: { good: true, funnel: true } }); check('a funnel set counts as a good set', a.sys.goodSnares >= 6, a.sys.goodSnares);
   const c = camp('US-S6', 85); c.mats.wire = 6; E.act(c, 'snares', { extra: { good: true, bare: true } }); check('bare snares count as poor', c.sys.poorSnares >= 6, c.sys.poorSnares);
 }
+{ // moving camp by raft: fewer loads; a lopsided load swamps and loses food; the run remembers its best camp
+  const m = camp('US-S6', 91); E.sysOf(m).raft = { float: 1, inWater: false, dry: true }; m.firewood = 30; Object.assign(m.mats, { poles: 20, logs: 10 });
+  const foot = E.moveCampCost(m, 800), raft = E.moveCampCost(m, 800, true); check('a raft moves camp in fewer loads', raft.trips < foot.trips, [foot, raft]);
+  m.stores = [{ id: 'trout', por: 10, left: 5, smoked: false }]; E.moveCamp(m, 800, { raft: true, swamp: 1 }); check('a swamped raft loses food and soaks you', m.stores[0].por < 10 && m.wet === 1, [m.stores[0].por, m.wet]);
+  const c = camp('US-S6', 92); E.sysOf(c).bed = 1; c.crafts.rack = 1; E.endDay(c); check('the run remembers its best camp', c.stats.bestCamp && /Lean-to with a bough bed and a drying rack/.test(c.stats.bestCamp.text), c.stats.bestCamp);
+}
+{ // by the fire and the water: the hands decide
+  const sl = d => { let hit = 0; for (let i = 0; i < 120; i++) { const t = camp('US-S6', 500 + i, ['Fishing gear']); t.hooks = 4; t.mats.bait = 4; t.mats.cordage = 4; E.act(t, 'setlines', { extra: { depthOk: d } }); const r0 = t.raw.length; E.endDay(t); E.beginDay(t); if (t.raw.length > r0) hit++; } return hit; };
+  check('set lines at the right depth catch more', sl(1) > sl(0), [sl(1), sl(0)]);
+  const n = camp('US-S6', 93, ['Gillnet']); n.net = { catch: ['trout'], torn: false }; E.act(n, 'checknet', { extra: { tangle: 4 } }); check('fish pulled forward through the mesh tear the net', n.net.torn === true);
+  const f = camp('US-S6', 94); f.fire = true; f.hours = E.dayHours(f); f.phase = 3; E.act(f, 'tend_fire', { extra: { out: true } }); check('a fire let burn down goes out', f.fire === false);
+  const r = camp('US-S6', 95, ['Pot']); r.fire = true; r.stores = [{ id: 'fat', por: 4, left: 20, smoked: false }]; E.act(r, 'render_fat', { extra: { scorch: true } }); check('scorched fat renders less', r.stores[0].por < 4 * 0.85 - 0.01, r.stores[0].por);
+  const m = camp('US-S6', 96, ['Pot']); m.fire = true; m.firewood = 5; E.act(m, 'melt_snow', { extra: { good: true } }); check('snow melted with care saves wood', m.firewood > 4.5, m.firewood);
+}
 { // the raft: dry logs soak up slower; a gust taken standing rolls it; missing the drop-off fishes the shallows
   const mk = dry => { const t = camp('US-S6', 71, ['Axe', 'Fishing gear']); Object.assign(t.mats, { logs: 8, cordage: 8 }); E.act(t, 'craft_raft', { extra: { good: true, logs: dry ? 'dry' : 'green' } }); E.act(t, 'craft_raft', { extra: { good: true } }); return t; };
   const d = mk(true), g = mk(false); check('dry logs make a dry raft', d.sys.raft && d.sys.raft.dry === true && !g.sys.raft.dry, [d.sys.raft, g.sys.raft]);

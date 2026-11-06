@@ -195,6 +195,10 @@ Checked and left as they are: a wrong-sized snare is still set (it catches less,
 | 133 | Snare and deadfall sets on the map were forgotten at the start of each day, so after the first day checking the trapline skipped the walk | Sets are saved with the game and stay on the map while the snares are out |
 | 134 | The raft's careful-lashing bonus (fewer capsizes) was never reachable: fishing from the raft had no hands-on part, so it always used the rushed odds | Poling out and crouching for gusts decides it |
 | 135 | Pressing a shelter plan that still needs materials reopened the design picker, a loop with no word on where poles or boughs come from | It opens what the plan still needs, where each comes from, and a Walk there to the nearest source |
+| 136 | Several mini-game tests searched the whole page text, which includes the game's own script, so checks like "it came out charred" passed whatever happened | Tests read the day's messages instead; all re-run honestly |
+| 137 | Coiling a pot: the thickness bar showed the last coil's value for a moment when the next roll began | The bar resets when a roll starts and ends |
+| 138 | Tile labels cut mid-phrase ("Chink the", "Cook a", "Smoke your", "Scrape and") | Short labels skip filler words, and the jobs that need it have their own short names |
+| 139 | Skinning: the first touch movement could read as a jerk and tear the hide, because speed was measured over one event | Speed is measured over the last tenth of a second |
 
 ### Test-side problems (not game bugs)
 
