@@ -75,3 +75,7 @@ GAME_FILE=/path/to/copy.html node baseline.js
 - `bot.js` is the simple player used by the baseline, balance, screen checks and the gear simulation. It makes do with what it carries: the best roof its tools allow (a quick one first), a bow drill without a ferro rod, a hole in the ice without an axe, and it gathers only what its shelter and camp works still need.
 - `baseline-core.json` and `baseline-full.json` are the recorded references; `balance.json` holds the survival medians.
 - `fixtures/` holds saves from the version before the rival names changed, and the old names that must never reappear.
+
+## Tuning the mini-games (not part of run-all)
+
+`node minitune.js [runs] [names]` plays the timing mini-games (knapping, coiling, netting, cooking, chopping) as a sharp, an average and a slow player, with reaction or timing errors drawn at random, and reports how often each does well. The brief's targets for the average player: about 70% finish OK or better, 25 to 35% do well, under 10% fail hard. It plays in real time, so it is slow, and with few runs the numbers wobble. Its scripted players are methodical, so jobs that reward care (cooking) read easier than they are for a person.

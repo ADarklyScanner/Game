@@ -199,6 +199,8 @@ Checked and left as they are: a wrong-sized snare is still set (it catches less,
 | 137 | Coiling a pot: the thickness bar showed the last coil's value for a moment when the next roll began | The bar resets when a roll starts and ends |
 | 138 | Tile labels cut mid-phrase ("Chink the", "Cook a", "Smoke your", "Scrape and") | Short labels skip filler words, and the jobs that need it have their own short names |
 | 139 | Skinning: the first touch movement could read as a jerk and tear the hide, because speed was measured over one event | Speed is measured over the last tenth of a second |
+| 140 | Cooking: once the middle was done, the turn-it warning hid the take-it-off message, so following the prompts burned the food | Done-through comes first; just right needs it taken off promptly and browned evenly |
+| 141 | A tree beside camp offered no jobs (camp jobs took over) | Its pop-up lists what the tree offers |
 
 ### Test-side problems (not game bugs)
 

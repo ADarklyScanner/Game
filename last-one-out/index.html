@@ -158,6 +158,16 @@ summary { cursor: pointer; color: var(--muted); font-size: 13px; }
 .mtext { color: #fff; text-shadow: 0 1px 6px rgba(0,0,0,.85); font-size: 13.5px; text-align: center; max-width: 360px; }
 .actbtn.dim { opacity: .62; }
 .acts { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; padding-bottom: 2px; }
+.pop { position: fixed; z-index: 30; width: min(300px, calc(100vw - 24px)); box-sizing: border-box; background: var(--paper, #ece4d2); color: var(--paper-ink, #2a2420); border-radius: 12px; box-shadow: 0 6px 22px rgba(0,0,0,.35); padding: 8px 8px 6px; max-width: min(320px, calc(100vw - 24px)); font-size: 13px; }
+.pop::after { content: ''; position: absolute; left: var(--ax, 50%); bottom: -7px; width: 14px; height: 14px; background: inherit; transform: translateX(-50%) rotate(45deg); box-shadow: 3px 3px 6px rgba(0,0,0,.12); }
+.pop.below::after { bottom: auto; top: -7px; box-shadow: -3px -3px 6px rgba(0,0,0,.08); }
+.pop .ph { font-weight: 600; margin: 0 4px 6px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.pop .pb { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
+.pop .pb button { min-height: 64px; border: 1px solid rgba(60,45,30,.25); border-radius: 9px; background: rgba(255,255,255,.35); color: inherit; font: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 6px 4px; }
+.pop .pb button .ai { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.pop .pb button small { font-size: 11px; opacity: .75; }
+.pop .chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 2px 6px; }
+
 .acts.many { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; max-width: 520px; margin: 0 auto; }
 .acts.many .actbtn { min-width: 0; padding: 7px 8px 8px; border-radius: 10px; justify-content: center; }
 .acts.many .actbtn b { font-size: 15.5px; line-height: 1.05; }
@@ -887,6 +897,7 @@ const ACTIONS = {
   climb: { label: 'Climb the rock for a look around', hours: 1.5, effort: 'heavy', group: 'Materials', where: 'any' },
   craft_stoneblade: { label: 'Knap a stone blade', hours: 1, effort: 'light', group: 'Build' },
   craft_mat: { label: 'Weave a door mat', hours: 2, effort: 'light', group: 'Build' },
+  raft_cover: { label: 'Roof the raft', hours: 1.5, effort: 'moderate', group: 'Build', need: 1 },
   craft_raft: { label: 'Build a raft', hours: 2.5, effort: 'heavy', group: 'Build', need: 2 },
   raft_fish: { label: 'Fish from the raft', hours: 2.5, effort: 'moderate', group: 'Food', where: 'water' },
   beach_raft: { label: 'Pull the raft up to dry', hours: 0.5, effort: 'moderate', group: 'Camp', where: 'water' },
@@ -1059,6 +1070,7 @@ function available(s, id) {
     case 'climb': return s.storm || s.wind ? r(false, 'Too much wind up there') : (s.sys && s.sys.climbDay === s.day) ? r(false, 'Once is enough today') : r(true, '', `${climbAnchor(s) ? 'roped' : 'no rope'} · ${(fallChance(s) * 100).toFixed(fallChance(s) < 0.01 ? 1 : 0)}% chance of a fall${s.rain || s.snowfall || s.fog || frozen(s) ? ' · the rock is slick' : ''}`);
     case 'craft_stoneblade': return (has(s, 'Knife') || has(s, 'Multitool')) ? r(false, 'You have a knife') : s.crafts.stoneblade >= 1 ? r(false, 'Made') : flintOf(s) < 1 ? r(false, 'Needs fine-grained stone (look among the stones you gather)') : s.mats.stone < 1 ? r(false, 'Needs a hammerstone') : r(true, '', 'a sharp edge, brittle · it can shatter');
     case 'craft_mat': return s.sys && s.sys.mat ? r(false, 'Made') : !s.shelterType ? r(false, 'Needs a shelter door to hang it over') : s.mats.bark < 4 || s.mats.cordage < 2 ? r(false, 'Needs 4 bark, 2 cordage') : r(true, '', 'a woven cover for the door · keeps the wind out');
+    case 'raft_cover': { const rf = raftOf(s); return !rf ? r(false, 'Build a raft first') : rf.cover ? r(false, 'Built') : s.mats.poles < 2 || s.mats.cordage < 2 || (!has(s, 'Tarp') && s.mats.boughs < 6) ? r(false, has(s, 'Tarp') ? 'Needs 2 poles, 2 cordage' : 'Needs 2 poles, 2 cordage, 6 boughs') : r(true, '', 'dry in the rain, but it catches the wind'); }
     case 'craft_raft': return raftOf(s) ? r(false, 'Built') : season(s).climate.water === 'scarce' ? r(false, 'No water to float on') : !cutter(s) ? r(false, 'Needs an axe or saw') : !(s.crafts.raft >= 1) && (s.mats.logs < 4 || s.mats.cordage < 4) ? r(false, 'Needs 4 logs, 4 cordage') : r(true, '', progressText(s, 'raft', 2));
     case 'raft_fish': { if (!raftOf(s)) return r(false, 'No raft'); if (!raftOk(s)) return r(false, 'The raft is waterlogged and sits low. Dry it out'); if (frozen(s)) return r(false, 'Frozen'); if (s.storm) return r(false, 'Too rough'); if (!hasRod(s)) return r(false, 'Needs fishing gear or a handline'); return r(true, '', `deeper water${s.wind ? ' · windy: it could tip' : ''}`); }
     case 'beach_raft': { const rf = raftOf(s); return !rf ? r(false, 'No raft') : !rf.inWater ? r(false, 'Already on shore') : r(true, '', `${Math.round(rf.float * 100)}% afloat · let it dry`); }
@@ -1592,11 +1604,12 @@ function doAction(s, id, lines, mod, opts) {
         addCond(s, { name: 'Sprained ankle from a fall', days: 6, dmg: 1 }); s.health -= 6; s.morale -= 6; lines.push([climbAnchor(s) ? 'Your foot slipped on the wet rock and the rope caught you, but not before you smashed an ankle into the face.' : 'A hold crumbled and you slid down the face on your front, landing hard on one foot.', 'bad']); break; }
       sys.lookout = s.day; s.morale += 4; lines.push(['From the top the whole country is laid out: the shore, the river, the timber, the bare ground beyond. You fix it in your head.', 'good']); break;
     }
+    case 'raft_cover': { const rf = raftOf(s); s.mats.poles -= 2; s.mats.cordage -= 2; if (!has(s, 'Tarp')) s.mats.boughs -= 6; rf.cover = X.good === false ? 'loose' : true; lines.push([has(s, 'Tarp') ? 'Lashed a low ridge pole on the deck and stretched the tarp over it. Somewhere dry to sit out the rain on the water.' : 'Lashed a low frame on the deck and thatched it with boughs. Somewhere dry to sit out the rain on the water.', 'good']); if (X.good === false) lines.push(['The lashings are loose; it shifts when the raft rocks.', 'muted']); break; }
     case 'raft_fish': {
-      const rf = raftOf(s); rf.inWater = true;
+      const rf = raftOf(s); rf.inWater = true; if (s.rain) { if (rf.cover) lines.push(['Rain on the cover all afternoon. You fished from under it, dry.', 'muted']); else { s.wet = Math.min(1, s.wet + 0.25); lines.push(['Nowhere to get out of the rain on the open raft.', 'muted']); } }
       if (X.spot == null && s.wind && drand(s, 'drift' + s.hours) < 0.25) { s.hours = round1(s.hours + 0.5); s.phase = phaseOf(s); lines.push(['The wind kept pushing the raft down the lake. Half an hour of poling to hold your spot.', 'muted']); }
       if (X.spot === false) { mod *= 0.75; lines.push(['You never got out over the drop-off. Fished the shallows where the wind left you.', 'muted']); } else if (X.spot === true) lines.push(['Held the raft over the drop-off where the water goes dark.', 'muted']);
-      if (X.capsize === true || (X.capsize == null && s.wind && chance(s, X.good === true ? 0.05 : 0.15))) { s.wet = 1; s.morale -= 6; s.health -= 3; addCond(s, { name: 'Chilled after a capsize', days: 2, dmg: 1.5 }); lines.push(['A gust caught the raft broadside and rolled it. You came up under it in water that took your breath, and swam it in.', 'bad']); break; }
+      if (X.capsize === true || (X.capsize == null && s.wind && chance(s, (X.good === true ? 0.05 : 0.15) * (rf.cover ? 1.3 : 1)))) { /* the cover catches the wind */ s.wet = 1; s.morale -= 6; s.health -= 3; addCond(s, { name: 'Chilled after a capsize', days: 2, dmg: 1.5 }); lines.push(['A gust caught the raft broadside and rolled it. You came up under it in water that took your breath, and swam it in.', 'bad']); break; }
       doAction(s, 'fish', lines, mod * 1.3, opts); break;
     }
     case 'beach_raft': { raftOf(s).inWater = false; lines.push(['Hauled the raft up the bank and tipped it on its side to drain.', 'info']); break; }
@@ -1691,7 +1704,7 @@ function doAction(s, id, lines, mod, opts) {
     case 'cook': { const lf0 = 1 - s.weight / s.weight0; const want = Math.round(C.bmrPerLb * s.weight * (1 - C.adapt * lf0) * 0.45); const ate = eatCooked(s, want, lines);
       /* the fire decides it: wind and a hot, flaring fire scorch it; patience at the edge of the coals gets it right, and gets better with practice */
       const burnP = 0.12 * (s.storm || s.wind ? 1.6 : 1) / (s.skill.fire || 1) * (s.sys && s.sys.fireLay === 'cabin' ? 0.6 : 1) /* a log-cabin lay leaves an even bed of coals */, goodP = 0.22 * (s.skill.fire || 1); let how = '';
-      const roll = X.heat === 'burnt' ? burnP * (0.1 + 0.89 * drand(s, 'cookb' + s.hours)) : X.heat === 'right' ? 1 : X.heat === 'under' ? 0.5 : drand(s, 'cook' + s.hours); /* cooked by hand: the hands decide, not the dice */
+      const roll = X.heat === 'burnt' ? burnP * (0.1 + 0.89 * drand(s, 'cookb' + s.hours)) : X.heat === 'right' ? 1 : X.heat === 'under' || X.heat === 'ok' ? 0.5 : drand(s, 'cook' + s.hours); if (X.heat === 'ok' && ate.kcal > 0) how = ' Cooked through, browner on one side than the other.'; /* cooked by hand: the hands decide, not the dice */
       if (X.heat === 'under' && ate.kcal > 0) { s.morale -= 1; how = ' Pulled it off early; the middle was still cold. You ate round it.'; }
       if (ate.kcal > 0 && roll < burnP) { const lost = Math.round(ate.kcal * 0.15); ate.kcal -= lost; s.morale -= 1; how = ` You turned your back on it and the outside charred; you scraped off the black and lost about ${lost.toLocaleString('en-US')} kcal with it.`; if (roll < burnP * 0.2) { addCond(s, { name: 'Burned fingers', days: 2, dmg: 0.3 }); how += ' Burned your fingers pulling it off the coals.'; } }
       else if (ate.kcal > 0 && roll > 1 - goodP) { s.morale += 1; how = ' Cooked slowly at the edge of the coals, it came out just right.'; s.skill.fire = Math.min(1.6, (s.skill.fire || 1) + 0.01); }
@@ -2336,9 +2349,10 @@ function foundWreck(s) {
 function moveCamp(s, metres, opts = {}) {
   const raft = !!(opts.raft && raftOf(s)); const c = moveCampCost(s, metres, raft); const L = [];
   if (raft) { raftOf(s).inWater = true; const sw = clamp(+opts.swamp || 0, 0, 1);
-    if (sw > 0) { let lost = 0; for (const x of s.stores) { const l = round1(x.por * 0.25 * sw); x.por = round1(x.por - l); lost += l * DATA.foods[x.id].kcal; } s.stores = s.stores.filter(x => x.por > 0.05); s.wet = 1; sysOf(s).tinderDamp = Math.max(tinderDamp(s), 0.6); s.morale -= 5;
+    if (sw > 0) { let lost = 0; const under = raftOf(s).cover ? 0.5 : 1; /* what is under the cover stays aboard */ for (const x of s.stores) { const l = round1(x.por * 0.25 * sw * under); x.por = round1(x.por - l); lost += l * DATA.foods[x.id].kcal; } s.stores = s.stores.filter(x => x.por > 0.05); s.wet = 1; sysOf(s).tinderDamp = Math.max(tinderDamp(s), 0.6); s.morale -= 5;
       L.push([`The raft rode down on one side and the water came over the deck. Everything on that side is soaked${lost > 50 ? `, and ${Math.round(lost).toLocaleString('en-US')} kcal of food went over the edge` : ''}. Trim the load next time.`, 'bad']); }
-    else L.push(['Loaded the raft evenly and poled the camp along the shore. It rode level the whole way.', 'good']); }
+    else L.push(['Loaded the raft evenly and poled the camp along the shore. It rode level the whole way.', 'good']);
+    if (s.rain && !raftOf(s).cover) { sysOf(s).tinderDamp = Math.max(tinderDamp(s), 0.5); L.push(['Rain on the open deck the whole way. The tinder and the bedding are wet.', 'muted']); } }
   if (s.shelterType) { const b = billFor(s, s.shelterType) || {}; for (const k of ['poles', 'logs', 'boughs', 'moss', 'stone', 'cordage']) if (b[k] && k !== 'stone') s.mats[k] += Math.floor(b[k] / 2); L.push([`Took the ${low(SHELTERS[s.shelterType].name)} down and carried what was worth carrying.`, 'info']); }
   refundPlan(s, 0.5); s.shelterType = null; s.shelterLvl = 0; s.shelterGoal = null; s.shelterWork = 0; s.shelterPaid = false; s.shelterCond = 1; s.fireInside = false; s.fire = false; s.flueRisk = 0; if (s.sys) { s.sys.snowLoad = 0; delete s.sys.fit; delete s.sys.layout; if (s.sys.leaky) s.sys.leaky = false; if (s.sys.buildFlaws) s.sys.buildFlaws = 0; }
   for (const k of ['smoker', 'woodshed', 'chimney']) s.crafts[k] = 0; if (s.crafts.rack) { s.crafts.rack = 0; sysOf(s).rackRoof = false; } if (s.crafts.hearth) s.crafts.hearth = 0; if (s.sys) { s.sys.fouling = 0; s.sys.latrineDay = null; } if (s.crafts.reflector) s.crafts.reflector = 0; if (s.crafts.platform) s.crafts.platform = 0; if (s.sys) s.sys.snowLoad = 0; if (s.sys) { s.sys.seal = 0; s.sys.soot = 0; s.sys.bed = 0; } for (const x of s.stores) delete x.where; if (s.sys) s.sys.smoking = 0; if (s.cachePlace === 'camp') { s.crafts.cache = 0; s.cachePlace = null; }
@@ -3283,9 +3297,9 @@ function miniUI(html) { const m = hudEl && hudEl.querySelector('#mini'); if (m) 
 function bindInput() {
   let start = null, moved = false;
   const toWorld = (e) => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / W.scale + W.cam.x, y: (e.clientY - r.top) / W.scale + W.cam.y }; };
-  cv.onpointerdown = (e) => { sfx.unlock(); start = { x: e.clientX, y: e.clientY, id: e.pointerId }; moved = false; cv.setPointerCapture(e.pointerId); input.target = null; };
+  cv.onpointerdown = (e) => { sfx.unlock(); closePop(); start = { x: e.clientX, y: e.clientY, id: e.pointerId }; moved = false; cv.setPointerCapture(e.pointerId); input.target = null; if (W) W.pending = null; };
   cv.onpointermove = (e) => { if (!start || e.pointerId !== start.id) return; const dx = e.clientX - start.x, dy = e.clientY - start.y; const d = Math.hypot(dx, dy); if (d > 10) moved = true; if (moved) { const m = Math.min(1, d / 48); input.joy = { sx: start.x, sy: start.y, x: e.clientX, y: e.clientY }; input.vec = { x: dx / (d || 1) * m, y: dy / (d || 1) * m }; } };
-  const up = (e) => { if (!start || e.pointerId !== start.id) return; if (!moved) { const pt = toWorld(e); if (!(mini && mini.tap && mini.tap(pt))) input.target = pt; } start = null; input.joy = null; input.vec = { x: 0, y: 0 }; };
+  const up = (e) => { if (!start || e.pointerId !== start.id) return; if (!moved) { const pt = toWorld(e); if (!(mini && mini.tap && mini.tap(pt))) { const ob = !mini && objectAt(pt); if (!(ob && openPop(ob)) && !(S && S.campChosen === false && openSitePop(pt))) input.target = pt; } } start = null; input.joy = null; input.vec = { x: 0, y: 0 }; };
   cv.onpointerup = up; cv.onpointercancel = up;
 }
 function keyVec() { const k = input.keys; let x = (k.ArrowRight || k.d ? 1 : 0) - (k.ArrowLeft || k.a ? 1 : 0), y = (k.ArrowDown || k.s ? 1 : 0) - (k.ArrowUp || k.w ? 1 : 0); const d = Math.hypot(x, y); return d ? { x: x / d, y: y / d } : null; }
@@ -3354,6 +3368,7 @@ function update(dt) {
   W.revealT = (W.revealT || 0) + dt; if (W.revealT > 0.4) { W.revealT = 0; reveal(W.player.x, W.player.y, S.fog ? 150 : W.night ? 90 : 230); }
   const p = W.player; const busy = !!(mini && !mini.free) || W.night || (S.event && S.event.id === 'wound');
   let v = keyVec() || (input.joy ? input.vec : null);
+  if (W.pending) arrivePending(); if (popEl && (mini || W.night)) closePop();
   if (!v && input.target) { const d = dist(p, input.target); if (d < 6) input.target = null; else v = { x: (input.target.x - p.x) / d, y: (input.target.y - p.y) / d }; }
   const nearAnimal = W.animals.some(a => !a.dead && !a.fled && dist(a, p) < 220);
   if (v && !busy) {
@@ -3980,7 +3995,7 @@ function startChop(tree, id, fell) {
     setTimeout(() => { if (!mini) return; const off = ad(fell.aim, fell.lean.a); const held = good >= need - 1 && (off <= 1.2 || Math.random() < (off > 2 ? 0.35 : 0.65) * (good >= need ? 1.2 : 0.8)); const dir = held ? fell.aim : fell.lean.a;
       fellEx = { fell: held ? 'aimed' : 'lean', hung: fell.near.some(o => ad(o.a, dir) < 0.35 && o.d < 110), hitCamp: fell.camp != null && ad(fell.camp, dir) < 0.45, kick: !cleared }; finish(); }, 1300); };
   mini = { type: 'chop', tree, deadline: W.t + 30, get pos() { return (Math.sin(t * 1.4 * Math.PI) + 1) / 2; }, update(dt) { t += dt; },
-    acts: [{ label: E.chopper(S) || E.cutter(S) ? 'Swing' : 'Haul', sub: `0 of ${need}`, primary: true, fn: () => { n++; if (mini.acts.length > 1) { mini.acts.length = 1; lastActs = ''; } const hit = Math.abs(mini.pos - 0.5) < 0.14; if (hit) good++; tree.shake = 0.25; sfx.play('axe'); buzz(hit ? 20 : 8); W.fx.push({ kind: 'chip', x: tree.x, y: tree.y, age: 0, life: 0.5 }); mini.acts[0].sub = `${n} of ${need}${hit ? ' · clean hit' : ''}`; lastActs = ''; if (n >= need) { if (fell) crack(); else finish(); } } }], cancel: finish };
+    acts: [{ label: E.chopper(S) || E.cutter(S) ? 'Swing' : 'Haul', sub: `0 of ${need}`, primary: true, fn: () => { n++; if (mini.acts.length > 1) { mini.acts.length = 1; lastActs = ''; } const hit = Math.abs(mini.pos - 0.5) < 0.12; if (hit) good++; tree.shake = 0.25; sfx.play('axe'); buzz(hit ? 20 : 8); W.fx.push({ kind: 'chip', x: tree.x, y: tree.y, age: 0, life: 0.5 }); mini.acts[0].sub = `${n} of ${need}${hit ? ' · clean hit' : ''}`; lastActs = ''; if (n >= need) { if (fell) crack(); else finish(); } } }], cancel: finish };
   mini.acts.push({ label: 'Step back', sub: 'leave the tree for now', fn: () => { if (mini && n === 0) endMini(); } }); /* back out before the first swing */
   miniUI('<div class="mtext">Swing when the marker is in the window. Clean hits cut more.</div>'); lastActs = ''; refreshActs();
 }
@@ -4372,7 +4387,7 @@ function startFilter() {
 }
 /* cooking (brief 4.6): hold it into the coals or keep it at the edge; turn it so neither side chars; take it off when the middle is done */
 function startCook() {
-  autoResolve(); let heat = 0.35, inside = 0, side = [0, 0], down = 0, holding = false, done = false, turns = 0, ended = false;
+  autoResolve(); let heat = 0.35, inside = 0, side = [0, 0], down = 0, holding = false, done = false, turns = 0, ended = false, ct = 0; const ph = Math.random() * 6.28;
   const finish = (how) => { if (!mini || ended) return; ended = true; endMini(); handsDone('cook', how === 'right'); doAct('cook', { heat: how }); };
   const quit = () => { if (mini) endMini(); };
   const svg = pad(`<text x="8" y="12" font-size="9" fill="#e8e0cc" opacity=".8">middle</text><rect x="62" y="5" width="230" height="7" rx="3.5" fill="rgba(0,0,0,.35)"/><rect id="bin" x="62" y="5" width="0" height="7" rx="3.5" fill="#8fc477"/><text x="8" y="24" font-size="9" fill="#e8e0cc" opacity=".8">underside</text><rect x="62" y="17" width="230" height="7" rx="3.5" fill="rgba(0,0,0,.35)"/><rect id="bch" x="62" y="17" width="0" height="7" rx="3.5" fill="#d9a35a"/><rect x="60" y="80" width="180" height="14" rx="7" fill="#3a2a22"/><g id="coals"></g><path d="M 20 34 L 280 34" stroke="#7d6648" stroke-width="3"/><g id="food"></g>`, 300, 100);
@@ -4381,16 +4396,16 @@ function startCook() {
     svg.querySelector('#coals').innerHTML = [70, 100, 130, 160, 190, 220].map((x, i) => `<circle cx="${x}" cy="${80 + (i % 2) * 4}" r="${7 + (i % 3)}" fill="${holding ? '#e8683a' : '#b8482a'}" opacity="${0.6 + Math.random() * 0.4}"/>`).join('');
     svg.querySelector('#food').innerHTML = `<path d="M 150 34 L 150 ${y - 10}" stroke="#7d6648" stroke-width="2"/><ellipse cx="150" cy="${y}" rx="44" ry="11" fill="${col(side[1 - down])}"/><ellipse cx="150" cy="${y + 4}" rx="42" ry="7" fill="${col(side[down])}"/>`; };
   let said = ''; const ui = () => { const ch = Math.max(side[0], side[1]); const t = (
-    ch >= 1 ? 'Charred. Black on the outside, whatever the middle is.' : side[down] > 0.7 ? 'The underside is catching. Turn it.' : inside >= 1 ? 'Done through. Take it off.' : holding ? 'In the coals: fast, and the underside darkens quickly.' : inside > 0.6 ? 'Nearly through. Patience at the edge.' : 'At the edge of the coals: slow and even.'); if (t !== said) { said = t; padText(t); } };
+    ch >= 1 ? 'Charred. Black on the outside, whatever the middle is.' : inside >= 1 ? 'Done through. Take it off.' : side[down] > 0.7 ? 'The underside is catching. Turn it.' : holding ? 'In the coals: fast, and the underside darkens quickly.' : inside > 0.6 ? 'Nearly through. Patience at the edge.' : 'At the edge of the coals: slow and even.'); if (t !== said) { said = t; padText(t); } };
   mini = { type: 'craft', deadline: W.t + 45, update(dt) { if (done) return; heat += ((holding ? 1 : 0.35) - heat) * Math.min(1, dt * 4);
-      inside += dt * (0.025 + heat * 0.09); side[down] += dt * heat * heat * 0.16; side[1 - down] = Math.max(0, side[1 - down] - dt * 0.004);
+      ct += dt; const flare = 1 + 0.8 * Math.max(0, Math.sin(ct * 1.3 + ph) * Math.sin(ct * 0.53 + ph * 2)); /* the coals flare up now and then */ inside += dt * (0.025 + heat * 0.09); side[down] += dt * heat * heat * 0.2 * flare; side[1 - down] = Math.max(0, side[1 - down] - dt * 0.004);
       if (Math.max(side[0], side[1]) >= 1 && !done) { done = true; sfx.play('bad'); ui(); draw(); setTimeout(() => finish('burnt'), 700); return; }
       draw(); ui(); },
     acts: [{ label: 'Into the coals', sub: 'hold', primary: true, down: () => { holding = true; if (!started()) mark(); }, up: () => { holding = false; } },
       { label: 'Turn it', sub: '', fn: () => { down = 1 - down; turns++; sfx.play('stick'); mark(); } },
       { label: 'Not now', sub: 'no time spent', fn: quit }],
-    cancel: () => finish(inside >= 0.85 ? (Math.max(side[0], side[1]) < 0.7 ? 'right' : 'burnt') : 'under') };
-  let begun = false; const me = mini; const started = () => begun; const mark = () => { if (begun || mini !== me) return; begun = true; mini.acts[2] = { label: 'Take it off', sub: '', fn: () => { done = true; finish(inside >= 0.85 ? (Math.max(side[0], side[1]) < 0.7 ? 'right' : 'burnt') : 'under'); } }; lastActs = ''; refreshActs(); };
+    cancel: () => finish(inside >= 0.85 ? (Math.max(side[0], side[1]) >= 0.85 ? 'burnt' : inside <= 1.2 && Math.min(side[0], side[1]) >= 0.3 && Math.abs(side[0] - side[1]) <= 0.25 ? 'right' : 'ok') : 'under') };
+  let begun = false; const me = mini; const started = () => begun; const mark = () => { if (begun || mini !== me) return; begun = true; mini.acts[2] = { label: 'Take it off', sub: '', fn: () => { done = true; finish(inside >= 0.85 ? (Math.max(side[0], side[1]) >= 0.85 ? 'burnt' : inside <= 1.2 && Math.min(side[0], side[1]) >= 0.3 && Math.abs(side[0] - side[1]) <= 0.25 ? 'right' : 'ok') : 'under'); } }; lastActs = ''; refreshActs(); };
   /* a cook who has done this a hundred times gets a head start */
   { const k = headStart('cook', 3); if (k) inside = Math.min(0.5, k * 0.15); }
   setTimeout(mark, 2500); /* once it is over the fire, walking away is taking it off */
@@ -4595,7 +4610,7 @@ const skillTol = () => Math.min(1.35, Math.max(0.8, (S.skill && S.skill.craft) |
 /* knapping: pick a spot on the edge, then strike when the hammerstone comes in at a glancing angle */
 function startKnap(id, inside) {
   autoResolve(); const K = craftKit(id, inside); const spots = [[72, 62], [108, 53], [150, 50], [192, 53], [228, 62]]; const done = new Set(); let sel = null, ang = 60, t = 0, faults = 0, hinge = {}, over = false;
-  const lo = 66 - 9 * skillTol(), hi = 66 + 9 * skillTol();
+  const lo = 66 - 11 * skillTol(), hi = 66 + 11 * skillTol();
   const svg = pad(`<g transform="translate(0 22)"><path d="M 50 50 C 90 22, 210 22, 250 50 C 210 78, 90 78, 50 50 Z" fill="#3a3a44"/><path d="M 60 50 C 100 34, 200 34, 240 50" stroke="#5a5a68" stroke-width="1" fill="none"/></g><g id="scars"></g>${spots.map((p, i) => `<circle class="ks" data-i="${i}" cx="${p[0]}" cy="${p[1]}" r="10" fill="rgba(255,255,255,.12)" stroke="#fff" stroke-width="1.2"/>`).join('')}<g id="hammer"></g><text x="292" y="94" text-anchor="end" font-size="9" fill="#e8e0cc" opacity=".7" id="angt"></text>`, 300, 100);
   const strike = () => { if (sel == null || over) return; K.start(); const p = spots[sel]; sfx.play('stick'); buzz(15);
     if (ang >= lo && ang <= hi) { done.add(sel); svg.querySelector('#scars').insertAdjacentHTML('beforeend', `<path d="M ${p[0] - 14} ${p[1] + 2} Q ${p[0]} ${p[1] + 18} ${p[0] + 14} ${p[1] + 2} Q ${p[0]} ${p[1] + 6} ${p[0] - 14} ${p[1] + 2} Z" fill="#6a6a7c" opacity=".9"/>`); const c = svg.querySelector(`.ks[data-i="${sel}"]`); c.setAttribute('fill', 'rgba(170,200,160,.35)'); c.setAttribute('stroke', '#9ec08a'); padText(done.size < spots.length ? `A long flake peeled away. ${done.size} of ${spots.length}.` : 'A clean, sharp edge all along.'); sel = null; if (done.size === spots.length) { over = true; sfx.play('good'); setTimeout(() => K.finish(faults <= 2, { faults }), 400); } }
@@ -4603,7 +4618,7 @@ function startKnap(id, inside) {
     else { faults++; hinge[sel] = (hinge[sel] || 0) + 1; sfx.play('bad'); if (hinge[sel] >= 2) { over = true; padText('Glanced off again and the core split across. What is left will cut, roughly.'); setTimeout(() => K.finish(false, { faults }), 900); } else padText('Too flat. It glanced off and left a short step. Again there and it may split.'); }
     lastActs = ''; refreshActs(); };
   if (svg) svg.onpointerdown = (e) => { const q = svg.toLocal(e); const i = spots.findIndex((p, k) => !done.has(k) && Math.hypot(p[0] - q.x, p[1] - q.y) < 18); if (i >= 0) { sel = i; padText('Watch the hammerstone. Strike when it comes in at a slant.'); lastActs = ''; refreshActs(); } else if (sel != null) strike(); };
-  mini = { type: 'craft', deadline: W.t + 60, update(dt) { t += dt; ang = 45 + 45 * (0.5 + 0.5 * Math.sin(t * 1.9)); if (!svg) return; const h = svg.querySelector('#hammer');
+  mini = { type: 'craft', deadline: W.t + 60, update(dt) { t += dt; ang = 45 + 45 * (0.5 + 0.5 * Math.sin(t * 1.7)); if (!svg) return; const h = svg.querySelector('#hammer');
       if (sel == null) { h.innerHTML = ''; svg.querySelector('#angt').textContent = ''; return; } const p = spots[sel], a = ang * Math.PI / 180, ok = ang >= lo && ang <= hi;
       h.innerHTML = `<line x1="${p[0]}" y1="${p[1]}" x2="${(p[0] - Math.cos(a) * 38).toFixed(1)}" y2="${(p[1] - Math.sin(a) * 38).toFixed(1)}" stroke="${ok ? '#9ec08a' : '#d8cfbd'}" stroke-width="2" stroke-dasharray="3 3"/><ellipse cx="${(p[0] - Math.cos(a) * 44).toFixed(1)}" cy="${(p[1] - Math.sin(a) * 44).toFixed(1)}" rx="9" ry="7" fill="${ok ? '#a8a294' : '#8a857a'}"/>`; svg.querySelector('#angt').textContent = ok ? 'now' : ''; },
     acts: [{ label: 'Strike', sub: 'when the stone is at a slant', primary: true, fn: strike }, ...K.tail()], cancel: K.cancel() };
@@ -4652,7 +4667,7 @@ function startCoil(id, inside) {
   const roll = { label: 'Roll a coil', sub: 'hold, release at the mark', primary: true, down: () => { if (over) return; K.start(); if (!joined) { unjoined++; coils[coils.length - 1].j = false; sfx.play('bad'); padText('You laid the next coil on before smoothing the last one in. That seam will crack.'); joined = true; } rolling = true; th = 0; draw(); }, up: () => { if (!rolling) return; rolling = false; const ok = th >= lo && th <= hi; coils.push({ t: th, ok, j: true }); joined = false; sfx.play(ok ? 'tap' : 'bad'); padText(ok ? `Even. ${coils.length} of ${N}. Smooth it into the one below.` : th < lo ? 'Thin. That part of the wall is weak.' : 'Thick. It will dry slower than the rest and crack.'); draw(); th = 0; draw(); if (coils.length >= N) finishPot(); lastActs = ''; refreshActs(); } };
   const smooth = { label: 'Smooth it in', sub: 'join the coil to the last', fn: () => { if (joined || over) return; joined = true; sfx.play('stick'); padText(`Joined. ${coils.length} of ${N}.`); draw(); } };
   const finishPot = () => { over = true; setTimeout(() => { const bad = coils.filter(c => !c.ok).length; K.finish(bad <= 1 && unjoined === 0, { uneven: bad, unjoined }); }, 500); };
-  mini = { type: 'craft', deadline: W.t + 70, update(dt) { if (rolling) { th += dt * 0.42; if (th > 1.05) { roll.up(); } draw(); } }, acts: [roll, smooth, ...K.tail()], cancel: K.cancel() };
+  mini = { type: 'craft', deadline: W.t + 70, update(dt) { if (rolling) { th += dt * 0.32; if (th > 1.05) { roll.up(); } draw(); } }, acts: [roll, smooth, ...K.tail()], cancel: K.cancel() };
   padText('Hold to roll a coil and let go when it reaches the mark, then smooth it into the one below. Even walls survive the fire.'); draw(); lastActs = ''; refreshActs();
 }
 
@@ -4679,7 +4694,7 @@ function startMesh(id, inside) {
   const svg = pad(`<rect x="20" y="70" width="260" height="5" rx="2" fill="#8a6a44"/><g id="row"></g><circle cx="150" cy="38" r="${G}" fill="none" stroke="rgba(150,210,120,.6)" stroke-width="${(tol * 2).toFixed(1)}"/><circle id="loop" cx="150" cy="38" r="0" fill="none" stroke="#e8e0cc" stroke-width="1.8"/>`, 300, 100);
   const draw = () => { if (!svg) return; svg.querySelector('#loop').setAttribute('r', r.toFixed(1)); svg.querySelector('#row').innerHTML = meshes.map((m, i) => { const x = 32 + i * 26, s = 4 + m.r / G * 7; return `<path d="M ${x} ${84 - s} L ${x + s * 0.8} 84 L ${x} ${84 + s} L ${x - s * 0.8} 84 Z" fill="none" stroke="${m.ok ? '#d8cfbd' : '#d06a4a'}" stroke-width="1.4"/>`; }).join(''); };
   const pull = { label: 'Pull the loop', sub: 'hold; let go at the gauge', primary: true, down: () => { if (over) return; K.start(); pulling = true; r = 2; }, up: () => { if (!pulling) return; pulling = false; const ok = Math.abs(r - G) <= tol; meshes.push({ r, ok }); sfx.play(ok ? 'tap' : 'bad'); padText(ok ? `Snug to the gauge. ${meshes.length} of ${N}.` : r < G ? 'Pulled short. A small mesh: fish slip past it.' : 'Too loose. A big mesh: it will sag open.'); r = 0; draw(); if (meshes.length >= N) { over = true; setTimeout(() => K.finish(meshes.filter(m => !m.ok).length <= 2, { off: meshes.filter(m => !m.ok).length }), 400); } } };
-  mini = { type: 'craft', deadline: W.t + 60, update(dt) { if (pulling) { r += dt * 15; if (r > G * 1.9) pull.up(); draw(); } }, acts: [pull, ...K.tail()], cancel: K.cancel() };
+  mini = { type: 'craft', deadline: W.t + 60, update(dt) { if (pulling) { r += dt * 11; if (r > G * 1.9) pull.up(); draw(); } }, acts: [pull, ...K.tail()], cancel: K.cancel() };
   padText('Hold to pull the twine round the gauge stick, and let go when the loop sits in the green ring. Every mesh the same.'); draw(); lastActs = ''; refreshActs();
 }
 
@@ -4718,6 +4733,7 @@ function startCraft(id, inside, extra) {
     craft_mittens: () => startStitch(id, inside, { n: 9, col: '#e8dcc0', art: `<path d="M 30 50 C 30 20, 270 20, 270 50 C 270 80, 30 80, 30 50 Z" fill="#c8a882"/><path d="M 34 50 L 266 50" stroke="#a08060" stroke-width="1" stroke-dasharray="2 3"/>`, intro: 'Draw the sinew through each hole along the seam, fur in. Unhurried, or the stitch lies slack.', slip: 'Loose stitch. The wind will find it.' }),
     craft_stoneblade: () => startKnap(id, inside),
     craft_mat: () => startSteps(id, { steps: ['Over', 'Under'], subs: ['across the warp', 'and back'], need: 10, inside, col: '#b89a6a', intro: 'Weave each strip over one, under the next, and beat the row tight.', slip: 'Skipped one. That leaves a gap the wind finds.' }),
+    raft_cover: () => startLash(id, 4, S.gear.includes('Tarp') ? 'Lash the ridge pole and the tarp corners down tight. Loose, it flaps and shifts.' : 'Lash the low frame to the deck, then thatch it. Loose, it shifts as the raft rocks.'),
     craft_raft: () => S.crafts.raft >= 1 ? startLash(id, 6, 'Cross-lash the deck poles over the logs, tight. Loose lashings come apart in the water.') : openRaftLogs(),
     craft_bow: () => S.crafts.bow >= 1 ? startTiller(id, inside) : startTaps(id, [[60, 50], [120, 50], [180, 50], [240, 50]], `<rect x="30" y="42" width="240" height="16" rx="6" fill="#a08060"/><path d="M 30 50 L 270 50" stroke="#6a5038" stroke-width="1.5" stroke-dasharray="6 4"/>`, 'Drive a wedge in at each mark to split the stave along the grain.', { inside }),
     tiller_bow: () => startTiller(id, inside),
@@ -4742,7 +4758,7 @@ function startCraft(id, inside, extra) {
 function openBuild(inside, where = inside) { /* inside: show only the jobs you can do sitting down; where: whether you are really under a roof */
   sheet((sh, close) => {
     sh.append($(`<h2>Craft</h2>`)); sh.append($(`<div class="muted" style="font-size:13px">You have: ${esc(E.matList(S) || 'nothing')}.</div>`));
-    const outdoor = ['craft_raft', 'craft_reflector', 'craft_hearth', 'craft_rack', 'craft_smoker', 'craft_cache', 'craft_fishtrap', 'craft_woodshed', 'craft_chimney', 'craft_stove'];
+    const outdoor = ['raft_cover', 'craft_raft', 'craft_reflector', 'craft_hearth', 'craft_rack', 'craft_smoker', 'craft_cache', 'craft_fishtrap', 'craft_woodshed', 'craft_chimney', 'craft_stove'];
     for (const [id, a] of Object.entries(E.ACTIONS)) { if (a.group !== 'Build') continue; if (inside && outdoor.includes(id)) continue; const av = E.available(S, id); if (!av.ok && /Made|Built|You have/.test(av.why)) continue;
       const b = $(`<button class="act" ${av.ok ? '' : 'disabled'}><b>${esc(a.label)}</b><span class="o">${esc(av.ok ? av.odds : '')}</span><small>${esc(av.ok ? `${a.hours}h` : av.why)}</small></button>`);
       if (av.ok) b.onclick = () => { close(); if (id === 'craft_cache' && !(S.crafts.cache >= 1)) openCachePlace(); else startCraft(id, where); }; sh.append(b); }
@@ -4788,7 +4804,7 @@ function startRaft() {
   const spot = { x: 205, y: 42, r: 26 };
   const finish = (left) => { if (!mini || ended) return; ended = true; endMini(); const onSpot = held >= 4; handsDone('raft', onSpot && !capsized); doAct('raft_fish', { spot: onSpot, capsize: capsized ? true : windy ? false : undefined, good: !capsized }); };
   const quit = () => { if (mini) endMini(); };
-  const svg = pad(`<rect x="0" y="0" width="300" height="100" fill="rgba(70,110,135,.35)"/><ellipse cx="${spot.x}" cy="${spot.y}" rx="${spot.r + 8}" ry="${spot.r - 4}" fill="rgba(20,40,60,.55)"/><g id="ripples"></g><g id="raft"><rect x="-13" y="-7" width="26" height="14" rx="3" fill="#8a7352" stroke="#5a4632"/><path d="M-13 -2 L13 -2 M-13 2 L13 2" stroke="#5a4632" stroke-width="1"/><circle id="me" cx="0" cy="0" r="3.5" fill="#d8cfbd"/></g>`, 300, 100);
+  const svg = pad(`<rect x="0" y="0" width="300" height="100" fill="rgba(70,110,135,.35)"/><ellipse cx="${spot.x}" cy="${spot.y}" rx="${spot.r + 8}" ry="${spot.r - 4}" fill="rgba(20,40,60,.55)"/><g id="ripples"></g><g id="raft"><rect x="-13" y="-7" width="26" height="14" rx="3" fill="#8a7352" stroke="#5a4632"/><path d="M-13 -2 L13 -2 M-13 2 L13 2" stroke="#5a4632" stroke-width="1"/>${E.raftOf(S) && E.raftOf(S).cover ? '<path d="M-9 5 L-9 -4 L0 -9 L9 -4 L9 5" fill="#5a6a4a" opacity=".85"/>' : ''}<circle id="me" cx="0" cy="0" r="3.5" fill="#d8cfbd"/></g>`, 300, 100);
   if (svg) { svg.onpointerdown = (e) => { tgt = svg.toLocal(e); svg.setPointerCapture(e.pointerId); }; svg.onpointermove = (e) => { if (tgt) tgt = svg.toLocal(e); }; svg.onpointerup = () => { tgt = null; }; }
   const msg = t => { if (mini && mini.said !== t) { mini.said = t; padText(t); } };
   mini = { type: 'craft', deadline: W.t + 40, update(dt) { if (ended || ending) return; const t = W.t;
@@ -4796,7 +4812,7 @@ function startRaft() {
       vx += Math.cos(wa) * ws * dt; vy += Math.sin(wa) * ws * dt; vx *= 1 - 1.6 * dt; vy *= 1 - 1.6 * dt; x = Math.max(12, Math.min(288, x + vx * dt)); y = Math.max(10, Math.min(90, y + vy * dt));
       const on = Math.hypot(x - spot.x, y - spot.y) < spot.r; if (on) held += dt;
       if (windy && !warn && t > t0 + gustAt - 1.4) { warn = true; sfx.play('tap'); buzz(15); }
-      if (windy && warn && t > t0 + gustAt) { if (crouch) { safe++; msg('The gust hit and you rode it out, low on the logs.'); } else { capsized = true; sfx.play('bad'); buzz(60); msg('The gust caught you standing and rolled the raft.'); ending = true; setTimeout(() => finish(), 900); return; } warn = false; gustAt += 6 + Math.random() * 5; vx += Math.cos(wa) * 40; vy += Math.sin(wa) * 40; }
+      if (windy && warn && t > t0 + gustAt) { if (crouch) { safe++; msg('The gust hit and you rode it out, low on the logs.'); } else { capsized = true; sfx.play('bad'); buzz(60); msg('The gust caught you standing and rolled the raft.'); ending = true; setTimeout(() => finish(), 900); return; } warn = false; gustAt += 6 + Math.random() * 5; { const k = E.raftOf(S) && E.raftOf(S).cover ? 56 : 40; vx += Math.cos(wa) * k; vy += Math.sin(wa) * k; } } /* a roofed raft catches more wind */
       if (svg) { const g = svg.querySelector('#raft'); g.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${(Math.atan2(vy, vx) * 57.3 * 0.2).toFixed(1)})`); svg.querySelector('#me').setAttribute('r', crouch ? 2.6 : 3.5);
         svg.querySelector('#ripples').innerHTML = warn ? `<path d="M ${(150 - Math.cos(wa) * 120).toFixed(0)} ${(50 - Math.sin(wa) * 40).toFixed(0)} l ${(Math.cos(wa) * 30).toFixed(0)} ${(Math.sin(wa) * 12).toFixed(0)}" stroke="#e8f0f4" stroke-width="2" opacity=".8"/>` : ''; }
       if (held >= 4) { msg('Over the drop-off. Let the line down.'); ending = true; setTimeout(() => finish(), 500); return; }
@@ -4843,6 +4859,31 @@ function startRaftLoad(cost, done) {
   mini = { type: 'craft', deadline: W.t + 90, update() {}, acts: [{ label: 'Push off', sub: 'when it rides level', primary: true, fn: push }, { label: 'Not now', sub: 'carry it instead, or stay', fn: () => { if (mini) endMini(); } }], cancel: () => { if (mini) endMini(); } };
   pick(); draw(); lastActs = ''; refreshActs();
 }
+/* anchored pop-ups (UI spec 3.5, 4.1, 4.4): tap a tree, bush or trail on the map for its jobs, right there; before camp, tap the ground for a site report */
+let popEl = null;
+function closePop() { if (popEl) { popEl.remove(); popEl = null; } if (W && W.ring && !W.ring.keep) W.ring = null; }
+const POP_IDS = { tree: ['firewood', 'cut_poles', 'cut_logs', 'boughs', 'bark', 'tinder', 'insects', 'pinenuts'], bush: ['berries', 'greens', 'mushrooms', 'roots', 'nettle', 'rosehips', 'seeds', 'cattail', 'forage', 'inspect', 'insects'], track: ['scout', 'snares', 'deadfalls', 'checktraps', 'hunt'] };
+function objectAt(pt) { const by = (list, r) => (list || []).filter(o => !o.gone && dist(o, pt) < r).sort((a, b) => dist(a, pt) - dist(b, pt))[0];
+  const t = by(W.trees, 26); if (t) return { kind: 'tree', o: t }; const b = by(W.bushes, 20); if (b) return { kind: 'bush', o: b }; const k = by(W.tracks, 22); if (k) return { kind: 'track', o: k }; return null; }
+function actsAt(ob) { const p = W.player, sx = p.x, sy = p.y, camp = W.camp; p.x = ob.o.x; p.y = ob.o.y + 20; W.camp = { x: -1e5, y: -1e5 }; /* what the thing itself offers, even beside camp */ let acts = []; try { acts = interactionsHere() || []; } catch (e) { acts = []; } finally { p.x = sx; p.y = sy; W.camp = camp; } return acts.filter(a => a.id && POP_IDS[ob.kind].includes(a.id) && !a.dim).slice(0, 6); }
+function placePop(el, wx, wy) { const r = cv.getBoundingClientRect(); const x = (wx - W.cam.x) * W.scale + r.left, y = (wy - W.cam.y) * W.scale + r.top; document.body.append(el); const w = el.offsetWidth, h = el.offsetHeight;
+  const left = Math.max(12, Math.min(window.innerWidth - w - 12, x - w / 2)); let top = y - h - 22; if (top < 70) { top = y + 26; el.classList.add('below'); } el.style.left = left + 'px'; el.style.top = top + 'px'; el.style.setProperty('--ax', Math.max(14, Math.min(w - 14, x - left)) + 'px'); }
+function goDo(target, then) { closePop(); W.pending = { x: target.x, y: target.y, then }; const p = W.player, d = dist(p, target) || 1; input.target = then.camp ? { x: target.x, y: target.y } : { x: target.x + (p.x - target.x) / d * 26, y: target.y + (p.y - target.y) / d * 26 }; } /* stand on the near side of it, within reach */
+function openPop(ob) { if (!S || S.status !== 'playing' || mini || W.night || W.inside) return false; const acts = actsAt(ob); if (!acts.length) return false; closePop();
+  const name = ob.kind === 'tree' ? E.treeNames(ob.o) : ob.kind === 'bush' ? (ob.o.kind === 'berries' ? 'Berry bushes' : E.DATA.foods[ob.o.kind] ? E.DATA.foods[ob.o.kind].name : 'Plants') : 'Game trail';
+  const head0 = typeof name === 'string' ? name : (name && name.name) || ''; const head = head0.charAt(0).toUpperCase() + head0.slice(1); const d = mFromPx(dist(W.player, ob.o));
+  const el = $(`<div class="pop" role="dialog" aria-label="${esc(head)}"><div class="ph"><span>${esc(head)}</span>${d > 12 ? `<span class="need time">${fmtDist(d)} away</span>` : ''}</div><div class="pb"></div></div>`);
+  for (const a of acts) { const b = $(`<button aria-label="${esc(a.label)}">${actIcon(a.id, a.label)}<span>${esc(shortLabel(a))}</span><small>${esc(niceSub(((a.sub || '').split(' · ').find(x => /\d/.test(x)) || (a.sub || '').split(' · ')[1] || '').trim()))}</small></button>`); b.onclick = (e) => { e.stopPropagation(); goDo(ob.o, { id: a.id, label: a.label, ob }); }; el.querySelector('.pb').append(b); }
+  popEl = el; placePop(el, ob.o.x, ob.o.y - 30); return true; }
+function openSitePop(pt) { if (!S || S.campChosen !== false || mini || W.night) return false; closePop(); const sp = spotOf(pt); W.ring = { x: pt.x, y: pt.y, keep: false, bad: !!sp.bad };
+  const chip = (ok, txt) => `<span class="need ${ok === true ? 'ok' : ok === false ? 'miss' : 'time'}">${ok === true ? '✓ ' : ok === false ? '! ' : ''}${esc(txt)}</span>`;
+  const el = $(`<div class="pop" role="dialog" aria-label="Site report"><div class="ph">This spot</div><div class="chips">${[chip(sp.waterM <= 150, `water ${sp.waterM} m`), chip(sp.woodM != null && sp.woodM <= 120, sp.woodM == null ? 'no dry wood' : `wood ${sp.woodM} m`), chip(sp.windbreak ? true : sp.exposed ? false : null, sp.windbreak ? 'sheltered' : sp.exposed ? 'exposed' : 'some shelter'), chip(!sp.bad, sp.bad ? 'flood or hazard' : 'dry ground'), ...(sp.hollow ? [chip(false, 'cold hollow')] : []), ...(sp.sun ? [chip(true, 'morning sun')] : []), ...(sp.bugs ? [chip(false, 'insects')] : []), ...(sp.snag ? [chip(false, 'dead tree over it')] : []), ...(sp.trail ? [chip(false, 'game trail')] : [])].join('')}</div><div class="pb"></div></div>`);
+  const go = $(`<button>${actIcon('shelter', 'camp')}<span>${sp.bad ? 'Not here' : 'Camp here'}</span><small>${sp.bad ? esc(sp.bad.split('.')[0]) : 'walk there, ½ h'}</small></button>`); if (!sp.bad) go.onclick = (e) => { e.stopPropagation(); W.ring.keep = true; goDo(pt, { camp: true }); }; else go.disabled = true;
+  const no = $(`<button>${actIcon('eye', 'look')}<span>Keep looking</span><small>tap elsewhere</small></button>`); no.onclick = (e) => { e.stopPropagation(); closePop(); };
+  el.querySelector('.pb').append(go, no); popEl = el; placePop(el, pt.x, pt.y - 10); return true; }
+/* arriving where a pop-up sent you: do the job */
+function arrivePending() { const pd = W.pending; if (!pd || mini) return; if (dist(W.player, pd) > (pd.then.camp ? 16 : 40)) { if (!input.target && !input.joy) W.pending = null; return; } W.pending = null; input.target = null;
+  if (pd.then.camp) { if (W.ring) W.ring.keep = false; W.ring = null; openMakeCamp(); return; } const a = (pd.then.ob ? actsAt(pd.then.ob) : interactionsHere() || []).find(x => x.id === pd.then.id); if (a && !a.dim) a.fn(); lastActs = ''; refreshActs(); }
 function openCachePlace() {
   sheet((sh, close) => {
     sh.append($(`<h2>Where to hang the cache</h2>`));
@@ -5202,7 +5243,8 @@ function draw() {
   if (!W.night && !needCamp) { if (S.carcass && W.carcassPos && !W.carrying && dist(W.player, W.carcassPos) > 50) arrowTo(W.carcassPos, 'rgba(255,200,120,.9)'); else if (S.wounded && W.blood.length) { const b = W.blood.find(x => !x.seen); if (b && dist(W.player, b) > 40) arrowTo(b, 'rgba(255,120,110,.9)'); } else if (S.raw.length && !atCamp() && !mini) arrowTo(W.camp, 'rgba(255,255,255,.5)'); }
   if (needCamp) { const a = Math.atan2(W.camp.y - W.player.y, W.camp.x - W.player.x); const x = W.player.x + Math.cos(a) * 60, y = W.player.y + Math.sin(a) * 60; cx.save(); cx.translate(x, y); cx.rotate(a); cx.fillStyle = 'rgba(255,255,255,.85)'; cx.beginPath(); cx.moveTo(10, 0); cx.lineTo(-6, -7); cx.lineTo(-2, 0); cx.lineTo(-6, 7); cx.closePath(); cx.fill(); cx.restore(); }
   // timing windows
-  if (mini && (mini.type === 'hunt' && mini.acts[0].label === 'Release' || mini.type === 'chop') && Number.isFinite(mini.pos)) { const p = W.player; const BW = 128, BH = 14; /* big enough to read on a phone */ const x = p.x - BW / 2, y = p.y - 54; const win = mini.type === 'hunt' ? Math.max(0.045, 0.07 - mini.wobble * 0.08) : mini.type === 'chop' ? 0.14 : 0.15; cx.fillStyle = 'rgba(0,0,0,.6)'; cx.beginPath(); cx.roundRect(x - 3, y - 3, BW + 6, BH + 6, 9); cx.fill(); cx.fillStyle = 'rgba(140,220,130,.85)'; cx.beginPath(); cx.roundRect(x + BW * (0.5 - win), y, BW * win * 2, BH, 5); cx.fill(); cx.fillStyle = '#fff'; cx.beginPath(); cx.roundRect(x + mini.pos * (BW - 2) - 1, y - 4, 4.5, BH + 8, 2); cx.fill(); }
+  if (W.ring) { cx.save(); cx.strokeStyle = W.ring.bad ? 'rgba(220,110,90,.9)' : 'rgba(240,230,200,.9)'; cx.lineWidth = 2; cx.setLineDash([6, 5]); cx.beginPath(); cx.ellipse(W.ring.x, W.ring.y, 34, 22, 0, 0, 6.283); cx.stroke(); cx.restore(); }
+  if (mini && (mini.type === 'hunt' && mini.acts[0].label === 'Release' || mini.type === 'chop') && Number.isFinite(mini.pos)) { const p = W.player; const BW = 128, BH = 14; /* big enough to read on a phone */ const x = p.x - BW / 2, y = p.y - 54; const win = mini.type === 'hunt' ? Math.max(0.045, 0.07 - mini.wobble * 0.08) : mini.type === 'chop' ? 0.12 : 0.15; cx.fillStyle = 'rgba(0,0,0,.6)'; cx.beginPath(); cx.roundRect(x - 3, y - 3, BW + 6, BH + 6, 9); cx.fill(); cx.fillStyle = 'rgba(140,220,130,.85)'; cx.beginPath(); cx.roundRect(x + BW * (0.5 - win), y, BW * win * 2, BH, 5); cx.fill(); cx.fillStyle = '#fff'; cx.beginPath(); cx.roundRect(x + mini.pos * (BW - 2) - 1, y - 4, 4.5, BH + 8, 2); cx.fill(); }
   for (const a of W.animals) if (!a.dead && !a.fled && a.alert > 0.1 && dist(a, W.player) < 220) { const w = (SPECIES[a.sp] || { w: 12 }).w * animalK(a.sp); cx.fillStyle = 'rgba(0,0,0,.5)'; cx.beginPath(); cx.roundRect(a.x - 12, a.y - w - 16, 24, 4, 2); cx.fill(); cx.fillStyle = a.alert > 0.7 ? '#ff8a7a' : '#f0c060'; cx.beginPath(); cx.roundRect(a.x - 12, a.y - w - 16, 24 * Math.min(1, a.alert), 4, 2); cx.fill(); }
   if (input.joy) { cx.setTransform(dpr, 0, 0, dpr, 0, 0); const r = cv.getBoundingClientRect(); const sx = input.joy.sx - r.left, sy = input.joy.sy - r.top; cx.strokeStyle = 'rgba(255,255,255,.5)'; cx.lineWidth = 2; cx.beginPath(); cx.arc(sx, sy, 34, 0, 6.28); cx.stroke(); cx.fillStyle = 'rgba(255,255,255,.7)'; cx.beginPath(); cx.arc(sx + input.vec.x * 34, sy + input.vec.y * 34, 12, 0, 6.28); cx.fill(); }
 }

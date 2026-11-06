@@ -151,6 +151,12 @@ const nights = (mk, n, f) => { let hit = 0; for (let i = 0; i < n; i++) { const 
   if (E.temperature(camp('AU-S2', 97)) > 12) check('insects off still water cost will without smoke', bug(false) < bug(true), [bug(false), bug(true)]);
   const sun = camp('US-S6', 98); E.sysOf(sun).campSpot = { sun: true }; sun.wet = 0.6; sun.sys.bedDamp = 0.5; sun.day = 5; let dried = false; for (let i = 0; i < 6 && !dried; i++) { E.endDay(sun); sun.wet = 0.6; sun.sys.bedDamp = 0.5; E.beginDay(sun); sun.event = null; dried = !sun.rain && !sun.storm && !sun.fog && !sun.snowfall && sun.wet < 0.6 && sun.sys.bedDamp < 0.5; } check('the morning sun dries things out on fair days', dried);
 }
+{ // a roof on the raft: dry in the rain, and it catches the wind
+  const r = camp('US-S6', 99, ['Axe', 'Fishing gear']); E.sysOf(r).raft = { float: 1, inWater: false }; Object.assign(r.mats, { poles: 4, cordage: 4, boughs: 8 });
+  check('a roof can go on a raft', E.available(r, 'raft_cover').ok, E.available(r, 'raft_cover').why); E.act(r, 'raft_cover', { extra: { good: true } }); check('and it is built', r.sys.raft.cover === true);
+  const wetOn = cover => { const t = camp('US-S6', 100, ['Fishing gear']); E.sysOf(t).raft = { float: 1, inWater: false, cover }; t.rain = true; t.storm = t.wind = false; t.wet = 0; E.act(t, 'raft_fish', { extra: { spot: true } }); return t.wet; };
+  check('under the roof you fish dry in the rain', wetOn(true) < wetOn(false), [wetOn(true), wetOn(false)]);
+}
 { // the raft: dry logs soak up slower; a gust taken standing rolls it; missing the drop-off fishes the shallows
   const mk = dry => { const t = camp('US-S6', 71, ['Axe', 'Fishing gear']); Object.assign(t.mats, { logs: 8, cordage: 8 }); E.act(t, 'craft_raft', { extra: { good: true, logs: dry ? 'dry' : 'green' } }); E.act(t, 'craft_raft', { extra: { good: true } }); return t; };
   const d = mk(true), g = mk(false); check('dry logs make a dry raft', d.sys.raft && d.sys.raft.dry === true && !g.sys.raft.dry, [d.sys.raft, g.sys.raft]);
