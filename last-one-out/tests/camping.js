@@ -18,6 +18,21 @@ const KIT = ['Knife', 'Pot', 'Ferro rod', 'Axe', 'Fishing gear', 'Sleeping bag',
   check('nothing ends a practice run but the button', t.status === 'playing' && t.health >= 30 && t.morale >= 35, [t.status, t.health, t.morale]);
   const u = E.newGame(E.PRACTICE_KEY, KIT, { seed: 5, weight: 200 }); E.beginDay(u); u.event = null; u.campChosen = true; u.health = -5; u.hours = 1; E.act(u, 'rest');
   check('even a collapse does not end a practice run', u.status === 'playing' && u.health >= 30, [u.status, u.health]);
+  { // the lesson rules
+    const html2 = fs.readFileSync(SRC, 'utf8'); const a0 = html2.indexOf('const LESSONS = ['), b0 = html2.indexOf('/* end of lesson rules */');
+    const R = new Function('E', html2.slice(a0, b0) + '; return { LESSONS, lessonState, chipLesson, lessonCounts };')(E); const L = id => R.LESSONS.find(l => l[1] === id);
+    const g = E.newGame(E.PRACTICE_KEY, ['Knife', 'Ferro rod', 'Pot'], { seed: 8, weight: 200 }); E.beginDay(g); g.event = null;
+    check('a lesson your kit makes moot is covered, not stuck', R.lessonState(g, L('craft_bowdrill')).st === 'kit', R.lessonState(g, L('craft_bowdrill')));
+    check('no axe or saw: felling is out of reach, not a lesson to chase', R.lessonState(g, L('cut_logs')).st === 'reach', R.lessonState(g, L('cut_logs')));
+    check('tending the fire waits for dark', R.lessonState(g, L('tend_fire')).st !== 'ready');
+    check('the chip starts with making camp', R.chipLesson(g)[0][1] === 'camp'); g.campChosen = true;
+    { const x = R.lessonState(g, L('cattail')); check('cattails point at the digging stick first (or what it needs)', x.st === 'step' && ['craft_diggingstick', 'firewood', 'light_fire'].includes(x.step), x); }
+    const c1 = R.chipLesson(g); check('and then points at something you can do', ['ready', 'step'].includes(c1[1].st), c1[1]);
+    check('the count leaves out what the kit covers or cannot reach', R.lessonCounts(g).total < R.LESSONS.length, R.lessonCounts(g));
+    g.hyd = 20; check('parched, the chip says drink first', R.chipLesson(g)[0][1] === 'drink_edge'); g.hyd = 100;
+    g.day = 3; check('greens are in season early in the valley', E.available(g, 'greens').ok || !/season/.test(E.available(g, 'greens').why), E.available(g, 'greens'));
+    const h = E.newGame(E.PRACTICE_KEY, ['Knife'], { seed: 9, weight: 200 }); h.crafts.bow = 1; check('a stave cut is not a bow made', !L('craft_bow')[4](h)); h.crafts.bow = 2; check('a finished bow is', L('craft_bow')[4](h));
+  }
   const v = E.newGame('US-S6', KIT, { seed: 5, weight: 200 }); E.beginDay(v); v.event = null; v.health = -5; v.hours = 1; E.act(v, 'rest'); check('it still does in a real drop', v.status === 'medical', v.status);
 }
 (async () => { const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 390, height: 844 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));

@@ -236,6 +236,10 @@ Checked and left as they are: a wrong-sized snare is still set (it catches less,
 | 174 | A job whose time read "½ h" got the time added a second time | Half hours are read as times |
 | 175 | Feeding a smoker that was already going took a flat hour and a half, the same as cutting and hanging a full load | Half an hour to feed it; hanging takes about six minutes a portion |
 | 176 | The animals on the map ran on real seconds while the game clock runs on distance walked, so the world's speed changed hunting: at 4x half of all approaches spooked the animal, at 44x none did and shots per game hour more than doubled | Wariness, wandering, fleeing, drift-ins and the bear all run on game time; at the tuned 11x nothing changes, and 11x and 44x now match (tests/timespeed.js) |
+| 177 | In Camping, greens and nettles were out of season from day 2 (frost came eight days before the day-9 snow), so that lesson could never be done | The valley's frost comes two days before its snow |
+| 178 | "Make a bow" counted as done once the stave was cut, so bare-kit players never got a bow, arrows or a hunt | It counts when the bow is made |
+| 179 | The lesson chip pointed at the first lesson not done, which on 93% of days was one you could not do: the bow drill when you brought a ferro rod, tending the fire in daylight | Lessons have a state (done, covered by your kit, out of reach, later, a step away, ready); the chip points at what you can do now or its first step |
+| 180 | In Camping, weight lost while learning never came back: meals were capped at the day's burn | In the valley a full ration can be up to 1.3x the burn when you are underweight and have the food |
 
 ### Test-side problems (not game bugs)
 
