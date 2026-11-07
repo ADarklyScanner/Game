@@ -43,7 +43,12 @@ const KIT = ['Knife', 'Pot', 'Ferro rod', 'Axe', 'Fishing gear', 'Sleeping bag',
     check('no storms or fog in the valley, and no winter unless you are learning it', rough === 0 && cold === 0, [rough, cold]);
     w.winter = true; check('the Winter stage brings snow and ice', E.status(w).snowy && E.available(w, 'melt_snow').why !== 'No snow', E.available(w, 'melt_snow'));
     const a1 = E.newGame(E.PRACTICE_KEY, KIT, { seed: 1, weight: 200 }), a2 = E.newGame(E.PRACTICE_KEY, KIT, { seed: 1, weight: 200 }); const wx = g => { const o = []; for (let d = 0; d < 8; d++) { E.beginDay(g); g.event = null; o.push(+!!g.rain); E.endDay(g); } return o.join(''); };
-    check('the same weather in the same order every time', wx(a1) === wx(a2)); }
+    check('the same weather in the same order every time', wx(a1) === wx(a2));
+    const cs = E.newGame(E.PRACTICE_KEY, KIT, { seed: 1, weight: 200 }); cs.campChosen = true; E.beginDay(cs); cs.event = null; E.act(cs, 'firewood'); E.act(cs, 'cut_poles'); for (let d = 0; d < 3; d++) { E.endDay(cs); E.beginDay(cs); cs.event = null; }
+    check('in the valley, a woodpile and poles once gathered stay stocked', cs.firewood >= 8 && cs.mats.poles >= 10, [cs.firewood, cs.mats.poles]);
+    cs.everDone.clean = 1; E.campStock(cs); const lard = () => cs.stores.filter(x => x.larder).reduce((a, x) => a + x.por, 0); const l0 = lard(); E.endDay(cs); E.beginDay(cs); cs.event = null;
+    check('and the larder stays full of meat and fat', l0 >= 20 && lard() >= 20, [l0, lard()]);
+    const rl = E.newGame('US-S6', KIT, { seed: 1, weight: 200 }); E.beginDay(rl); rl.event = null; E.act(rl, 'firewood'); rl.firewood = 1; E.endDay(rl); E.beginDay(rl); check('a real drop does not', rl.firewood <= 1, rl.firewood); }
   const v = E.newGame('US-S6', KIT, { seed: 5, weight: 200 }); E.beginDay(v); v.event = null; v.health = -5; v.hours = 1; E.act(v, 'rest'); check('it still does in a real drop', v.status === 'medical', v.status);
 }
 (async () => { const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 390, height: 844 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
@@ -55,14 +60,19 @@ const KIT = ['Knife', 'Pot', 'Ferro rod', 'Axe', 'Fishing gear', 'Sleeping bag',
   check('plants of every kind, and plenty of them', w.bushes >= 60 && w.kinds >= 6, w);
   check('the chip shows the stage and the next lesson', /Camp and water · Make camp/.test(await p.evaluate(() => document.querySelector('#h-goal').textContent)));
   const miss = await p.evaluate(() => window.__t.L().filter(l => l[5] && !window.__t.tgt(l[5])).map(l => l[1])); check('every lesson can show you where', !miss.length, miss);
-  check('starting Camping opens the stages', await p.evaluate(() => /Camping lessons/.test((document.querySelector('.scrim') || {}).textContent || '')));
+  check('starting Camping opens the checklist', await p.evaluate(() => /Checklist/.test((document.querySelector('.scrim') || {}).textContent || '')));
   await p.evaluate(() => { const sc = document.querySelector('.scrim'); if (sc) sc.click(); }); await p.waitForTimeout(300);
-  await p.click('#h-goal'); await p.waitForTimeout(400); const rows = await p.evaluate(() => document.querySelectorAll('.scrim .row').length); check('the chip opens the lessons: the stages, and the current one in full', rows >= 14, rows);
+  await p.evaluate(() => { const S = window.__t.S(); S.campChosen = true; }); await p.waitForTimeout(800);
+  check('a lesson done is announced', await p.evaluate(() => (window.__t.S().lessonsDone || []).includes('camp')));
+  await p.click('#h-goal'); await p.waitForTimeout(400);
+  const ck = await p.evaluate(() => { const t = document.querySelector('.scrim').textContent; return { t, count: /\d+ \/ \d+ completed/.test(t), spoil: /Dig a latrine|Light a fire|Build a shelter/.test(t), done: /✓ Make camp/.test(t), now: /NOW/.test(t) }; });
+  check('the checklist counts what is done', ck.count, ck.t.slice(0, 120)); check('shows what is done and what is now', ck.done && ck.now); check('and does not give away what is still to come', !ck.spoil);
   const p0 = await p.evaluate(() => ({ x: window.__t.W().player.x, y: window.__t.W().player.y }));
   await p.evaluate(() => [...document.querySelectorAll('.scrim button')].find(b => /Show me/.test(b.textContent)).click()); await p.waitForTimeout(1500);
   const p1 = await p.evaluate(() => ({ x: window.__t.W().player.x, y: window.__t.W().player.y })); check('Show me walks you there', Math.hypot(p1.x - p0.x, p1.y - p0.y) > 20, [p0, p1]);
-  await p.evaluate(() => { const S = window.__t.S(); S.campChosen = true; }); await p.waitForTimeout(800);
-  check('a lesson done is announced', await p.evaluate(() => (window.__t.S().lessonsDone || []).includes('camp')));
+  await p.click('#h-goal'); await p.waitForTimeout(400); check('a done lesson can be tapped to do again', await p.evaluate(() => [...document.querySelectorAll('.scrim button')].some(b => /Make camp/.test(b.textContent) && /again/.test(b.textContent))));
+  await p.evaluate(() => { const sc = document.querySelector('.scrim'); if (sc) sc.click(); }); await p.waitForTimeout(300);
+  check('a bear den is marked in the valley', await p.evaluate(() => !!window.__t.W().slope));
   await p.evaluate(() => { const S = window.__t.S(); S.status = 'tapped'; S.endReason = 'test'; }); await p.evaluate(() => { try { renderEnd(); } catch (e) { window.__e = e.message; } }).catch(() => {});
   await p.waitForTimeout(300); check('practice runs are not recorded', await p.evaluate(() => !Object.keys(window.__t.rec().seasons || {}).length));
   { const p2 = await b.newPage({ viewport: { width: 390, height: 844 } }); await p2.goto('file://' + TMP); await p2.evaluate(() => localStorage.clear()); await p2.reload(); await p2.waitForTimeout(600);

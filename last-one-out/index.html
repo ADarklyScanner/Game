@@ -1301,6 +1301,7 @@ function foragePool(s) { return season(s).pools.forage.filter(([t]) => inSeason(
 // ------------------------------------------------------------------ the day, in hours
 function morningSun(s) { const sp = (s.sys && s.sys.campSpot) || {}; if (!sp.sun || s.rain || s.storm || s.fog || s.snowfall) return; s.wet = Math.max(0, Math.round((s.wet - 0.1) * 100) / 100); if (s.sys && s.sys.bedDamp) s.sys.bedDamp = Math.max(0, Math.round((s.sys.bedDamp - 0.08) * 100) / 100); }
 function beginDay(s) {
+  if (s.practice) campStock(s); /* the campsite is stocked each morning */
   if (s.status !== 'playing' || s.phase !== -1) return [];
   const se = season(s); const lines = [];
   s.day += 1; s.hours = 0; s.phase = 0; s.braced = false; s.boiled = Math.max(0, s.boiled - 1);
@@ -1357,7 +1358,7 @@ function act(s, id, opts = {}) {
   if (['fish', 'setlines'].includes(id) && frozen(s) && temperature(s) < -5 && !s.today.iceHole) { s.today.iceHole = true; s.hours = round1(s.hours + 0.5); s.today.burn += C.burnPerHour.heavy * 0.5; lines.push(['The hole had frozen over a hand thick. Half an hour chopping it open again.', 'muted']); }
   if (['fish', 'setnet', 'checknet', 'setlines'].includes(id) && thinIce(s) && chance(s, 0.015)) { s.wet = 1; s.health -= 10; s.morale -= 10; addCond(s, { name: 'Chilled through after the ice broke', days: 2, dmg: 2 }); lines.push(['The new ice cracked like a shot and you went through to the waist. You got out on your elbows and ran for the fire, soaked to the skin.', 'bad']); }
   s._at = s.hours - h; try { doAction(s, id, lines, Math.max(1, opts.mod || 1) * dim, opts); } finally { s._at = null; }
-  thirst(s, h, A.effort, id, lines); if (s.practice) { (s.everDone || (s.everDone = {}))[id] = 1; if (id === 'fish' && frozen(s)) s.everDone.fish_ice = 1; }
+  thirst(s, h, A.effort, id, lines); if (s.practice) { (s.everDone || (s.everDone = {}))[id] = 1; if (id === 'fish' && frozen(s)) s.everDone.fish_ice = 1; campStock(s); }
   if (chopping && s.status === 'playing') axeWear(s, lines);
   if (['roots', 'cattail', 'dig_latrine', 'bury'].includes(id) && s.crafts.diggingstick >= 1 && !has(s, 'Shovel') && poorly(s, 'diggingstick') && chance(s, 0.08)) { s.crafts.diggingstick = 0; delete s.sys.poor.diggingstick; lines.push(['The soft point of the digging stick split up the middle. Make another, and harden it properly.', 'bad']); }
   if (BLADE_JOBS.includes(id) && s.crafts.stoneblade >= 1 && !has(s, 'Knife') && !has(s, 'Multitool') && chance(s, 0.03)) { s.crafts.stoneblade = 0; lines.push(['The stone blade snapped across the middle on a joint. Knap another.', 'bad']); }
@@ -2422,6 +2423,18 @@ function moveCamp(s, metres, opts = {}) {
   s.stats.moves = (s.stats.moves || 0) + 1; s.morale = Math.min(100, s.morale + 3); s.phase = phaseOf(s); s.today.lines.push(...L); return L;
 }
 // how many potfuls you can carry back from the water
+/* Camping is a campsite, not a survival test: what you have gathered once stays stocked. One load of firewood and the pile
+   never runs down; fetch water once and the pots stay full; put meat by once and the larder stays full of meat and fat. */
+const CAMP_KEEP = { cut_poles: ['poles', 10], cordage: ['cordage', 10], bark: ['bark', 6], boughs: ['boughs', 10], stones: ['stone', 8], tinder: ['tinder', 4], dig_clay: ['clay', 6], cut_logs: ['logs', 6], moss: ['moss', 6] };
+function campStock(s) {
+  if (!s.practice || s.status !== 'playing') return; const ev = s.everDone || {};
+  for (const [id, [m, n]] of Object.entries(CAMP_KEEP)) if (ev[id] && (s.mats[m] || 0) < n) s.mats[m] = n;
+  if (ev.firewood && s.firewood < 8) s.firewood = 8;
+  if (ev.water && !(s.winter && !ev.melt_snow)) { const cap = waterCap(s); /* in winter, the pots wait for you to melt snow once */ if ((s.potWater || 0) < cap) s.potWater = cap; if (ev.boil) s.boiled = 2; }
+  if (ev.clean || ev.dress || ev.cook || ev.buy_food) { const meat = ((season(s).pools.fish[0]) || [])[0]; const have = s.stores.filter(x => x.larder && !x.where && x.id === meat).reduce((a, x) => a + x.por, 0);
+    if (meat && have < 20) { const x = s.stores.find(y => y.larder && y.id === meat && !y.where); if (x) { x.por = round1(x.por + 20 - have); x.left = 99; } else s.stores.push({ id: meat, por: round1(20 - have), left: 99, larder: true }); }
+    const fat = s.stores.filter(x => x.id === 'fat' && x.larder && !x.rendered && !x.where).reduce((a, x) => a + x.por, 0); if (fat < 3) s.stores.push({ id: 'fat', por: round1(3 - fat), left: 99, larder: true }); }
+}
 function waterCap(s) { return (has(s, 'Pot') ? 2 : clayPots(s) ? 1 : 0) + (has(s, 'Canteen') ? 1 : 0) + (has(s, 'Frying pan') ? 1 : 0) + (s.containers || 0); }
 // a stew needs a pot of water from the shore; without one the meal goes on the coals instead
 function eatCooked(s, target, L) { const stew = s.cook === 'boil' && potLike(s) && s.fire; if (stew && !(s.potWater >= 1)) { s.cook = 'roast'; const a = eat(s, target); s.cook = 'boil'; if (a.kcal > 0 && L) L.push(['No water at camp for a stew. Roasted it instead.', 'muted']); return a; } const a = eat(s, target); if (stew && a.kcal > 0) s.potWater -= 1; return a; }
@@ -2474,7 +2487,7 @@ const GEAR_COST = { 'Gillnet': 12, 'Fishing gear': 4, 'Axe': 4, 'Sleeping bag': 
   'Rations': 1, 'Multitool': 1, 'Soap': 1, 'Scotch eyed auger': 1, 'Trapping wire': 1, 'Shovel': 1, 'Salt': 1, 'Tarp': 1, 'Frying pan': 1, 'Wire': 1, 'Canteen': 1, 'Rope': 1, 'Slingshot': 1 };
 const BUDGET = 20;
 const gearCost = id => GEAR_COST[id] ?? 2; const kitCost = gear => gear.reduce((a, g) => a + gearCost(g), 0);
-const API = { jobHours, surplusPor, PRACTICE_KEY, placeOf, practicePlace, hydOf, waterNow, drinkUp, fishDepth, campSummary, shelterScores, bedDampOf, prevailOf, CAMP_FIXED, zoneOf, layoutNotes, kitchenMult, GEAR_COST, BUDGET, gearCost, kitCost, waterToday, note, sunny, sprayLeft, fallChance, climbAnchor, stalkNoise, fouling, latrineOk, raftOf, raftOk, flintOf, hasBow, bowPower, driftChance, bearings, wade, clothesOf, tomorrow, skyAcc, thinIce, potLike, clayPots, greenPots, bedWarmth, snowLoadOf, bedOf, lampOk, nightOk, haftOf, tinderDamp, fireOdds, sealOf, hasHearth, isDry, onStation, RACK_CAP, DRY_AT, dryDaysLeft, sysOf, cacheSign, low, matName, BIOMES, biomeOf, treeKind, realMedianOf: se => { const d = se.rivals.filter(r => r.days != null).map(r => r.days).sort((a, b) => a - b); return d[d.length >> 1]; }, WEIGHT, loadOf, carryCap, moveCampCost, moveCamp, collectSize, berryRipe, bushRipeDay, stockOf, stockWord, billFor, nightOk, NIGHT_OK, treeYield, treeNames, fishPool, sizeOf, SHELTERS, shelterOptions, chooseShelter, dropPlan, makeCamp, foundWreck, shelterName, canWorkInside, travel, activeWindows, windowOn, timeMult, weatherName, dayFrac, midday, setTune, DATA, C, MATS, ACTIONS, EVENTS, newGame, runDay, beginDay, act, endDay, choose, carryLoad, available, tapOut, placing, status, season, storeKcal, temperature, shelterLevel, SHELTER_NAMES, shelterBill, shelterMissing, matList, fishOdds, huntOdds, bowDrillOdds, dayHours, hoursLeft, phaseOf, lowTide, igniter, blade, cutter, chopper, hasRod, digger };
+const API = { campStock, jobHours, surplusPor, PRACTICE_KEY, placeOf, practicePlace, hydOf, waterNow, drinkUp, fishDepth, campSummary, shelterScores, bedDampOf, prevailOf, CAMP_FIXED, zoneOf, layoutNotes, kitchenMult, GEAR_COST, BUDGET, gearCost, kitCost, waterToday, note, sunny, sprayLeft, fallChance, climbAnchor, stalkNoise, fouling, latrineOk, raftOf, raftOk, flintOf, hasBow, bowPower, driftChance, bearings, wade, clothesOf, tomorrow, skyAcc, thinIce, potLike, clayPots, greenPots, bedWarmth, snowLoadOf, bedOf, lampOk, nightOk, haftOf, tinderDamp, fireOdds, sealOf, hasHearth, isDry, onStation, RACK_CAP, DRY_AT, dryDaysLeft, sysOf, cacheSign, low, matName, BIOMES, biomeOf, treeKind, realMedianOf: se => { const d = se.rivals.filter(r => r.days != null).map(r => r.days).sort((a, b) => a - b); return d[d.length >> 1]; }, WEIGHT, loadOf, carryCap, moveCampCost, moveCamp, collectSize, berryRipe, bushRipeDay, stockOf, stockWord, billFor, nightOk, NIGHT_OK, treeYield, treeNames, fishPool, sizeOf, SHELTERS, shelterOptions, chooseShelter, dropPlan, makeCamp, foundWreck, shelterName, canWorkInside, travel, activeWindows, windowOn, timeMult, weatherName, dayFrac, midday, setTune, DATA, C, MATS, ACTIONS, EVENTS, newGame, runDay, beginDay, act, endDay, choose, carryLoad, available, tapOut, placing, status, season, storeKcal, temperature, shelterLevel, SHELTER_NAMES, shelterBill, shelterMissing, matList, fishOdds, huntOdds, bowDrillOdds, dayHours, hoursLeft, phaseOf, lowTide, igniter, blade, cutter, chopper, hasRod, digger };
 if (typeof module !== 'undefined') module.exports = API; else root.Engine = API;
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
@@ -3630,6 +3643,7 @@ function interactionsHere() {
   }
   if (atCamp()) {
     if (tired || E.hoursLeft(S) < 3 || S.hours >= 4) out.push(turnIn(tired));
+    if (S.practice) out.push({ label: 'Camp store', sub: 'wood, food and water', fn: openStore });
     if (S.shelterType) out.push({ label: 'Go inside', sub: S.storm || S.rain ? 'out of the weather' : E.canWorkInside(S) ? 'sit, whittle, craft' : 'crawl in and rest', primary: !!(S.storm || S.rain), fn: () => { W.inside = true; input.target = null; input.joy = false; lastActs = ''; sfx.play('tap'); } });
     if (tired) { nightJobs(push, out, av, false); return overflow(out); }
     push('light_fire', null, startFire); push('clean', null, startClean);
@@ -3760,7 +3774,7 @@ const TOOL_JOBS = {
   hunt: ['hunt', 'track'],
   traps: ['snares', 'deadfalls', 'checktraps'],
 };
-const TOOL_LABELS = { camp: /^(Make camp here|Look over the wreck|Turn in early|Sleep|Go inside|Go outside|Journal|Head back to camp|Move camp|Sleep rough|Brace the shelter|No light|Stack your load|Load up|Shoulder a load|Take the fat)/, knife: /^Craft/, fish: /^Fish the run/ };
+const TOOL_LABELS = { camp: /^(Camp store|Make camp here|Look over the wreck|Turn in early|Sleep|Go inside|Go outside|Journal|Head back to camp|Move camp|Sleep rough|Brace the shelter|No light|Stack your load|Load up|Shoulder a load|Take the fat)/, knife: /^Craft/, fish: /^Fish the run/ };
 const TOOL_OF = {}; for (const [k, ids] of Object.entries(TOOL_JOBS)) for (const id of ids) TOOL_OF[id] = k;
 function toolOf(a) {
   if (a.id && TOOL_OF[a.id]) return TOOL_OF[a.id];
@@ -3985,7 +3999,7 @@ function pick(i) {
 }
 function spawnEvent() {
   const ev = S.event; const p = W.player;
-  if (ev.id === 'bear') { const a = Math.random() * 6.28; W.actor = { kind: 'bear', x: W.camp.x + Math.cos(a) * 420, y: W.camp.y + Math.sin(a) * 420, t: 0 }; banner([[ev.text, 'warn']]); sfx.play('warn'); buzz([30, 40, 30]); }
+  if (ev.id === 'bear') { const a = Math.random() * 6.28; const den = S.practice && W.slope; W.actor = { kind: 'bear', x: den ? W.slope.x : W.camp.x + Math.cos(a) * 420, y: den ? W.slope.y : W.camp.y + Math.sin(a) * 420, t: 0 }; /* in the valley the bear comes from its den on the berry slope */ banner([[ev.text, 'warn']]); sfx.play('warn'); buzz([30, 40, 30]); }
   else if (ev.id === 'grouse') { W.actor = { kind: 'grouse', x: p.x + 46, y: p.y - 30 }; banner([[ev.text, 'warn']]); }
   else if (ev.id === 'carcass') { const y = Math.max(120, Math.min(MAP.h - 120, p.y + 40)); W.carcassEv = W.desert ? { x: p.x + 50, y } : { x: W.shoreX(y) + 20, y }; banner([[ev.text, 'warn']]); }
   else banner([[ev.text, ev.id === 'wound' ? 'bad' : 'warn']]);
@@ -5114,6 +5128,7 @@ function stageEnter(s, k) { const L = []; s.stage = k; const name = STAGES[k][0]
     if (name === 'Tools' && !(s.mats.feathers >= 2)) s.mats.feathers = (s.mats.feathers || 0) + 4;
     if (name === 'Tools' && !(s.mats.hide > 0)) { s.mats.hide = 1; L.push(['A hide hanging in the old camp shelter: one to learn to scrape.', 'good']); }
   }
+  if (s.winter && !ev(s, 'melt_snow')) s.potWater = 0;
   if (s.winter) L.push(['Winter comes to the valley: snow on the ground and ice on the lake, for as long as you are learning it.', 'big']);
   return L; }
 function nextStage(s) { for (let i = 1; i <= STAGES.length; i++) { const k = (s.stage + i) % STAGES.length; if (!stageDone(s, k)) return k; } return null; }
@@ -5134,19 +5149,34 @@ function showLesson(l) { if (!W || !W.player || !S || S.status !== 'playing') re
   const where = step ? ((LESSONS.find(m => m[1] === step) || [])[5] || STEP_WHERE[step] || 'camp') : l[5]; const t = where && lessonTarget(where);
   const say = step ? `${l[2]}: first ${E.low(E.ACTIONS[step].label)} (${x.why.replace(/\.$/, '').toLowerCase()}).` : x.st === 'later' ? `${l[2]}: later. ${x.why}.` : l[2] + ': ' + l[3];
   if (!t) { banner([[say, 'info']], 6000); return; } W.ring = { x: t.x, y: t.y, keep: true }; input.target = { x: t.x, y: t.y + 24 }; banner([[say, 'info']], 6500); setTimeout(() => { if (W.ring && W.ring.keep) W.ring = null; }, 15000); }
+function openStore() { sheet((sh, close) => { sh.append($(`<h2>Camp store</h2><div class="muted" style="font-size:13px">It is a campsite: buy what you need, and once you have gathered something yourself it stays stocked.</div>`));
+  const item = (label, sub, fn) => { const b = $(`<button class="act"><b>${label}</b><small>${sub}</small></button>`); b.onclick = () => { fn(); E.campStock(S); save(); close(); updateHud(); lastActs = ''; refreshActs(); banner([[label.replace(/^Buy /, 'Bought ') + '.', 'good']], 2500); sfx.play('good'); }; sh.append(b); };
+  item('Buy firewood', 'a full woodpile', () => { S.firewood = Math.max(S.firewood, 10); });
+  item('Buy food', 'the larder filled with fish and fat', () => { (S.everDone || (S.everDone = {})).buy_food = 1; });
+  item('Buy water', 'the pots filled, boiled and safe', () => { S.potWater = Math.max(S.potWater || 0, E.waterCap ? E.waterCap(S) || 1 : 1); S.boiled = 2; E.drinkUp(S); }); }); }
+function replayLesson(l) { if (!W || !W.player || !S || S.status !== 'playing') return; const id = l[1] === 'better' ? 'shelter' : l[1];
+  if (!E.ACTIONS[id]) { showLesson(l); return; } const t = l[5] && lessonTarget(l[5]); const av = E.available(S, id);
+  if (!av.ok) { banner([[`${l[2]}: not right now. ${av.why}.`, 'info']], 4500); if (t) { W.ring = { x: t.x, y: t.y, keep: true }; input.target = { x: t.x, y: t.y + 24 }; } return; }
+  if (t) goDo(t, { id }); else { const a = interactionsHere().find(x => x.id === id); if (a && !a.dim) a.fn(); } banner([[`${l[2]}: again.`, 'info']], 2500); }
 function openLessons() {
-  sheet((sh, close) => { const C = lessonCounts(S); const cur = S.stage || 0;
-    sh.append($(`<h2>Camping lessons</h2>`));
-    if (C.done >= C.total) { const go = $(`<button class="act primary"><b>Back to your run</b><small>or pick a drop site, if there is no run going</small></button>`); go.onclick = () => { close(); leaveCamping(); }; sh.append(go); }
-    sh.append($(`<div class="muted" style="font-size:13px">${C.done} of ${C.total} done${C.kit ? `, ${C.kit} covered by the kit you brought` : ''}${C.reach ? `, ${C.reach} need an axe or saw you did not bring` : ''}. Ten short stages, the same every time. Stop whenever you like: Leave Camping is in the ⚙ menu, and the valley waits for you.</div>`));
+  sheet((sh, close) => { const C = lessonCounts(S); const cur = S.stage || 0; const doneIds = new Set(LESSONS.filter(l => { const x = lessonState(S, l).st; return x === 'done' || x === 'kit'; }).map(l => l[1]));
+    const done = LESSONS.filter(l => doneIds.has(l[1])).length, total = LESSONS.filter(l => lessonState(S, l).st !== 'reach').length;
+    sh.append($(`<h2>Checklist <span class="num muted" style="font-size:15px">${done} / ${total} completed</span></h2>`));
+    if (done >= total) { const go = $(`<button class="act primary"><b>Back to your run</b><small>or pick a drop site, if there is no run going</small></button>`); go.onclick = () => { close(); leaveCamping(); }; sh.append(go); }
+    sh.append($(`<div class="muted" style="font-size:13px">Ten short stages, the same every time. What is still to come stays hidden until you get there. Tap anything you have done to try it again. Stop whenever you like: Leave Camping is in the ⚙ menu.</div>`));
+    const nowL = nextLesson(); const nowX = nowL ? lessonState(S, nowL) : null;
     STAGES.forEach(([name], k) => { const c = stageCount(S, k), here = k === cur, fin = c.done >= c.total;
-      const head = $(`<div class="row" style="align-items:center;gap:10px;margin-top:6px"><span style="flex:1;text-align:left"><b>${fin ? '✓ ' : ''}${k + 1}. ${esc(name)}</b> <span class="muted num" style="font-size:12px">${c.done}/${c.total}</span>${name === 'Winter' ? '<br><span class="muted" style="font-size:12px">Snow and ice come to the valley while you do this one: come back when winter reaches your run.</span>' : ''}</span></div>`);
-      if (!here) { const b = $(`<button class="act" style="flex:0 0 auto;padding:6px 10px"><b>${fin ? 'Again' : c.done ? 'Continue' : 'Start'}</b></button>`); b.onclick = () => { const L = stageEnter(S, k); save(); close(); updateHud(); lastActs = ''; refreshActs(); banner([[`Stage ${k + 1}: ${name}.`, 'big'], ...L], 5000); }; head.append(b); } else head.style.background = 'rgba(127,168,106,.14)';
-      sh.append(head); if (!here) return;
-      for (const l of stageLessons(k)) { const x = lessonState(S, l); const ok = x.st === 'done'; const off = x.st === 'kit' || x.st === 'reach';
-        const note = x.st === 'step' ? `First: ${E.low(E.ACTIONS[x.step].label)} (${x.why.replace(/\.$/, '').toLowerCase()})` : x.st === 'later' ? `Later: ${x.why}` : x.st === 'kit' ? `Covered: ${x.why.replace(/\.$/, '').toLowerCase()} already` : x.st === 'reach' ? `Not with this kit: ${x.why.replace(/\.$/, '').toLowerCase()}` : '';
-        const row = $(`<div class="row" style="align-items:flex-start;gap:10px;padding-left:12px"><span style="flex:1;text-align:left"><b>${ok ? '✓ ' : ''}${esc(l[2])}</b><br><span class="muted" style="font-size:13px">${esc(l[3])}</span>${note ? `<br><span class="${x.st === 'step' || x.st === 'later' ? 'tone-warn' : 'muted'}" style="font-size:12px">${esc(note)}</span>` : ''}</span></div>`);
-        if (!ok && !off && l[5]) { const b = $(`<button class="act" style="flex:0 0 auto;padding:6px 10px"><b>Show me</b></button>`); b.onclick = () => { close(); showLesson(l); }; row.append(b); } if (ok || off) row.style.opacity = '.6'; sh.append(row); } });
+      const head = $(`<div class="row" style="align-items:center;gap:10px;margin-top:6px"><span style="flex:1;text-align:left"><b>${fin ? '✓ ' : ''}${k + 1}. ${esc(name)}</b> <span class="muted num" style="font-size:12px">${c.done}/${c.total}</span>${name === 'Winter' && !fin ? '<br><span class="muted" style="font-size:12px">Snow and ice come to the valley for this one: a good one to do when winter reaches your run.</span>' : ''}</span></div>`);
+      if (!here) { const b = $(`<button class="act" style="flex:0 0 auto;padding:6px 10px"><b>${fin ? 'Again' : c.done ? 'Continue' : 'Start'}</b></button>`); b.onclick = () => { const L = stageEnter(S, k); E.campStock(S); save(); close(); updateHud(); lastActs = ''; refreshActs(); banner([[`Stage ${k + 1}: ${name}.`, 'big'], ...L], 5000); }; head.append(b); } else head.style.background = 'rgba(127,168,106,.14)';
+      sh.append(head);
+      const ls = stageLessons(k);
+      for (const l of ls) { if (!doneIds.has(l[1])) continue; const kit = lessonState(S, l).st === 'kit';
+        const row = $(`<button class="act" style="margin:2px 0 2px 12px;padding:6px 10px;text-align:left"><b>✓ ${esc(l[2])}</b><small>${kit ? 'covered by the kit you brought' : 'tap to do it again'}</small></button>`); if (kit) row.disabled = true; else row.onclick = () => { close(); replayLesson(l); }; sh.append(row); }
+      if (here && nowL && ls.includes(nowL)) { const note = nowX.st === 'step' ? `First: ${E.low(E.ACTIONS[nowX.step].label)}.` : nowX.st === 'later' ? `Later: ${nowX.why}.` : nowL[3];
+        const row = $(`<div class="row" style="align-items:flex-start;gap:10px;padding-left:12px"><span style="flex:1;text-align:left"><span class="muted" style="font-size:11px;letter-spacing:.06em">NOW</span><br><b>${esc(nowL[2])}</b><br><span class="muted" style="font-size:13px">${esc(note)}</span></span></div>`);
+        if (nowL[5] || (nowX.st === 'step')) { const b = $(`<button class="act" style="flex:0 0 auto;padding:6px 10px"><b>Show me</b></button>`); b.onclick = () => { close(); showLesson(nowL); }; row.append(b); } sh.append(row); }
+      const hidden = ls.filter(l => !doneIds.has(l[1]) && l !== nowL && lessonState(S, l).st !== 'reach').length;
+      if (hidden && (here || c.done)) sh.append($(`<div class="muted" style="font-size:12px;padding-left:14px">${hidden} more to find${here ? ' in this stage' : ''}.</div>`)); });
   });
 }
 function lessonTick() { if (!S || !S.practice || S.status !== 'playing') return; const have = new Set(S.lessonsDone || []); const now = lessonsDone().map(l => l[1]); const fresh = now.filter(k => !have.has(k));
@@ -5464,6 +5494,7 @@ function draw() {
   // sprites sorted by y
   const sprites = [];
   if (W.ufo && inView(W.ufo.x, W.ufo.y, 200)) sprites.push({ y: W.ufo.y, f: () => drawWreck(W.ufo) });
+  if (S.practice && W.slope && inView(W.slope.x, W.slope.y - 30, 120)) sprites.push({ y: W.slope.y - 30, f: () => { const x = W.slope.x, y = W.slope.y - 30; cx.save(); cx.fillStyle = 'rgba(40,28,20,.55)'; for (const [dx, dy] of [[-14, 6], [-4, -4], [8, 4], [18, -6]]) { cx.beginPath(); cx.ellipse(x + dx, y + dy, 3.4, 4.2, 0, 0, 6.28); cx.fill(); for (let t = -1; t <= 1; t++) { cx.beginPath(); cx.arc(x + dx + t * 2.6, y + dy - 5.5, 1.2, 0, 6.28); cx.fill(); } } cx.font = '600 11px ' + W.font; cx.textAlign = 'center'; cx.fillStyle = 'rgba(240,230,210,.85)'; cx.fillText('bear den', x, y + 20); cx.restore(); } }); /* you know where the bear lives */
   for (const tr of W.trees) if (inView(tr.x, tr.y, 60)) sprites.push({ y: tr.y, f: () => drawTree(tr, snow) });
   for (const q of (S.piles || [])) if (inView(q.x, q.y, 40)) sprites.push({ y: q.y, f: () => drawPile(q) });
   for (const pin of (S.pins || [])) if (inView(pin.x, pin.y, 30)) sprites.push({ y: pin.y, f: () => { cx.strokeStyle = '#6a5a4a'; cx.lineWidth = 1.5; cx.beginPath(); cx.moveTo(pin.x, pin.y); cx.lineTo(pin.x, pin.y - 18); cx.stroke(); cx.fillStyle = PIN_COLS[pin.k] || '#fff'; cx.beginPath(); cx.moveTo(pin.x, pin.y - 18); cx.lineTo(pin.x + 10, pin.y - 14); cx.lineTo(pin.x, pin.y - 10); cx.closePath(); cx.fill(); } });
@@ -6045,6 +6076,7 @@ function openMap() {
     const label = (x, y, txt, always) => { if (!near && !always) return; if (!always && !seen(x, y)) return; const px = X(x); let py = Y(y); if (px < 0 || px > 320 || py < 0 || py > 320) return; m.font = '600 7px ' + (W.mono || 'monospace'); m.textAlign = 'center'; const lw = m.measureText(txt).width; /* step a label down past any it would overlap */ for (let k = 0; k < 6 && placed.some(b => Math.abs(b.x - px) < (b.w + lw) / 2 + 2 && Math.abs(b.y - py) < 9); k++) py += 9; placed.push({ x: px, y: py, w: lw }); m.fillStyle = 'rgba(0,0,0,.6)'; m.fillText(txt, px + 0.5, py + 8.5); m.fillStyle = '#fff'; m.fillText(txt, px, py + 8); };
     if (hasCamp()) { dot(W.camp.x, W.camp.y, '#e8743b', 4); label(W.camp.x, W.camp.y + 10, 'CAMP', true); } else { dot(W.campHome.x, W.campHome.y, '#9a9a8a', 3); label(W.campHome.x, W.campHome.y + 10, 'LANDED', true); }
     if (W.ufo && S.stats && S.stats.wreck) { dot(W.ufo.x, W.ufo.y, '#9fd0a0', 3); label(W.ufo.x, W.ufo.y + 10, 'WRECK', true); }
+    if (S.practice && W.slope) { dot(W.slope.x, W.slope.y - 30, '#a0603a', 3); label(W.slope.x, W.slope.y - 20, 'BEAR DEN', true); }
     label(W.trail.x, W.trail.y, 'GAME TRAIL'); label(W.meadow.x, W.meadow.y, 'MEADOW'); label(W.slope.x, W.slope.y, 'BERRY SLOPE'); label(W.ruin.x, W.ruin.y, 'OLD CAMP'); if (W.pond) label(W.pond.x, W.pond.y, 'BEAVER POND'); if (W.river && S.crafts.bridge >= 2) label(W.river.bridgeX, W.river.y0 - 10, 'LOGS'); label(W.bog.x, W.bog.y, W.desert ? 'FLATS' : 'BOG'); label(W.forest.x, W.forest.y, 'BIG TIMBER'); label(W.cliff.x, W.cliff.y - 12, 'ROCK');
     if (W.river) label(W.river.ford, W.river.y1 + 10, 'FORD'); for (const pl of W.pools || []) label(pl.x, pl.y + 12, 'POOL');
     for (const lm of W.landmarks || []) if (seen(lm.x, lm.y)) { dot(lm.x, lm.y, '#d8c8a0', 3); label(lm.x, lm.y + 6, lm.name.toUpperCase(), true); }
