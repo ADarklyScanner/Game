@@ -2,17 +2,17 @@
  "US-S1#11": {
   "d5": "1306847e385d",
   "d25": "0dc9fbccb97f",
-  "end": "136f164a21cb",
-  "day": 42,
+  "d50": "7e2d07cf2253",
+  "end": "60901afc4550",
+  "day": 55,
   "status": "medical"
  },
  "US-S1#222": {
   "d5": "e0200c1e7076",
-  "d25": "89d71db4cd9c",
-  "d50": "31819b81592f",
-  "end": "1061566bf8a7",
-  "day": 60,
-  "status": "won"
+  "d25": "3700a625b96c",
+  "end": "23be3a9ff679",
+  "day": 34,
+  "status": "medical"
  },
  "US-S1#3333": {
   "d5": "e22060c45e47",
@@ -25,17 +25,16 @@
  "US-S2#11": {
   "d5": "6d532d532c72",
   "d25": "8d12b0215b57",
-  "d50": "87c0d7d9fa2c",
-  "end": "1343362d4dc6",
-  "day": 62,
-  "status": "medical"
+  "d50": "8edde832c277",
+  "end": "1fc9357d0586",
+  "day": 69,
+  "status": "won"
  },
  "US-S2#222": {
   "d5": "5ca8c525e89c",
-  "d25": "11ff7c788010",
-  "d50": "cd49d7a5fe11",
-  "end": "f9d7384f2d8b",
-  "day": 63,
+  "d25": "0b2a1b8095ed",
+  "end": "b17c33bdeb4f",
+  "day": 42,
   "status": "medical"
  },
  "US-S2#3333": {
@@ -48,7 +47,7 @@
  "US-S3#11": {
   "d5": "276eb9a60970",
   "d25": "d988745cae8f",
-  "end": "832577b2b35f",
+  "end": "51e10d2ec814",
   "day": 49,
   "status": "medical"
  },
@@ -165,8 +164,8 @@
  "US-S9#11": {
   "d5": "d66c9098c91c",
   "d25": "775d8d02bba7",
-  "d50": "38dbba48544a",
-  "end": "1172c3d022c9",
+  "d50": "5ad64624bd0b",
+  "end": "0b6a0360f00f",
   "day": 82,
   "status": "tapped"
  },
@@ -202,10 +201,10 @@
   "status": "medical"
  },
  "US-S10#3333": {
-  "d5": "75418696681d",
-  "d25": "d29ff02aa514",
-  "d50": "c8b93e34ade3",
-  "end": "e61cd63a4a22",
+  "d5": "0cbf7fccb276",
+  "d25": "5e3829d85a7a",
+  "d50": "665fb52221f8",
+  "end": "7b6205a82362",
   "day": 67,
   "status": "won"
  },
@@ -295,26 +294,26 @@
   "status": "won"
  },
  "US Frozen-S1#3333": {
-  "d5": "407940e116c4",
-  "d25": "c00b556fce57",
-  "d50": "ac24987491b1",
-  "end": "0d686dc81dd9",
+  "d5": "ffe38732996e",
+  "d25": "830f108076e7",
+  "d50": "de9cf4229f84",
+  "end": "76655c41fc21",
   "day": 52,
   "status": "won"
  },
  "AU-S1#11": {
   "d5": "447fa53e664e",
   "d25": "0bae69f5fa97",
-  "d50": "8cffab034915",
-  "end": "f346e180affa",
-  "day": 69,
-  "status": "tapped"
+  "d50": "95a2b0cecac5",
+  "end": "285125a808b6",
+  "day": 70,
+  "status": "won"
  },
  "AU-S1#222": {
   "d5": "c8e87cd79368",
-  "d25": "db9c101a0889",
-  "d50": "e959438c8c48",
-  "end": "ad74a26aa1f8",
+  "d25": "5a0d1d69b16e",
+  "d50": "a65a0dedb00b",
+  "end": "b8ae914fdd7b",
   "day": 70,
   "status": "won"
  },
@@ -322,45 +321,46 @@
   "d5": "1b1fd9eb9c64",
   "d25": "529ac0c5fa7c",
   "d50": "007d3d4c917a",
-  "end": "f7cfe8014350",
+  "end": "56e0491e3cd2",
   "day": 70,
   "status": "won"
  },
  "AU-S2#11": {
   "d5": "a89bf5e4c92d",
   "d25": "3c19482a400f",
-  "d50": "1283a042a2ec",
-  "end": "f56792580e21",
+  "d50": "8773ffcc9bc8",
+  "end": "4209ee2aac0a",
   "day": 67,
   "status": "won"
  },
  "AU-S2#222": {
   "d5": "4922200d432c",
-  "d25": "92ee55fa3e20",
-  "end": "989be05796c9",
-  "day": 42,
+  "d25": "bb54e9ca18cc",
+  "end": "fa12c4558242",
+  "day": 49,
   "status": "medical"
  },
  "AU-S2#3333": {
-  "d5": "d378d2a41285",
-  "d25": "f9d5d0deaac8",
-  "end": "3be91e63d6ad",
+  "d5": "1d4ca95828e2",
+  "d25": "0b5c3d7fad5a",
+  "end": "39d934a8f825",
   "day": 49,
   "status": "medical"
  },
  "AU-S3#11": {
   "d5": "a0797c136448",
   "d25": "f6d6569e586c",
-  "d50": "326c58c87a74",
-  "end": "997ff78033e0",
-  "day": 80,
-  "status": "won"
+  "d50": "beab7e94f725",
+  "end": "b4d226a3e644",
+  "day": 77,
+  "status": "medical"
  },
  "AU-S3#222": {
   "d5": "e3555a5d672e",
-  "d25": "9412bdebeeb3",
-  "end": "75f11636e508",
-  "day": 42,
+  "d25": "68389bff56e7",
+  "d50": "228a8a578088",
+  "end": "eb7222998a90",
+  "day": 69,
   "status": "medical"
  },
  "AU-S3#3333": {
@@ -381,15 +381,15 @@
  "AU-S4#222": {
   "d5": "46881fd756a6",
   "d25": "3f4b83024d74",
-  "d50": "027b54b17758",
-  "end": "3d0f092e3edd",
+  "d50": "365f4c84bdc2",
+  "end": "2fa36a1ee6ce",
   "day": 56,
   "status": "won"
  },
  "AU-S4#3333": {
   "d5": "5036e8d72402",
-  "d25": "9c6a99d14d96",
-  "end": "5dc9913cbe7a",
+  "d25": "56791861da2a",
+  "end": "dc4d723e56d5",
   "day": 42,
   "status": "medical"
  }

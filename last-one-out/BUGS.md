@@ -246,6 +246,13 @@ Checked and left as they are: a wrong-sized snare is still set (it catches less,
 | 184 | Elk were fully defined and drawn but lived in no place, so you could never meet one | Elk are big game on the Rainforest Coast (northern Vancouver Island has Roosevelt elk) |
 | 185 | A hint in the fire mini-game looked for a canteen where the game never records one, so it never said "from the canteen" | It checks the kit |
 | 186 | One function was never used (nearestTree) | Removed |
+| 187 | "Letter from home" was checked for but is not a kit item; everyone gets the letter anyway | The check is gone and the letter is on the issued list on the setup screen |
+| 188 | The forecast from reading the sky was stored and never shown again | It stays on the top bar until the day it is about |
+| 189 | Failed fires were counted and never used | After three in a row, a hint says what usually fixes it; a lit fire resets the count |
+| 190 | Jobs done, camp moves, hooks lost, times lost, fires put out in the shelter and chimney fires were counted and never shown | On the end screen, with distance walked |
+| 191 | "Something alive in a snare" could never happen on the Rainforest Coast, Salmon Inlets, in Tasmania or Fiordland: their predator lists name no small hunter | Martens, quolls and stoats live there; the event can happen, a quarter as often as where the list names one (keeps balance within 5%) |
+| 192 | Fiordland's podocarps grew but needle tea said "No conifers here" | Podocarp sprigs make tea |
+| 193 | Bears in Sápmi and the taiga were called black bears | Brown bears there; grizzlies where listed; black bears elsewhere |
 
 ### Test-side problems (not game bugs)
 
@@ -294,3 +301,5 @@ After the water fixes (Nov 3): median 56 → 56 days (0.0%), mean 56.4 → 56.1 
 After the gear-simulation fixes (Nov 3), with the better test bot on both: median 62 → 62 days (0.0%), mean 61.7 → 60.8 (−1.5%). The dry desert site moved because the bot now hauls water (see above); the two lake sites that moved about 11% (US-S10, AU-S3) had moved before the water fixes.
 
 Preserving pass (Nov 7): the test bot smoked nearly everything it caught and tended the smoker daily, about an hour a day, which cost it 210 kcal a day of fishing and hunting to save 40 kcal a day of spoilage. With the shorter smoker chore and a bot that keeps only what it cannot eat before it turns (and builds a rack or smoker only then), preserving is worth about 1% more days overall instead of 5% fewer. Reference re-recorded with this bot on the original game: median 67 → 65 days (−3.0%), mean 65.5 → 63.7 (−2.7%).
+
+Not bugs, from the same review: the cache is never marked poorly built (only the smoker, woodshed, bridge, stove and net are); an open event such as the carcass is settled when you sleep, so it cannot stay stuck; the raft's materials are paid in the first session, like every two-part build; leather mittens are made from leather (the code is roundabout but right). tests/deadrefs.js now checks the whole file for this pattern on every run.

@@ -1085,7 +1085,7 @@ function available(s, id) {
     case 'dig_clay': return c.water === 'scarce' ? r(false, 'No clay here') : frozen(s) ? r(false, 'Ground is frozen') : r(true, '', '3 clay');
     case 'needle_tea': return !biomeOf(s.seasonKey).needles ? r(false, 'No conifers here') : !s.fire ? r(false, 'Needs a fire') : !(potLike(s) || has(s, 'Canteen')) ? r(false, 'Nothing to brew in') : s.teaToday ? r(false, 'Had a cup today') : !(s.potWater >= 1) ? r(false, 'No water at camp. Fetch some') : s.mats.boughs < 1 ? r(false, 'Needs a spruce bough for the needles') : r(true, '', 'Vitamin C, warms you through');
     case 'bone_broth': return !s.fire ? r(false, 'Needs a fire') : !potLike(s) ? r(false, 'Needs a pot') : s.mats.bone < 2 ? r(false, 'Needs 2 bone') : !(s.potWater >= 1) ? r(false, 'No water at camp. Fetch some') : r(true, '', '2 bone → 3 portions of broth');
-    case 'read_letter': return !has(s, 'Letter from home') && !s.letter ? r(false, 'You did not bring one') : s.day - (s.letterDay || -9) < 6 ? r(false, 'Save it. You will need it more later') : r(true, '', 'lifts your will · once a week');
+    case 'read_letter': return !s.letter ? r(false, 'You did not bring one') : s.day - (s.letterDay || -9) < 6 ? r(false, 'Save it. You will need it more later') : r(true, '', 'lifts your will · once a week');
     // the issued kit: a full spare set (shirt, pants, thermals, socks, the second pair of boots), one photograph, a leather belt
     case 'change_dry': return s.wet < 0.35 ? r(false, 'Dry enough') : s.sys && s.sys.sparesWet ? r(false, 'The spares are wet too. Dry them by the fire') : r(true, '', 'spare shirt, pants, thermals, socks and boots');
     case 'photo': return s.sys && s.sys.photoDay === s.day ? r(false, 'You looked at it today') : r(true, '', 'lifts your will a little');
@@ -1205,7 +1205,7 @@ const BIOMES = {
   delta: { mix: { conifer: 0.44, deciduous: 0.4, birch: 0.08, snag: 0.06 }, sp: { conifer: 'white spruce', deciduous: 'willow', birch: 'birch' }, needles: true },
   karoo: { mix: { scrub: 0.8, snag: 0.18 }, sp: { scrub: 'thorn tree' }, needles: false, spiders: true },
   tasrain: { mix: { eucalypt: 0.46, deciduous: 0.42, snag: 0.1 }, sp: { eucalypt: 'gum tree', deciduous: 'myrtle beech' }, needles: false, leeches: true, spiders: true },
-  nzbeech: { mix: { deciduous: 0.78, conifer: 0.06, snag: 0.12 }, sp: { deciduous: 'beech', conifer: 'podocarp' }, needles: false, spiders: true },
+  nzbeech: { mix: { deciduous: 0.78, conifer: 0.06, snag: 0.12 }, sp: { deciduous: 'beech', conifer: 'podocarp' }, needles: true, spiders: true },
   sapmi: { mix: { birch: 0.6, conifer: 0.3, snag: 0.08 }, sp: { birch: 'mountain birch', conifer: 'pine' }, needles: true },
 };
 function biomeOf(key) { const se = placeOf(key); const id = (se && se.biome) || (se && se.climate.water === 'scarce' ? 'karoo' : 'shield'); return Object.assign({ id }, BIOMES[id]); }
@@ -1584,8 +1584,8 @@ function doAction(s, id, lines, mod, opts) {
       const ig = igniter(s); let p = fireOdds(s) * (X.lay === 'teepee' ? 1.1 : X.lay === 'cabin' ? 0.95 : X.lay === 'leanto' ? ((s.wind || s.storm) ? 1.2 : 1) : 1); const cc = !!(s.sys && s.sys.charcloth > 0); if (X.lay) sysOf(s).fireLay = X.lay; /* a teepee catches fast; a lean-to lay shields it from the wind; a log cabin is slower but leaves good coals */ if (X.ember != null) p = X.ember ? (ig === 'bowdrill' && tinderDamp(s) > (cc ? 0.45 : 0.2) ? 0.03 : Math.min(0.98, p + 0.4)) : p * 0.3;
       if (cc) { s.sys.charcloth -= 1; lines.push(['Laid a square of char cloth on the tinder bundle.', 'muted']); }
       s.mats.tinder -= 1;
-      if (chance(s, clamp(p, 0, 0.98))) { s.fire = true; lines.push([ig === 'ferro' ? 'Sparks into the tinder, blow, and it takes. Fire.' : 'Smoke, then an ember, then flame. Fire, by hand.', 'good']); s.morale += s.firstFire ? 2 : 10; if (!s.firstFire) { s.firstFire = true; lines.push(['First fire going.', 'good']); } s.skill.fire = Math.min(1.8, s.skill.fire + 0.12); }
-      else { s.fireFails++; lines.push([ig === 'ferro' ? (tinderDamp(s) > 0.2 ? 'The tinder is too damp. It smoulders and dies.' : 'The sparks skittered off the tinder and died. Again.') : X.ember ? 'An ember, but the tinder would not take. It needs to be drier.' : 'Smoke but no ember. Your arms give out.', 'bad']); s.morale -= 2; s.skill.fire = Math.min(1.8, s.skill.fire + 0.04); }
+      if (chance(s, clamp(p, 0, 0.98))) { s.fire = true; s.fireFails = 0; lines.push([ig === 'ferro' ? 'Sparks into the tinder, blow, and it takes. Fire.' : 'Smoke, then an ember, then flame. Fire, by hand.', 'good']); s.morale += s.firstFire ? 2 : 10; if (!s.firstFire) { s.firstFire = true; lines.push(['First fire going.', 'good']); } s.skill.fire = Math.min(1.8, s.skill.fire + 0.12); }
+      else { s.fireFails++; if (s.fireFails === 3) lines.push([tinderDamp(s) > 0.2 ? 'Three tries and no fire. The tinder is damp: dry some by your body or find birch bark and punk wood first.' : (s.wind || s.storm) ? 'Three tries and no fire. Build it out of the wind, behind a log or a wall of stones.' : 'Three tries and no fire. More tinder and finer kindling, and build it up slowly.', 'info']); lines.push([ig === 'ferro' ? (tinderDamp(s) > 0.2 ? 'The tinder is too damp. It smoulders and dies.' : 'The sparks skittered off the tinder and died. Again.') : X.ember ? 'An ember, but the tinder would not take. It needs to be drier.' : 'Smoke but no ember. Your arms give out.', 'bad']); s.morale -= 2; s.skill.fire = Math.min(1.8, s.skill.fire + 0.04); }
       break;
     }
     case 'shelter': {
@@ -1844,9 +1844,12 @@ const FOUND_USE = { 'Cordage': 'Four lengths of cordage.', 'Container': 'It will
 
 // ------------------------------------------------------------------ things that happen to you (one a day at most)
 const hasPred = (s, re) => season(s).predators.some(p => re.test(p[0]));
+const SNARE_PRED = /fox|wolverine|lynx|marten|jackal|bobcat|wild ?cat|quoll|stoat/; const SMALL_PRED = { coastrain: 'marten', tasrain: 'spotted-tailed quoll', nzbeech: 'stoat' }; /* the small hunters that live there even where the list only names the big ones */
+function smallPred(s) { const p = season(s).predators.find(x => SNARE_PRED.test(x[0])); return p ? p[0].replace(/s$/, '') : SMALL_PRED[biomeOf(s.seasonKey).id] || null; }
+function bearName(s) { return hasPred(s, /grizzly/) ? 'grizzly' : ['taiga', 'sapmi'].includes(biomeOf(s.seasonKey).id) ? 'brown bear' : 'black bear'; } /* Eurasian bears are brown bears */
 const EVENTS = {
   bear: { when: 'act', p: 0.035, cond: s => hasPred(s, /bear|grizzly/) && !(season(s).climate.snow && s.day > season(s).climate.snow + 12) && (s.stores.some(x => ['fish', 'game', 'fat', 'organ'].includes(DATA.foods[x.id].kind)) || s.raw.length),
-    title: 'Bear at camp', text: s => `A ${hasPred(s, /grizzly/) ? 'grizzly' : 'black bear'} is nosing around your food, thirty feet away. It has not seen you yet.`,
+    title: 'Bear at camp', text: s => `A ${bearName(s)} is nosing around your food, thirty feet away. It has not seen you yet.`,
     options: [
       { label: 'Stand tall and make noise', sub: 'Usually works. Sometimes it does not.', go(s, L) { s.stats.bear = true; if (chance(s, 0.8)) { L.push(['You bang the pot and shout. It huffs, turns, and lumbers off.', 'good']); s.morale += 5; } else { L.push(['It bluff-charges, then tears into the food before it leaves.', 'bad']); loseMeat(s, 0.5, L); s.morale -= 12; } } },
       { label: 'Back off and let it eat', sub: 'Safe. You lose whatever it finds.', go(s, L) { loseMeat(s, 0.5, L); s.morale -= 6; L.push(['You watch from the trees until it is done.', 'muted']); } },
@@ -1890,8 +1893,8 @@ const EVENTS = {
       { label: 'Chase it off and hang the food higher', sub: 'An hour. You lose a little.', go(s, L) { s.hours = round1(s.hours + 1); s.phase = phaseOf(s); loseMeat(s, 0.1, L); L.push(['It bolts. You hang what is left from a branch and swear at it.', 'info']); } },
       { label: 'Let it have its fill', sub: 'You lose more, but the day is yours.', go(s, L) { loseMeat(s, 0.35, L); s.morale -= 4; } },
     ] },
-  snarepred: { when: 'begin', p: 0.035, cond: s => s.snares >= 4 && hasPred(s, /fox|wolverine|lynx|marten|jackal|bobcat|wild ?cat|quoll|stoat/),
-    title: 'Something alive in a snare', text: s => { const n = season(s).predators.find(p => /fox|wolverine|lynx|marten|jackal|bobcat|wild ?cat|quoll|stoat/.test(p[0]))[0].replace(/s$/, ''); return `A ${n} is caught by the foot in one of your snares, alive, and it has torn up the ground around it.`; },
+  snarepred: { when: 'begin', p: 0.035, cond: s => s.snares >= 4 && !!smallPred(s) && (hasPred(s, SNARE_PRED) || drand(s, 'snarepred' + s.day) < 0.25), /* scarcer where they are not one of the place's named predators */
+    title: 'Something alive in a snare', text: s => { const n = smallPred(s); return `A ${n} is caught by the foot in one of your snares, alive, and it has torn up the ground around it.`; },
     options: [
       { label: 'Kill it with a heavy stick', sub: 'An hour. A pelt, and a chance of a bite.', go(s, L) { s.hours = round1(s.hours + 1); s.phase = phaseOf(s); s.mats.hide = (s.mats.hide || 0) + 1; if (chance(s, 0.2)) { addCond(s, { name: 'Bitten hand', days: 4, dmg: 0.6, wound: true }); L.push(['It came at you on the end of the wire and got your hand before the stick came down. A pelt, and a bite that needs watching.', 'bad']); } else L.push(['Two hard blows and it was over. You skinned it out: a good pelt for mittens or patches.', 'info']); } },
       { label: 'Cut it loose with a long pole', sub: 'Half an hour. The snare is lost.', go(s, L) { s.hours = round1(s.hours + 0.5); s.phase = phaseOf(s); s.snares = Math.max(0, s.snares - 1); L.push(['You pinned it with a forked pole and cut the wire. It went off through the brush on three legs. One snare gone.', 'info']); } },
@@ -1930,7 +1933,7 @@ const EVENTS = {
       { label: 'Let it finish', sub: 'Lose the catch. The net will need mending.', go(s, L) { s.net.catch = []; s.net.torn = true; s.morale -= 5; L.push(['It leaves a torn net and a few heads.', 'bad']); } },
     ] },
   bearkill: { when: 'begin', p: 0.3, cond: s => hasPred(s, /bear|grizzly/) && !(season(s).climate.snow && s.day > season(s).climate.snow + 12) && s.carcass && (!s.carcass.dressed || s.carcass.por > 2) && s.carcass.day < s.day && s.phase === 0,
-    title: 'Bear on the kill', text: s => `A ${hasPred(s, /grizzly/) ? 'grizzly' : 'black bear'} is on your ${low(DATA.foods[s.carcass.id].name)}. It has already eaten a good part of it.`,
+    title: 'Bear on the kill', text: s => `A ${bearName(s)} is on your ${low(DATA.foods[s.carcass.id].name)}. It has already eaten a good part of it.`,
     options: [
       { label: 'Walk in shouting and claim it', sub: 'Usually they give ground. Not always.', go(s, L) { if (chance(s, hasPred(s, /grizzly/) ? 0.45 : 0.65)) { s.carcass.por = round1(s.carcass.por * 0.6); s.morale += 4; L.push(['It stands, huffs, and goes. What it left is still worth carrying.', 'good']); } else { s.carcass = null; s.morale -= 12; s.health -= 3; L.push(['It comes at you. You back off fast, and it goes back to eating. The meat is gone.', 'bad']); } } },
       { label: 'Let it have the kill', sub: 'Safe. All that meat, gone.', go(s, L) { s.carcass = null; s.morale -= 10; L.push(['You watch from a long way off. Days of food, and it is the bear that gets fat.', 'bad']); } },
@@ -1954,7 +1957,7 @@ const EVENTS = {
       { label: 'Back off the long way round', sub: 'Two hours.', go(s, L) { s.hours = round1(s.hours + 2); s.today.burn += 250; s.phase = phaseOf(s); L.push(['A long loop through the scrub. Your heart does not slow down until camp.', 'muted']); } },
     ] },
   sow: { when: 'act', p: 0.008, cond: s => hasPred(s, /bear|grizzly/) && !snowy(s) && ['hunt', 'berries', 'forage', 'checktraps', 'rosehips'].includes(s.lastAction),
-    title: 'Sow with cubs', text: s => `A ${hasPred(s, /grizzly/) ? 'grizzly' : 'black bear'} sow and two cubs in the berries ahead of you. She has seen you.`,
+    title: 'Sow with cubs', text: s => `A ${bearName(s)} sow and two cubs in the berries ahead of you. She has seen you.`,
     options: [
       { label: 'Back away slowly, talking to her', sub: 'Mostly works.', go(s, L) { if (chance(s, 0.85)) L.push(['She watches you go, then puts her head back down.', 'muted']); else { s.morale -= 10; s.health -= 3; L.push(['She bluff-charges, stops ten feet off, pops her jaws, and turns. Your legs are water.', 'bad']); } s.stats.bear = true; } },
       { label: 'Climb a tree and wait her out', sub: 'An hour.', go(s, L) { s.hours = round1(s.hours + 1); s.phase = phaseOf(s); L.push(['An hour up a spruce while the cubs play underneath. Then they are gone.', 'muted']); } },
@@ -3355,7 +3358,7 @@ function updateHud() {
   hudEl.querySelector('#h-day').textContent = S.day;
   { const arrow = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'][Math.round(((S.windDir || 0) / 6.283) * 8) % 8]; const sky = S.storm ? `storm ${arrow}` : S.snowfall ? 'snowing' : S.rain ? 'rain' : S.fog ? 'fog' : st.weather === 'wind' ? `wind ${arrow}` : st.weather === 'heat' ? 'hot' : `breeze ${arrow}`;
     hudEl.querySelector('#h-temp').textContent = `${st.temp}°${st.windChill < st.temp - 2 ? ` (feels ${st.windChill}°)` : ''}, ${sky}${st.frozen ? ', ice' : st.snowy && !S.snowfall ? ', snow on the ground' : ''}`; }
-  const condEl = hudEl.querySelector('#h-cond'); const bits = st.windows.map(w => w.label); const arrow = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'][Math.round(((S.windDir || 0) / 6.283) * 8) % 8]; /* the weather is in the line under the light now */ void arrow; if (st.shelterCond < 0.5 && S.shelterLvl) bits.push('Roof leaking'); { const kg = E.loadOf(S.pack || {}); if (kg > 0.5) bits.push(`Pack ${Math.round(kg)}/${E.carryCap(S)} kg`); } { const b = bodyState(); const felt = []; { const dry = S.sys && S.sys.dry; const wt = E.waterToday(S); if (dry) felt.push('Dehydrated'); else if (!wt.ok && S.phase >= 0 && st.hoursLeft < 5) felt.push('Thirsty'); } if (b.wet > 0.5) felt.push('Soaked'); if (b.cold > 0.5) felt.push('Freezing'); if (b.hot) felt.push('Overheating'); if (b.starving > 0.4) felt.push('Starving'); else if (b.hungry > 0.5) felt.push('Hungry'); if (b.hurt > 0.4) felt.push('Hurt'); if (b.sick) felt.push('Sick'); if (b.low > 0.5) felt.push('Low'); bits.push(...felt.slice(0, 2)); } condEl.textContent = bits.join(' · '); condEl.hidden = !bits.length;
+  const condEl = hudEl.querySelector('#h-cond'); const bits = st.windows.map(w => w.label); { const fc = S.sys && S.sys.forecast; if (fc && fc.day === S.day + 1) bits.push(`You read ${fc.said} tomorrow`); } /* your read of the sky stays in view until the day it is about */ const arrow = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'][Math.round(((S.windDir || 0) / 6.283) * 8) % 8]; /* the weather is in the line under the light now */ void arrow; if (st.shelterCond < 0.5 && S.shelterLvl) bits.push('Roof leaking'); { const kg = E.loadOf(S.pack || {}); if (kg > 0.5) bits.push(`Pack ${Math.round(kg)}/${E.carryCap(S)} kg`); } { const b = bodyState(); const felt = []; { const dry = S.sys && S.sys.dry; const wt = E.waterToday(S); if (dry) felt.push('Dehydrated'); else if (!wt.ok && S.phase >= 0 && st.hoursLeft < 5) felt.push('Thirsty'); } if (b.wet > 0.5) felt.push('Soaked'); if (b.cold > 0.5) felt.push('Freezing'); if (b.hot) felt.push('Overheating'); if (b.starving > 0.4) felt.push('Starving'); else if (b.hungry > 0.5) felt.push('Hungry'); if (b.hurt > 0.4) felt.push('Hurt'); if (b.sick) felt.push('Sick'); if (b.low > 0.5) felt.push('Low'); bits.push(...felt.slice(0, 2)); } condEl.textContent = bits.join(' · '); condEl.hidden = !bits.length;
   const goalEl = hudEl.querySelector('#h-goal'); lessonTick(); const nl = S.practice && S.status === 'playing' ? nextLesson() : null; const nst = nl ? lessonState(S, nl) : null; const gt = S.status === 'playing' && S.phase >= 0 ? (nl ? `${STAGES[S.stage || 0][0]} · ${nl[2]}${nst && nst.st === 'step' ? ` · first ${E.low(E.ACTIONS[nst.step].label)}` : nst && nst.st === 'later' ? ' · later' : ''} ›` : goalText()) : ''; goalEl.textContent = gt; goalEl.hidden = !gt;
   goalEl.onclick = S.practice ? openLessons : null; goalEl.style.cursor = S.practice ? 'pointer' : ''; goalEl.setAttribute('role', S.practice ? 'button' : ''); goalEl.style.pointerEvents = S.practice ? 'auto' : '';
   const hl = st.hoursLeft; hudEl.querySelector('#h-time').textContent = S.phase < 0 || S.phase === 3 ? 'Night' : `${halves(hl)} h light`;
@@ -5217,7 +5220,7 @@ function openShelterChoice() {
   });
 }
 // issued to everyone on top of the ten items you choose
-const ISSUED = { clothing: ['High-leg hunting boots', 'Ankle boots', 'Short-sleeve T-shirt', '2 fleece or wool shirts', '2 wool sweaters (or a sweater and a zip vest)', '6 pairs of wool socks', '2 hats', 'Buff', 'Bandana', 'Shemagh', '3 pairs of gloves', '2 sets of thermal underwear', '2 pairs of underwear', 'Jacket', '2 pairs of pants', 'Insulated pants', 'Waterproof shell', 'Snake gaiters', 'Leather belt'], personal: ['Toothbrush', 'Prescription glasses, if you wear them', 'One photograph, 4×6'] };
+const ISSUED = { clothing: ['High-leg hunting boots', 'Ankle boots', 'Short-sleeve T-shirt', '2 fleece or wool shirts', '2 wool sweaters (or a sweater and a zip vest)', '6 pairs of wool socks', '2 hats', 'Buff', 'Bandana', 'Shemagh', '3 pairs of gloves', '2 sets of thermal underwear', '2 pairs of underwear', 'Jacket', '2 pairs of pants', 'Insulated pants', 'Waterproof shell', 'Snake gaiters', 'Leather belt'], personal: ['Toothbrush', 'Prescription glasses, if you wear them', 'One photograph, 4×6', 'A letter from home'] };
 function openPack() {
   sheet((sh) => { sh.classList.add('pk');
     sh.append($(`<h2>Pack</h2>`));
@@ -7311,6 +7314,7 @@ function renderEnd() {
   if (!renderEnd.played && firstEnd) { renderEnd.played = S.seed; sfx.stopAll(); sfx.play(won ? 'win' : 'lose'); buzz(won ? [60, 40, 60, 40, 120] : 50); }
   const loss = Math.round((1 - S.weight / S.weight0) * 100);
   const caught = Object.entries(S.stats.caught).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, n]) => `${n} ${E.low(D.foods[k].name)}`).join(', ');
+  const st0 = S.stats; const numbers = [`${st0.jobs || 0} jobs done`, `${((st0.walked || 0) / 1000).toFixed(1)} km walked`, st0.moves ? `camp moved ${st0.moves} time${st0.moves > 1 ? 's' : ''}` : '', st0.hooksLost ? `${st0.hooksLost} hook${st0.hooksLost > 1 ? 's' : ''} lost` : '', st0.lostWay ? `lost your way ${st0.lostWay} time${st0.lostWay > 1 ? 's' : ''}` : '', st0.nearFire ? `put out ${st0.nearFire} fire${st0.nearFire > 1 ? 's' : ''} in the shelter` : '', st0.chimneyFire ? `${st0.chimneyFire} chimney fire${st0.chimneyFire > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · '); /* the run in numbers: these were counted all along and never shown */
   const end = $(`<section class="end" style="display:flex;flex-direction:column;gap:12px">
     <img class="endart" alt="" src="${endArt(won)}">
     <span class="label">${esc(se.name)} · ${esc(se.location)}</span>
@@ -7320,6 +7324,7 @@ function renderEnd() {
       <div class="stat"><div class="label">Weight lost</div><div class="v">${loss}%</div></div>
       <div class="stat"><div class="label">Kcal a day</div><div class="v">${fmt(S.stats.kcal / Math.max(1, S.day))}</div></div></div>
     <p class="muted" style="margin:0">${[S.stats.bestCamp ? `Best camp: ${S.stats.bestCamp.text.charAt(0).toLowerCase() + S.stats.bestCamp.text.slice(1)} (day ${S.stats.bestCamp.day})` : E.shelterName(S) === 'No real shelter' ? 'No real shelter' : `Shelter: ${E.shelterName(S).toLowerCase()}`, S.stats.lost.includes('shelter fire') ? 'burned it down' : '', S.stats.walked ? `walked ${fmtDist(S.stats.walked)}` : '', caught ? `caught ${caught}` : ''].filter(Boolean).map(esc).join(' · ')}.</p>
+    <p class="muted" style="margin:0;font-size:13px">${esc(numbers)}.</p>
     ${rec.newBest || rec.newBadges.length ? `<div class="alerts">${rec.newBest ? '<span class="alert tone-big">New personal best</span>' : ''}${rec.newBadges.map(k => `<span class="alert tone-big">Badge: ${esc(BADGES.find(b => b[0] === k)[1])}</span>`).join('')}</div>` : ''}
     ${rec.opened && rec.opened.length ? `<div class="alerts">${rec.opened.map(g => `<span class="alert tone-big">New places open: ${esc(g.toLowerCase())}</span>`).join('')}</div>` : ''}
     ${S.opts && S.opts.budget ? `<p class="muted" style="margin:0">Budget kit: ${E.kitCost(S.gear)} of ${S.opts.budget} points.</p>` : ''}
