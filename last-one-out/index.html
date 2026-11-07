@@ -75,6 +75,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: .01e
 .item { text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: 9px; padding: 7px 9px; cursor: pointer; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .item[aria-pressed="true"] { background: var(--ember); color: var(--ember-ink); border-color: var(--ember); }
 .item[aria-pressed="true"] small { color: inherit; opacity: .8; }
+.item.variant { border-style: dashed; } .item.variant span::before { content: "↳ "; opacity: .55; } /* a kind of the item before it */
 .item span { font-weight: 700; font-size: 14px; }
 .item small { color: var(--muted); font-size: 11.5px; line-height: 1.3; }
 .rules { display: flex; gap: 6px; flex-wrap: wrap; margin: 2px 0 6px; } .rule { border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 999px; padding: 5px 12px; font-size: 13px; cursor: pointer; } .rule[aria-pressed="true"] { background: var(--ember); color: var(--ember-ink); border-color: var(--ember); }
@@ -393,6 +394,16 @@ const C = {
   carry: 28,                 // portions you can carry in one trip
 };
 const GEAR = Object.fromEntries(DATA.gear.map(g => [g.id, g]));
+/* Kit families. A family is the plain item (Knife) and its variants (Folding knife, Machete). has(s, 'Knife') is true for any of them;
+   kindsOf(s, 'Knife') says which you brought; VARIANT[id] holds what makes a variant different. Variants go on the end of the gear list,
+   so the ten most common items, and every existing item's behaviour, stay as they were. */
+const GEAR_FAMILY = {}, VARIANT = {};
+function addGear(base, list) { for (const v of list) { const g = { id: v.id, rate: v.rate ?? 0.01, effect: v.effect }; if (!GEAR[v.id]) { DATA.gear.push(g); GEAR[v.id] = g; } VARIANT[v.id] = Object.assign({ base }, v); if (base) (GEAR_FAMILY[base] || (GEAR_FAMILY[base] = [])).push(v.id); } }
+const kindsOf = (s, base) => [base, ...(GEAR_FAMILY[base] || [])].filter(id => s.gear.includes(id));
+const variantOf = (s, base) => { const k = kindsOf(s, base); return k.length ? (VARIANT[k[0]] || { id: k[0], base }) : null; }; /* the first one you brought; the plain item counts as itself */
+/* gear: tools and hunting */
+/* gear: camp and fire */
+/* gear: new kit and traps */
 // a season richer than the base gets half of it as better odds and half as bigger catches; a leaner one is simply scarcer
 function applyTune(se, t) { const odds = t > 1 ? Math.sqrt(t) : t; se.size = t > 1 ? Math.sqrt(t) : 1; for (const k in se.base) se.mult[k] = round1x(se.base[k] * (k === 'forage' ? t : odds)); }
 for (const se of DATA.seasons) { if (!se.base) se.base = { ...se.mult }; const tv = DATA.tune && DATA.tune[se.key]; const t = (typeof tv === 'object' ? tv.t : tv) || 1; se.harsh = (typeof tv === 'object' && tv.harsh) || 1; applyTune(se, t); }
@@ -410,7 +421,7 @@ function practicePlace() { if (PRACTICE) return PRACTICE; const all = DATA.seaso
   return PRACTICE; }
 function placeOf(key) { return key === PRACTICE_KEY ? practicePlace() : DATA.seasons.find(x => x.key === key); }
 function setTune(key, t, harsh) { const se = DATA.seasons.find(x => x.key === key); applyTune(se, t); if (harsh != null) se.harsh = harsh; }
-const has = (s, id) => s.gear.includes(id);
+const has = (s, id) => s.gear.includes(id) || !!(GEAR_FAMILY[id] && GEAR_FAMILY[id].some(v => s.gear.includes(v))); /* any of the family counts */
 const foundCount = (s, cls) => s.found.filter(f => f.cls === cls).length;
 const blade = s => has(s, 'Knife') || has(s, 'Multitool') || s.crafts.stoneblade >= 1; // a knapped stone blade cuts, but it is brittle
 const chopper = s => has(s, 'Axe') && !(s.sys && s.sys.axeOff); // no axe while its head is off
@@ -2492,8 +2503,8 @@ const GEAR_COST = { 'Gillnet': 12, 'Fishing gear': 4, 'Axe': 4, 'Sleeping bag': 
   'Paracord': 2, 'Sharpening stone': 2, 'Hammock': 2, 'Pot': 2, 'Ground sheet': 2, 'Ferro rod': 2,
   'Rations': 1, 'Multitool': 1, 'Soap': 1, 'Scotch eyed auger': 1, 'Trapping wire': 1, 'Shovel': 1, 'Salt': 1, 'Tarp': 1, 'Frying pan': 1, 'Wire': 1, 'Canteen': 1, 'Rope': 1, 'Slingshot': 1, 'Sunglasses': 1 };
 const BUDGET = 20;
-const gearCost = id => GEAR_COST[id] ?? 2; const kitCost = gear => gear.reduce((a, g) => a + gearCost(g), 0);
-const API = { campStock, jobHours, surplusPor, PRACTICE_KEY, placeOf, practicePlace, hydOf, waterNow, drinkUp, fishDepth, campSummary, shelterScores, bedDampOf, prevailOf, CAMP_FIXED, zoneOf, layoutNotes, kitchenMult, GEAR_COST, BUDGET, gearCost, kitCost, waterToday, note, sunny, sprayLeft, fallChance, climbAnchor, stalkNoise, fouling, latrineOk, raftOf, raftOk, flintOf, hasBow, bowPower, driftChance, bearings, wade, clothesOf, tomorrow, skyAcc, thinIce, potLike, clayPots, greenPots, bedWarmth, snowLoadOf, bedOf, lampOk, nightOk, haftOf, tinderDamp, fireOdds, sealOf, hasHearth, isDry, onStation, RACK_CAP, DRY_AT, dryDaysLeft, sysOf, cacheSign, low, matName, BIOMES, biomeOf, treeKind, realMedianOf: se => { const d = se.rivals.filter(r => r.days != null).map(r => r.days).sort((a, b) => a - b); return d[d.length >> 1]; }, WEIGHT, loadOf, carryCap, moveCampCost, moveCamp, collectSize, berryRipe, bushRipeDay, stockOf, stockWord, billFor, nightOk, NIGHT_OK, treeYield, treeNames, fishPool, sizeOf, SHELTERS, shelterOptions, chooseShelter, dropPlan, makeCamp, foundWreck, shelterName, canWorkInside, travel, activeWindows, windowOn, timeMult, weatherName, dayFrac, midday, setTune, DATA, C, MATS, ACTIONS, EVENTS, newGame, runDay, beginDay, act, endDay, choose, carryLoad, available, tapOut, placing, status, season, storeKcal, temperature, shelterLevel, SHELTER_NAMES, shelterBill, shelterMissing, matList, fishOdds, huntOdds, bowDrillOdds, dayHours, hoursLeft, phaseOf, lowTide, igniter, blade, cutter, chopper, hasRod, digger };
+const gearCost = id => GEAR_COST[id] ?? (VARIANT[id] && VARIANT[id].cost) ?? 2; const kitCost = gear => gear.reduce((a, g) => a + gearCost(g), 0);
+const API = { GEAR_FAMILY, VARIANT, kindsOf, variantOf, campStock, jobHours, surplusPor, PRACTICE_KEY, placeOf, practicePlace, hydOf, waterNow, drinkUp, fishDepth, campSummary, shelterScores, bedDampOf, prevailOf, CAMP_FIXED, zoneOf, layoutNotes, kitchenMult, GEAR_COST, BUDGET, gearCost, kitCost, waterToday, note, sunny, sprayLeft, fallChance, climbAnchor, stalkNoise, fouling, latrineOk, raftOf, raftOk, flintOf, hasBow, bowPower, driftChance, bearings, wade, clothesOf, tomorrow, skyAcc, thinIce, potLike, clayPots, greenPots, bedWarmth, snowLoadOf, bedOf, lampOk, nightOk, haftOf, tinderDamp, fireOdds, sealOf, hasHearth, isDry, onStation, RACK_CAP, DRY_AT, dryDaysLeft, sysOf, cacheSign, low, matName, BIOMES, biomeOf, treeKind, realMedianOf: se => { const d = se.rivals.filter(r => r.days != null).map(r => r.days).sort((a, b) => a - b); return d[d.length >> 1]; }, WEIGHT, loadOf, carryCap, moveCampCost, moveCamp, collectSize, berryRipe, bushRipeDay, stockOf, stockWord, billFor, nightOk, NIGHT_OK, treeYield, treeNames, fishPool, sizeOf, SHELTERS, shelterOptions, chooseShelter, dropPlan, makeCamp, foundWreck, shelterName, canWorkInside, travel, activeWindows, windowOn, timeMult, weatherName, dayFrac, midday, setTune, DATA, C, MATS, ACTIONS, EVENTS, newGame, runDay, beginDay, act, endDay, choose, carryLoad, available, tapOut, placing, status, season, storeKcal, temperature, shelterLevel, SHELTER_NAMES, shelterBill, shelterMissing, matList, fishOdds, huntOdds, bowDrillOdds, dayHours, hoursLeft, phaseOf, lowTide, igniter, blade, cutter, chopper, hasRod, digger };
 if (typeof module !== 'undefined') module.exports = API; else root.Engine = API;
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
@@ -2770,10 +2781,11 @@ function renderSetup() {
     s2.querySelector('#popular').onclick = () => { setup.gear = []; for (const id of POPULAR) if (setup.gear.length < 10 && fits(id)) setup.gear.push(id); drawGear(); count(); }; };
   const drawGear = () => {
     grid.replaceChildren();
-    for (const g of D.gear) {
+    const fam = E.GEAR_FAMILY, isVar = id => E.VARIANT[id] && E.VARIANT[id].base; const order = []; for (const g of D.gear) { if (isVar(g.id)) continue; order.push(g); for (const v of fam[g.id] || []) order.push(D.gear.find(x => x.id === v)); } /* variants sit under the item they are a kind of */
+    for (const g of order) {
       const on = setup.gear.includes(g.id);
       const c = E.gearCost(g.id); const out = !on && setup.budget && !fits(g.id);
-      const b = $(`<button class="item${out ? ' over' : ''}" data-id="${esc(g.id)}" aria-pressed="${on}"><span>${esc(gearName(g.id))} ${setup.budget ? `<small class="num cost" title="Points">${c} pt${c > 1 ? 's' : ''}</small>` : `<small class="num" title="Typical loadout frequency">${g.rate >= 0.5 ? 'Common' : g.rate >= 0.1 ? 'Uncommon' : 'Rare'}</small>`}</span><small>${esc(g.effect)}</small></button>`);
+      const b = $(`<button class="item${out ? ' over' : ''}${isVar(g.id) ? ' variant' : ''}" data-id="${esc(g.id)}" aria-pressed="${on}"><span>${esc(gearName(g.id))} ${setup.budget ? `<small class="num cost" title="Points">${c} pt${c > 1 ? 's' : ''}</small>` : `<small class="num" title="Typical loadout frequency">${g.rate >= 0.5 ? 'Common' : g.rate >= 0.1 ? 'Uncommon' : 'Rare'}</small>`}</span><small>${esc(g.effect)}</small></button>`);
       b.onclick = () => { if (on) setup.gear = setup.gear.filter(x => x !== g.id); else if (setup.gear.length < 10 && fits(g.id)) setup.gear.push(g.id); drawGear(); count(); };
       grid.append(b);
     }
