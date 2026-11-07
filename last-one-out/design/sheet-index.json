@@ -1,0 +1,1057 @@
+[
+ {
+  "n": 1,
+  "group": "Job icons",
+  "name": "fire"
+ },
+ {
+  "n": 2,
+  "group": "Job icons",
+  "name": "drop"
+ },
+ {
+  "n": 3,
+  "group": "Job icons",
+  "name": "axe"
+ },
+ {
+  "n": 4,
+  "group": "Job icons",
+  "name": "saw"
+ },
+ {
+  "n": 5,
+  "group": "Job icons",
+  "name": "pole"
+ },
+ {
+  "n": 6,
+  "group": "Job icons",
+  "name": "bough"
+ },
+ {
+  "n": 7,
+  "group": "Job icons",
+  "name": "bark"
+ },
+ {
+  "n": 8,
+  "group": "Job icons",
+  "name": "tinder"
+ },
+ {
+  "n": 9,
+  "group": "Job icons",
+  "name": "fish"
+ },
+ {
+  "n": 10,
+  "group": "Job icons",
+  "name": "hook"
+ },
+ {
+  "n": 11,
+  "group": "Job icons",
+  "name": "net"
+ },
+ {
+  "n": 12,
+  "group": "Job icons",
+  "name": "snare"
+ },
+ {
+  "n": 13,
+  "group": "Job icons",
+  "name": "bow"
+ },
+ {
+  "n": 14,
+  "group": "Job icons",
+  "name": "paw"
+ },
+ {
+  "n": 15,
+  "group": "Job icons",
+  "name": "knife"
+ },
+ {
+  "n": 16,
+  "group": "Job icons",
+  "name": "pot"
+ },
+ {
+  "n": 17,
+  "group": "Job icons",
+  "name": "leaf"
+ },
+ {
+  "n": 18,
+  "group": "Job icons",
+  "name": "berry"
+ },
+ {
+  "n": 19,
+  "group": "Job icons",
+  "name": "root"
+ },
+ {
+  "n": 20,
+  "group": "Job icons",
+  "name": "shroom"
+ },
+ {
+  "n": 21,
+  "group": "Job icons",
+  "name": "stone"
+ },
+ {
+  "n": 22,
+  "group": "Job icons",
+  "name": "moss"
+ },
+ {
+  "n": 23,
+  "group": "Job icons",
+  "name": "clay"
+ },
+ {
+  "n": 24,
+  "group": "Job icons",
+  "name": "tent"
+ },
+ {
+  "n": 25,
+  "group": "Job icons",
+  "name": "hammer"
+ },
+ {
+  "n": 26,
+  "group": "Job icons",
+  "name": "moon"
+ },
+ {
+  "n": 27,
+  "group": "Job icons",
+  "name": "heart"
+ },
+ {
+  "n": 28,
+  "group": "Job icons",
+  "name": "eye"
+ },
+ {
+  "n": 29,
+  "group": "Job icons",
+  "name": "compass"
+ },
+ {
+  "n": 30,
+  "group": "Job icons",
+  "name": "cord"
+ },
+ {
+  "n": 31,
+  "group": "Job icons",
+  "name": "rain"
+ },
+ {
+  "n": 32,
+  "group": "Job icons",
+  "name": "snow"
+ },
+ {
+  "n": 33,
+  "group": "Job icons",
+  "name": "spade"
+ },
+ {
+  "n": 34,
+  "group": "Job icons",
+  "name": "hide"
+ },
+ {
+  "n": 35,
+  "group": "Job icons",
+  "name": "sky"
+ },
+ {
+  "n": 36,
+  "group": "Job icons",
+  "name": "book"
+ },
+ {
+  "n": 37,
+  "group": "Job icons",
+  "name": "dot"
+ },
+ {
+  "n": 38,
+  "group": "Top buttons",
+  "name": "map"
+ },
+ {
+  "n": 39,
+  "group": "Top buttons",
+  "name": "pack"
+ },
+ {
+  "n": 40,
+  "group": "Top buttons",
+  "name": "menu"
+ },
+ {
+  "n": 41,
+  "group": "Tool belt",
+  "name": "camp"
+ },
+ {
+  "n": 42,
+  "group": "Tool belt",
+  "name": "fire"
+ },
+ {
+  "n": 43,
+  "group": "Tool belt",
+  "name": "gather"
+ },
+ {
+  "n": 44,
+  "group": "Tool belt",
+  "name": "knife"
+ },
+ {
+  "n": 45,
+  "group": "Tool belt",
+  "name": "wood"
+ },
+ {
+  "n": 46,
+  "group": "Tool belt",
+  "name": "fish"
+ },
+ {
+  "n": 47,
+  "group": "Tool belt",
+  "name": "hunt"
+ },
+ {
+  "n": 48,
+  "group": "Tool belt",
+  "name": "traps"
+ },
+ {
+  "n": 49,
+  "group": "Top bar",
+  "name": "d"
+ },
+ {
+  "n": 50,
+  "group": "Top bar",
+  "name": "w"
+ },
+ {
+  "n": 51,
+  "group": "Top bar",
+  "name": "h"
+ },
+ {
+  "n": 52,
+  "group": "Top bar",
+  "name": "m"
+ },
+ {
+  "n": 53,
+  "group": "Top bar",
+  "name": "f"
+ },
+ {
+  "n": 54,
+  "group": "Things you pick up",
+  "name": "bark"
+ },
+ {
+  "n": 55,
+  "group": "Things you pick up",
+  "name": "berry"
+ },
+ {
+  "n": 56,
+  "group": "Things you pick up",
+  "name": "bough"
+ },
+ {
+  "n": 57,
+  "group": "Things you pick up",
+  "name": "grub"
+ },
+ {
+  "n": 58,
+  "group": "Things you pick up",
+  "name": "leaf"
+ },
+ {
+  "n": 59,
+  "group": "Things you pick up",
+  "name": "moss"
+ },
+ {
+  "n": 60,
+  "group": "Things you pick up",
+  "name": "root"
+ },
+ {
+  "n": 61,
+  "group": "Things you pick up",
+  "name": "shell"
+ },
+ {
+  "n": 62,
+  "group": "Things you pick up",
+  "name": "stone"
+ },
+ {
+  "n": 63,
+  "group": "Things you pick up",
+  "name": "tinder"
+ },
+ {
+  "n": 64,
+  "group": "Things you pick up",
+  "name": "weed"
+ },
+ {
+  "n": 65,
+  "group": "Things you pick up",
+  "name": "worm"
+ },
+ {
+  "n": 66,
+  "group": "Materials at camp",
+  "name": "poles"
+ },
+ {
+  "n": 67,
+  "group": "Materials at camp",
+  "name": "logs"
+ },
+ {
+  "n": 68,
+  "group": "Materials at camp",
+  "name": "boughs"
+ },
+ {
+  "n": 69,
+  "group": "Materials at camp",
+  "name": "moss"
+ },
+ {
+  "n": 70,
+  "group": "Materials at camp",
+  "name": "bark"
+ },
+ {
+  "n": 71,
+  "group": "Materials at camp",
+  "name": "cord"
+ },
+ {
+  "n": 72,
+  "group": "Animals",
+  "name": "grouse"
+ },
+ {
+  "n": 73,
+  "group": "Animals",
+  "name": "duck"
+ },
+ {
+  "n": 74,
+  "group": "Animals",
+  "name": "squirrel"
+ },
+ {
+  "n": 75,
+  "group": "Animals",
+  "name": "smallbird"
+ },
+ {
+  "n": 76,
+  "group": "Animals",
+  "name": "hare"
+ },
+ {
+  "n": 77,
+  "group": "Animals",
+  "name": "pademelon"
+ },
+ {
+  "n": 78,
+  "group": "Animals",
+  "name": "possum"
+ },
+ {
+  "n": 79,
+  "group": "Animals",
+  "name": "porcupine"
+ },
+ {
+  "n": 80,
+  "group": "Animals",
+  "name": "beaver"
+ },
+ {
+  "n": 81,
+  "group": "Animals",
+  "name": "deer"
+ },
+ {
+  "n": 82,
+  "group": "Animals",
+  "name": "moose"
+ },
+ {
+  "n": 83,
+  "group": "Animals",
+  "name": "muskox"
+ },
+ {
+  "n": 84,
+  "group": "Animals",
+  "name": "warthog"
+ },
+ {
+  "n": 85,
+  "group": "Animals",
+  "name": "snake"
+ },
+ {
+  "n": 86,
+  "group": "Animals",
+  "name": "muskrat"
+ },
+ {
+  "n": 87,
+  "group": "Animals",
+  "name": "weasel"
+ },
+ {
+  "n": 88,
+  "group": "Animals",
+  "name": "marten"
+ },
+ {
+  "n": 89,
+  "group": "Animals",
+  "name": "fox"
+ },
+ {
+  "n": 90,
+  "group": "Animals",
+  "name": "wolverine"
+ },
+ {
+  "n": 91,
+  "group": "Animals",
+  "name": "crab"
+ },
+ {
+  "n": 92,
+  "group": "Animals",
+  "name": "mouse"
+ },
+ {
+  "n": 93,
+  "group": "Animals",
+  "name": "ptarmigan"
+ },
+ {
+  "n": 94,
+  "group": "Animals",
+  "name": "goose"
+ },
+ {
+  "n": 95,
+  "group": "Animals",
+  "name": "guineafowl"
+ },
+ {
+  "n": 96,
+  "group": "Animals",
+  "name": "hyrax"
+ },
+ {
+  "n": 97,
+  "group": "Animals",
+  "name": "springhare"
+ },
+ {
+  "n": 98,
+  "group": "Animals",
+  "name": "wallaby"
+ },
+ {
+  "n": 99,
+  "group": "Animals",
+  "name": "hare_eu"
+ },
+ {
+  "n": 100,
+  "group": "Animals",
+  "name": "otter"
+ },
+ {
+  "n": 101,
+  "group": "Animals",
+  "name": "chipmunk"
+ },
+ {
+  "n": 102,
+  "group": "Animals",
+  "name": "roedeer"
+ },
+ {
+  "n": 103,
+  "group": "Animals",
+  "name": "reddeer"
+ },
+ {
+  "n": 104,
+  "group": "Animals",
+  "name": "elk"
+ },
+ {
+  "n": 105,
+  "group": "Animals",
+  "name": "caribou"
+ },
+ {
+  "n": 106,
+  "group": "Animals",
+  "name": "boar"
+ },
+ {
+  "n": 107,
+  "group": "Animals",
+  "name": "springbok"
+ },
+ {
+  "n": 108,
+  "group": "Animals",
+  "name": "bear"
+ },
+ {
+  "n": 109,
+  "group": "Animals",
+  "name": "carcass (small)"
+ },
+ {
+  "n": 110,
+  "group": "Animals",
+  "name": "carcass (big)"
+ },
+ {
+  "n": 111,
+  "group": "Animals",
+  "name": "carcass, dressed"
+ },
+ {
+  "n": 112,
+  "group": "People",
+  "name": "you"
+ },
+ {
+  "n": 113,
+  "group": "People",
+  "name": "you, wet"
+ },
+ {
+  "n": 114,
+  "group": "People",
+  "name": "sitting"
+ },
+ {
+  "n": 115,
+  "group": "Trees",
+  "name": "snag"
+ },
+ {
+  "n": 116,
+  "group": "Trees",
+  "name": "birch"
+ },
+ {
+  "n": 117,
+  "group": "Trees",
+  "name": "spruce"
+ },
+ {
+  "n": 118,
+  "group": "Trees",
+  "name": "pine"
+ },
+ {
+  "n": 119,
+  "group": "Trees",
+  "name": "log"
+ },
+ {
+  "n": 120,
+  "group": "Trees",
+  "name": "alder"
+ },
+ {
+  "n": 121,
+  "group": "Trees",
+  "name": "aspen"
+ },
+ {
+  "n": 122,
+  "group": "Trees",
+  "name": "beech"
+ },
+ {
+  "n": 123,
+  "group": "Trees",
+  "name": "dwarfbirch"
+ },
+ {
+  "n": 124,
+  "group": "Trees",
+  "name": "mtnbirch"
+ },
+ {
+  "n": 125,
+  "group": "Trees",
+  "name": "myrtle"
+ },
+ {
+  "n": 126,
+  "group": "Trees",
+  "name": "willow"
+ },
+ {
+  "n": 127,
+  "group": "Trees",
+  "name": "snag, young"
+ },
+ {
+  "n": 128,
+  "group": "Trees",
+  "name": "snag, autumn"
+ },
+ {
+  "n": 129,
+  "group": "Trees",
+  "name": "snag, snow"
+ },
+ {
+  "n": 130,
+  "group": "Trees",
+  "name": "birch, young"
+ },
+ {
+  "n": 131,
+  "group": "Trees",
+  "name": "birch, autumn"
+ },
+ {
+  "n": 132,
+  "group": "Trees",
+  "name": "birch, snow"
+ },
+ {
+  "n": 133,
+  "group": "Trees",
+  "name": "spruce, young"
+ },
+ {
+  "n": 134,
+  "group": "Trees",
+  "name": "spruce, autumn"
+ },
+ {
+  "n": 135,
+  "group": "Trees",
+  "name": "spruce, snow"
+ },
+ {
+  "n": 136,
+  "group": "Trees",
+  "name": "pine, young"
+ },
+ {
+  "n": 137,
+  "group": "Trees",
+  "name": "pine, autumn"
+ },
+ {
+  "n": 138,
+  "group": "Trees",
+  "name": "pine, snow"
+ },
+ {
+  "n": 139,
+  "group": "Bushes",
+  "name": "berries, green"
+ },
+ {
+  "n": 140,
+  "group": "Bushes",
+  "name": "berries, ripe"
+ },
+ {
+  "n": 141,
+  "group": "Bushes",
+  "name": "berries, over"
+ },
+ {
+  "n": 142,
+  "group": "Bushes",
+  "name": "berries, used"
+ },
+ {
+  "n": 143,
+  "group": "Bushes",
+  "name": "berries, snow"
+ },
+ {
+  "n": 144,
+  "group": "Bushes",
+  "name": "rosehips"
+ },
+ {
+  "n": 145,
+  "group": "Plants",
+  "name": "greens"
+ },
+ {
+  "n": 146,
+  "group": "Plants",
+  "name": "nettle"
+ },
+ {
+  "n": 147,
+  "group": "Plants",
+  "name": "roots"
+ },
+ {
+  "n": 148,
+  "group": "Plants",
+  "name": "cattail"
+ },
+ {
+  "n": 149,
+  "group": "Plants",
+  "name": "seeds"
+ },
+ {
+  "n": 150,
+  "group": "Plants",
+  "name": "mushrooms"
+ },
+ {
+  "n": 151,
+  "group": "Plants",
+  "name": "moss"
+ },
+ {
+  "n": 152,
+  "group": "Plants",
+  "name": "fern"
+ },
+ {
+  "n": 153,
+  "group": "Mushrooms",
+  "name": "honey-coloured clusters on a stump"
+ },
+ {
+  "n": 154,
+  "group": "Mushrooms",
+  "name": "orange cap, pale gills, bruises blue"
+ },
+ {
+  "n": 155,
+  "group": "Mushrooms",
+  "name": "white cap, white gills, a cup at the base"
+ },
+ {
+  "n": 156,
+  "group": "Mushrooms",
+  "name": "grey cap, spongy underside"
+ },
+ {
+  "n": 157,
+  "group": "Mushrooms",
+  "name": "red cap with white flecks"
+ },
+ {
+  "n": 158,
+  "group": "Mushrooms",
+  "name": "small tan caps on a long stem"
+ },
+ {
+  "n": 159,
+  "group": "Mushrooms",
+  "name": "a pitted, honeycombed cap on a pale stem"
+ },
+ {
+  "n": 160,
+  "group": "Mushrooms",
+  "name": "a folded, brain-like cap on a pale stem"
+ },
+ {
+  "n": 161,
+  "group": "Shelters",
+  "name": "tarp"
+ },
+ {
+  "n": 162,
+  "group": "Shelters",
+  "name": "lean-to"
+ },
+ {
+  "n": 163,
+  "group": "Shelters",
+  "name": "debris hut"
+ },
+ {
+  "n": 164,
+  "group": "Shelters",
+  "name": "rock shelter"
+ },
+ {
+  "n": 165,
+  "group": "Shelters",
+  "name": "cabin"
+ },
+ {
+  "n": 166,
+  "group": "Shelters",
+  "name": "snow cave"
+ },
+ {
+  "n": 167,
+  "group": "Shelters",
+  "name": "bough bed"
+ },
+ {
+  "n": 168,
+  "group": "Camp",
+  "name": "fire ring"
+ },
+ {
+  "n": 169,
+  "group": "Camp",
+  "name": "fire ring, big"
+ },
+ {
+  "n": 170,
+  "group": "Camp",
+  "name": "flame"
+ },
+ {
+  "n": 171,
+  "group": "Camp",
+  "name": "pot"
+ },
+ {
+  "n": 172,
+  "group": "Camp",
+  "name": "woodpile"
+ },
+ {
+  "n": 173,
+  "group": "Camp",
+  "name": "woodshed"
+ },
+ {
+  "n": 174,
+  "group": "Camp",
+  "name": "smoker"
+ },
+ {
+  "n": 175,
+  "group": "Camp",
+  "name": "drying rack"
+ },
+ {
+  "n": 176,
+  "group": "Camp",
+  "name": "food cache"
+ },
+ {
+  "n": 177,
+  "group": "Camp",
+  "name": "raw catch"
+ },
+ {
+  "n": 178,
+  "group": "Camp",
+  "name": "quarter of meat"
+ },
+ {
+  "n": 179,
+  "group": "Camp",
+  "name": "hung meat"
+ },
+ {
+  "n": 180,
+  "group": "Camp",
+  "name": "kitchen"
+ },
+ {
+  "n": 181,
+  "group": "Camp",
+  "name": "latrine"
+ },
+ {
+  "n": 182,
+  "group": "Camp",
+  "name": "clothes drying"
+ },
+ {
+  "n": 183,
+  "group": "Camp",
+  "name": "raided camp"
+ },
+ {
+  "n": 184,
+  "group": "Camp",
+  "name": "cairn"
+ },
+ {
+  "n": 185,
+  "group": "Landmarks",
+  "name": "pine"
+ },
+ {
+  "n": 186,
+  "group": "Landmarks",
+  "name": "boulder"
+ },
+ {
+  "n": 187,
+  "group": "Landmarks",
+  "name": "knoll"
+ },
+ {
+  "n": 188,
+  "group": "Landmarks",
+  "name": "stone"
+ },
+ {
+  "n": 189,
+  "group": "Landmarks",
+  "name": "blaze"
+ },
+ {
+  "n": 190,
+  "group": "Landmarks",
+  "name": "boulder (small)"
+ },
+ {
+  "n": 191,
+  "group": "Beach debris",
+  "name": "debris 1"
+ },
+ {
+  "n": 192,
+  "group": "Beach debris",
+  "name": "debris 2"
+ },
+ {
+  "n": 193,
+  "group": "Beach debris",
+  "name": "debris 3"
+ },
+ {
+  "n": 194,
+  "group": "Badges",
+  "name": "First fire"
+ },
+ {
+  "n": 195,
+  "group": "Badges",
+  "name": "One week"
+ },
+ {
+  "n": 196,
+  "group": "Badges",
+  "name": "Thirty days"
+ },
+ {
+  "n": 197,
+  "group": "Badges",
+  "name": "Sixty days"
+ },
+ {
+  "n": 198,
+  "group": "Badges",
+  "name": "Netter"
+ },
+ {
+  "n": 199,
+  "group": "Badges",
+  "name": "Smokehouse"
+ },
+ {
+  "n": 200,
+  "group": "Badges",
+  "name": "Cabin"
+ },
+ {
+  "n": 201,
+  "group": "Badges",
+  "name": "Big game"
+ },
+ {
+  "n": 202,
+  "group": "Badges",
+  "name": "Stood your ground"
+ },
+ {
+  "n": 203,
+  "group": "Badges",
+  "name": "Beachcomber"
+ },
+ {
+  "n": 204,
+  "group": "Badges",
+  "name": "Top three"
+ },
+ {
+  "n": 205,
+  "group": "Badges",
+  "name": "Last one out"
+ },
+ {
+  "n": 206,
+  "group": "Badges",
+  "name": "All seasons"
+ },
+ {
+  "n": 207,
+  "group": "Badges",
+  "name": "Stone walls"
+ },
+ {
+  "n": 208,
+  "group": "Badges",
+  "name": "Burned out"
+ },
+ {
+  "n": 209,
+  "group": "Badges",
+  "name": "Ten kilometres"
+ },
+ {
+  "n": 210,
+  "group": "Badges",
+  "name": "River crosser"
+ },
+ {
+  "n": 211,
+  "group": "Badges",
+  "name": "Trapline"
+ }
+]
