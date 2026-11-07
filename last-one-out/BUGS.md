@@ -234,6 +234,7 @@ Checked and left as they are: a wrong-sized snare is still set (it catches less,
 | 172 | Stitching with no pad on screen could throw; painted rooms piled up in memory | Guarded; only the latest few rooms are kept |
 | 173 | The wreck gave nothing; Records did not show it or a finished Camping; mid-build the job still said "Build shelter"; picking things up had no keyboard path | Wire, cable and a pot from the wreck; both in Records; the job names the build; Pick up the nearest, or walk over them |
 | 174 | A job whose time read "½ h" got the time added a second time | Half hours are read as times |
+| 175 | Feeding a smoker that was already going took a flat hour and a half, the same as cutting and hanging a full load | Half an hour to feed it; hanging takes about six minutes a portion |
 
 ### Test-side problems (not game bugs)
 
@@ -280,3 +281,5 @@ The full test bot, 1,020 games, against the original game: median 56 → 56 days
 After the water fixes (Nov 3): median 56 → 56 days (0.0%), mean 56.4 → 56.1 (−0.5%).
 
 After the gear-simulation fixes (Nov 3), with the better test bot on both: median 62 → 62 days (0.0%), mean 61.7 → 60.8 (−1.5%). The dry desert site moved because the bot now hauls water (see above); the two lake sites that moved about 11% (US-S10, AU-S3) had moved before the water fixes.
+
+Preserving pass (Nov 7): the test bot smoked nearly everything it caught and tended the smoker daily, about an hour a day, which cost it 210 kcal a day of fishing and hunting to save 40 kcal a day of spoilage. With the shorter smoker chore and a bot that keeps only what it cannot eat before it turns (and builds a rack or smoker only then), preserving is worth about 1% more days overall instead of 5% fewer. Reference re-recorded with this bot on the original game: median 67 → 65 days (−3.0%), mean 65.5 → 63.7 (−2.7%).

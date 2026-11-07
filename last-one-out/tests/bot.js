@@ -42,16 +42,19 @@ function makeBot(E, s, opts = {}) {
     if (s.firewood < 6) pri.push('firewood');
     if (s.shelterLvl < 3) { pri.push('shelter'); const miss = (E.shelterMissing(s) || []).join(' '); const need = { stone: ['stones'], cordage: ['cordage', 'bark'], pole: ['cut_poles'], bough: ['boughs'], log: ['cut_logs'], moss: ['moss'], bark: ['bark'] }; for (const [w, acts] of Object.entries(need)) if (miss.includes(w)) pri.push(...acts); } /* gather what the chosen shelter still needs */
     if (s.carcass) pri.push('dress');
-    if (s.raw.length) pri.push('clean', 'cook', 'smoke');
+    if (s.raw.length) pri.push('clean', 'cook');
     if (s.sys && s.sys.offal >= 1) pri.push('bury');
     if (s.sys && s.sys.taint > 0) pri.push('scrub');
+    // preserve only a real surplus: fresh meat and fish that will turn before it can be eaten (worked out here, so the bot plays the same on any version)
+    const kc = id => E.DATA.foods[id].kcal; const freshList = s.stores.filter(x => !x.smoked && !x.dried && !x.where && ['fish', 'game', 'organ'].includes(E.DATA.foods[x.id].kind)).sort((a, b) => a.left - b.left);
+    let eaten = s.stores.filter(x => !freshList.includes(x) && !x.where && x.left < 6).reduce((a, x) => a + x.por * kc(x.id), 0), spare = 0; const perDay = 2600 * ({ full: 1, moderate: 0.7, lean: 0.4 }[s.ration] || 1);
+    for (const x of freshList) { const k = x.por * kc(x.id); const keep = Math.min(k, Math.max(0, (x.left + 0.5) * perDay - eaten)); eaten += keep; spare += (k - keep) / kc(x.id); }
+    const keepWant = spare >= 2 || !!(s.carcass && s.carcass.big) || s.stores.some(x => x.where); /* a rack or smoker is worth its poles once there is meat to spare */
     // build each camp item once when it becomes possible, then use it
-    for (const c of ['craft_reflector', 'craft_platform', 'craft_hearth', ...(s.crafts.smoker >= 2 ? [] : ['craft_rack']), 'craft_smoker', 'craft_cache', 'craft_handline', 'craft_hooks', 'craft_fishtrap', 'craft_woodshed', 'craft_net', 'craft_stove', 'craft_snowshoes', 'craft_mittens']) if (s.day > 3) pri.push(c); // the engine says 'Built' once a craft is finished
+    for (const c of ['craft_reflector', 'craft_platform', 'craft_hearth', ...(keepWant ? [...(s.crafts.smoker >= 2 ? [] : ['craft_rack']), 'craft_smoker'] : []), 'craft_cache', 'craft_handline', 'craft_hooks', 'craft_fishtrap', 'craft_woodshed', 'craft_net', 'craft_stove', 'craft_snowshoes', 'craft_mittens']) if (s.day > 3) pri.push(c); // the engine says 'Built' once a craft is finished
     /* gather what the camp items still lack (poles for the rack and smoker, boughs for the woodshed...) */
-    if (s.day > 3) { const want = new Set(); for (const c of ['craft_platform', 'craft_rack', 'craft_smoker', 'craft_fishtrap', 'craft_woodshed']) { const w = E.available(s, c).why || ''; if (/^Needs/.test(w)) for (const [k, acts] of [['pole', ['cut_poles']], ['bough', ['boughs']], ['log', ['cut_logs']], ['moss', ['moss']], ['cordage', ['cordage', 'bark']], ['stone', ['stones']], ['bark', ['bark']]]) if (w.includes(k)) acts.forEach(x => want.add(x)); } pri.push(...want); }
-    // preserve only a real surplus: a few portions of fresh meat beyond what spoils first
-    const fresh = s.stores.filter(x => !x.smoked && !x.dried && !x.where && ['fish', 'game', 'organ'].includes(E.DATA.foods[x.id].kind)).reduce((a, x) => a + x.por, 0);
-    if (fresh >= 3) pri.push(s.crafts.smoker >= 2 ? 'smoke' : 'dry_food'); // one station at a time: the smoker once it is built, the rack until then
+    if (s.day > 3) { const want = new Set(); for (const c of ['craft_platform', ...(keepWant ? ['craft_rack', 'craft_smoker'] : []), 'craft_fishtrap', 'craft_woodshed']) { const w = E.available(s, c).why || ''; if (/^Needs/.test(w)) for (const [k, acts] of [['pole', ['cut_poles']], ['bough', ['boughs']], ['log', ['cut_logs']], ['moss', ['moss']], ['cordage', ['cordage', 'bark']], ['stone', ['stones']], ['bark', ['bark']]]) if (w.includes(k)) acts.forEach(x => want.add(x)); } pri.push(...want); }
+    if (spare >= 2) pri.push(s.crafts.smoker >= 2 ? 'smoke' : 'dry_food'); // one station at a time: the smoker once it is built, the rack until then
     if (s.stores.filter(x => x.where === 'smoker').reduce((a, x) => a + x.por, 0) >= 2) pri.push('smoke'); // tend it
     if (s.stores.some(x => x.id === 'fat' && !x.rendered)) pri.push('render_fat');
     if ((s.sys && s.sys.snowLoad) > 1.5) pri.unshift('clear_roof');

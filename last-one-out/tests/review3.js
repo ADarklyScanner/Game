@@ -17,6 +17,13 @@ function base() { const s = E.newGame('US-S6', KIT, { seed: 41, weight: 200 }); 
   check('the wreck gives wire, cordage and a pot', t.mats.wire === w0 + 6 && (t.containers || 0) === c0 + 1, [t.mats.wire, t.containers]);
   const again = E.foundWreck(t); check('but only the first time', t.mats.wire === w0 + 6 && again.length === 1, t.mats.wire);
   const u = base(); u.hours = 2; E.act(u, 'hunt', { extra: { spooked: true, hit: 'none' } }); check('a stalk that spooked everything brings nothing home', !u.carcass);
+  { // the balance pass: the smoker is a short chore once it is going, hanging goes by how much, and only a real surplus is worth keeping
+    const k = base(); k.crafts.smoker = 2; k.fire = true; k.firewood = 5; k.stores = [{ id: 'trout', por: 3, left: 4, where: 'smoker', moist: 0.5, smoke: 0.5 }];
+    check('feeding a smoker that is already going takes half an hour', E.jobHours(k, 'smoke') === 0.5, E.jobHours(k, 'smoke'));
+    k.stores.push({ id: 'trout', por: 3, left: 4 }); check('hanging three portions takes under an hour', E.jobHours(k, 'smoke') === 0.8, E.jobHours(k, 'smoke'));
+    const h0 = k.hours; E.act(k, 'smoke'); check('and the clock agrees', Math.abs(k.hours - h0 - 0.8) < 0.05, k.hours - h0);
+    const q = base(); q.stores = [{ id: 'trout', por: 2, left: 3 }]; check('two days of fish is no surplus', E.surplusPor(q) === 0, E.surplusPor(q));
+    const mo = Object.keys(E.DATA.foods).find(f => E.DATA.foods[f].big); q.stores = [{ id: mo, por: 200, left: 3 }]; check('a big kill is a surplus', E.surplusPor(q) > 100, E.surplusPor(q)); }
   const c = E.newGame(E.PRACTICE_KEY, ['Knife', 'Ferro rod'], { seed: 3, weight: 200 }); check('the camping site has a can to carry and boil water in', (c.containers || 0) >= 1, c.containers);
 }
 (async () => {
