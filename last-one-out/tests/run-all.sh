@@ -34,5 +34,6 @@ node unlocks.js
 node oldsave.js
 node minis.js
 node camping.js
+node review3.js
 node selfcheck.js
 echo "Everything passed."

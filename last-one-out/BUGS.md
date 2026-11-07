@@ -220,6 +220,19 @@ Checked and left as they are: a wrong-sized snare is still set (it catches less,
 | 158 | "Hands remember" gave no head start on knapping, coiling, netting, pemmican, scraping or shingling | It does now |
 | 159 | The cabin's first three sessions were the same job | Sill logs, notched walls, the roof, then chinking |
 | 160 | Dead code: an empty block on a never-set field, an unread counter, an unread view variable, checks for gear that does not exist | Removed |
+| 161 | Floating +/- numbers went over the wrong vitals (food on will, will on water) since water was added | Each float finds its vital by name; water gets its own float |
+| 162 | Sitting inside, a tap on the world still walked you about | No walking while inside; going in drops any walk target |
+| 163 | Inside, a job's result never showed (the toast drew into the hidden world) | Shown as a banner when inside |
+| 164 | Beach debris you walked up to was never taken, and "Pick it up" rolled the normal shore odds | Picking it up is a sure find in half an hour, and that piece is gone |
+| 165 | Turning in early from the More... sheet skipped the "are you sure" | The sheet asks for a second tap |
+| 166 | The weight chart's limit line was always at 70%, not the site's real medical limit | Drawn at the real limit |
+| 167 | A three-session cabin skipped the roof | Stages spread over the sessions: sill, roof, chink |
+| 168 | Stalking the trail drew the bow at nothing | A creep up the trail first: dry patches to step over, wind shown; a quiet stalk turns up an animal and a better shot, a noisy one spooks everything |
+| 169 | Camping lessons asked for jobs your kit could not do | An old billy can at the site; a lesson says what is missing |
+| 170 | The job buttons were worked out every frame | A few times a second |
+| 171 | "½ h" was not shown as a time chip | It is |
+| 172 | Stitching with no pad on screen could throw; painted rooms piled up in memory | Guarded; only the latest few rooms are kept |
+| 173 | The wreck gave nothing; Records did not show it or a finished Camping; mid-build the job still said "Build shelter"; picking things up had no keyboard path | Wire, cable and a pot from the wreck; both in Records; the job names the build; Pick up the nearest, or walk over them |
 
 ### Test-side problems (not game bugs)
 

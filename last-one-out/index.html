@@ -501,7 +501,7 @@ function newGame(seasonKey, gear, opts = {}) {
   s.replaced = drop ? drop.name : ''; s.rivalsV = 1;
   s.rivals = roster.filter(r => r !== drop).map(r => ({ name: r.name, days: r.days, reason: r.reason, place: r.place, out: false }));
   s.winDay = season.winDay ?? Math.max(...s.rivals.map(r => r.days)) + 1;
-  if (season.practice) { s.practice = true; s.everDone = {}; logDay(s, 0, [['Camping in the practice valley. Everything is close and comes back quickly. Take your time and learn each job.', 'info']]); return s; }
+  if (season.practice) { s.practice = true; s.everDone = {}; s.containers = Math.max(1, s.containers || 0); /* an old billy can left at the site */ logDay(s, 0, [['Camping in the practice valley. Everything is close and comes back quickly. Take your time and learn each job.', 'info']]); return s; }
   logDay(s, 0, [[`Dropped at ${season.location}. ${s.rivals.length} others are out here somewhere.`, 'info']]);
   return s;
 }
@@ -1326,7 +1326,7 @@ function act(s, id, opts = {}) {
   if (s.phase > 2 && !nightOk(s, id)) return [];
   const lines = []; const av = available(s, id); const A = ACTIONS[id];
   if (!av.ok) { lines.push([`Couldn't ${A.label.toLowerCase()}: ${av.why.toLowerCase()}.`, 'muted']); return lines; }
-  const h = (id === 'hunt' && opts.extra && opts.extra.target ? 1.25 : A.hours) /* a shot at an animal you walked up to: the last of the stalk and the shot, not a whole blind hunt */ * (s.health < 40 ? 1.25 : 1) * (s.sys && s.sys.dry ? 1.25 : 1); /* thirst slows every job */
+  const h = (id === 'hunt' && opts.extra && opts.extra.target ? 1.25 : id === 'search' && opts.extra && opts.extra.debris ? 0.5 : A.hours) /* a shot at an animal you walked up to: the last of the stalk and the shot, not a whole blind hunt */ * (s.health < 40 ? 1.25 : 1) * (s.sys && s.sys.dry ? 1.25 : 1); /* thirst slows every job */
   if ((s.rain || s.storm) && !opts.inside && !['inside', 'camp'].includes(A.where)) s.wet = Math.min(1, s.wet + (s.storm ? 0.2 : 0.12) * h);
   if ((s.rain || s.storm) && opts.inside) s.morale += 0.5;
   const atNight = s.phase === 3; if (atNight) { s.nightHours = round1((s.nightHours || 0) + h); const lamp = lampOk(s) && (!s.fire || (!!opts.inside && !s.fireInside)) && !['light_fire', 'tend_fire'].includes(id); if (lamp) burnLamp(s, h, lines, !!opts.inside); else s.morale -= 0.3 * h; } // steady lamplight takes the strain out of night work
@@ -1436,7 +1436,7 @@ function doAction(s, id, lines, mod, opts) {
       let p;
       const crooked = bow && s.sys && s.sys.crooked ? Math.min(1, Math.min(s.sys.crooked, s.arrows) / s.arrows) : 0; // a crooked shaft flies wide
       if (X.target) { p = { good: bow ? 0.82 : 0.6, poor: bow ? 0.55 : 0.4, miss: 0.04, none: 0 }[X.hit || 'none'] * (big ? (bow ? 0.75 : 0.02) : 1) /* a slingshot stone stings a moose; it does not bring one down */ * Math.min(1.15, s.skill.hunt) * (1 - 0.3 * crooked) * (bow ? bowPower(s) : 1); if (s.health < 40) p *= 0.85; const smoked = s.sys && s.sys.smokeDay != null && s.day - s.sys.smokeDay <= 1; if (X.scent === 'down') p *= smoked ? 0.8 : 0.6; else if (smoked) p *= 1.05; if (X.scent === 'up') p *= 1.15; p *= 0.5 + 0.5 * stalkNoise(s); }
-      else p = huntOdds(s) * mod * (1 - 0.3 * crooked);
+      else p = X.spooked ? 0 : huntOdds(s) * mod * (1 - 0.3 * crooked); /* a stalk that crashed in finds nothing */
       const killed = chance(s, p);
       if (killed && (big || (!X.target && bow && se.big.length && chance(s, 0.0022 * se.mult.hunt)))) {
         const id2 = big ? X.target : se.big[Math.floor(rnd(s) * se.big.length)];
@@ -1708,7 +1708,7 @@ function doAction(s, id, lines, mod, opts) {
       if (has(s, 'Sharpening stone')) { s.axeEdge = 1; lines.push(['Put a fresh edge on the axe.', 'info']); } else { s.axeEdge = Math.max(s.axeEdge, 0.75); lines.push(['Honed the axe on a flat river stone, wet. A working edge, not a fine one.', 'info']); } break; }
     case 'fix_axe': { const sys = sysOf(s); const wrap = s.mats.hide >= 1; if (wrap) s.mats.hide -= 1; sys.wrapped = wrap; sys.haft = wrap ? 1 : 0.8; sys.axeOff = false; lines.push([wrap ? 'Carved a hardwood wedge, drove it into the eye and bound the neck in a strip of wet rawhide. It will shrink tight as it dries.' : 'Carved a new hardwood wedge and drove it into the eye. The head is tight again, for now.', 'good']); break; }
     case 'search': {
-      const p = se.found.rate * Math.pow(0.82, s.stats.found) * (mod || 1) * (X.cover != null ? 0.5 + X.cover : 1); /* the old camp's better odds (mod) were never applied; a well-swept shore turns up more */
+      const p = X.debris ? 1 : se.found.rate * Math.pow(0.82, s.stats.found) * (mod || 1) * (X.cover != null ? 0.5 + X.cover : 1); /* a thing you can see on the sand is a sure find */ /* the old camp's better odds (mod) were never applied; a well-swept shore turns up more */
       if (chance(s, p)) {
         const cls = pickW(s, se.found.classes); const ex = (se.found.examples[cls] || []);
         const name = ex.length ? ex[Math.floor(rnd(s) * ex.length)] : cls;
@@ -2381,7 +2381,9 @@ function makeCamp(s, spot) {
 // the far side of every drop site hides something that should not be there
 function foundWreck(s) {
   const first = !(s.stats && s.stats.wreck); const L = [];
-  if (first) { s.stats.wreck = s.day; s.morale = clamp(s.morale + 6, 0, 100); L.push(['A furrow of torn ground, and at the end of it a disc of dull metal half buried in the dirt. It is cold to the touch. There are no footprints but yours.', 'big']); }
+  if (first) { s.stats.wreck = s.day; s.morale = clamp(s.morale + 6, 0, 100); L.push(['A furrow of torn ground, and at the end of it a disc of dull metal half buried in the dirt. It is cold to the touch. There are no footprints but yours.', 'big']);
+    s.mats.wire += 6; s.mats.cordage += 4; s.containers = (s.containers || 0) + 1; s.found.push({ cls: 'Metal hardware', name: 'A curved shard of the wreck' }); s.stats.found += 1;
+    L.push(['Torn loose from the rim: a bundle of fine bright wire that will not kink, a coil of braided cable, and a curved shard of the hull that holds water and does not scorch in a fire. 6 wire, 4 cordage, and a pot.', 'good']); }
   else L.push(['The wreck is still here. Nothing has moved.', 'muted']);
   s.today.lines.push(...L); return L;
 }
@@ -2572,14 +2574,15 @@ function cueFor(lines) {
   if (lines.some(l => l[1] === 'warn')) return 'warn';
   return null;
 }
-function floatNum(i, text, cls) { const v = app.querySelectorAll('.vt')[i]; /* the vitals are .vt since the HUD redesign; .vital found nothing, so the numbers never showed */ if (!v || reduced) return; const r = v.getBoundingClientRect(); const f = $(`<span class="float ${cls}" style="position:fixed;left:${Math.round(r.right - 8)}px;top:${Math.round(r.top + 6)}px;right:auto;transform:translateX(-100%)">${esc(text)}</span>`); document.body.append(f); setTimeout(() => f.remove(), 1200); } /* on the page, not inside the vital: the next HUD refresh would wipe it */
-function snap() { const st = E.status(S); return { kcal: st.storeKcal, h: S.health, m: S.morale, w: S.weight }; }
+function floatNum(k, text, cls) { const v = app.querySelector('.vt.' + k); /* the vitals are .vt since the HUD redesign; .vital found nothing, so the numbers never showed */ if (!v || reduced) return; const r = v.getBoundingClientRect(); const f = $(`<span class="float ${cls}" style="position:fixed;left:${Math.round(r.right - 8)}px;top:${Math.round(r.top + 6)}px;right:auto;transform:translateX(-100%)">${esc(text)}</span>`); document.body.append(f); setTimeout(() => f.remove(), 1200); } /* on the page, not inside the vital: the next HUD refresh would wipe it */
+function snap() { const st = E.status(S); return { kcal: st.storeKcal, h: S.health, m: S.morale, w: S.weight, d: E.hydOf(S) }; }
 function diffFloats(a) {
   const b = snap();
-  if (Math.abs(b.kcal - a.kcal) >= 30) floatNum(3, `${b.kcal > a.kcal ? '+' : ''}${fmt(b.kcal - a.kcal)}`, b.kcal > a.kcal ? 'tone-good' : 'tone-bad');
-  if (Math.abs(b.m - a.m) >= 2) floatNum(2, `${b.m > a.m ? '+' : ''}${Math.round(b.m - a.m)}`, b.m > a.m ? 'tone-good' : 'tone-bad');
-  if (Math.abs(b.h - a.h) >= 2) floatNum(1, `${b.h > a.h ? '+' : ''}${Math.round(b.h - a.h)}`, b.h > a.h ? 'tone-good' : 'tone-bad');
-  if (Math.abs(b.w - a.w) >= 0.3) floatNum(0, `${b.w > a.w ? '+' : ''}${(b.w - a.w).toFixed(1)} lb`, b.w > a.w ? 'tone-good' : 'tone-bad');
+  if (Math.abs(b.kcal - a.kcal) >= 30) floatNum('f', `${b.kcal > a.kcal ? '+' : ''}${fmt(b.kcal - a.kcal)}`, b.kcal > a.kcal ? 'tone-good' : 'tone-bad');
+  if (a.d != null && Math.abs(b.d - a.d) >= 3) floatNum('d', `${b.d > a.d ? '+' : ''}${Math.round(b.d - a.d)}`, b.d > a.d ? 'tone-good' : 'tone-bad');
+  if (Math.abs(b.m - a.m) >= 2) floatNum('m', `${b.m > a.m ? '+' : ''}${Math.round(b.m - a.m)}`, b.m > a.m ? 'tone-good' : 'tone-bad');
+  if (Math.abs(b.h - a.h) >= 2) floatNum('h', `${b.h > a.h ? '+' : ''}${Math.round(b.h - a.h)}`, b.h > a.h ? 'tone-good' : 'tone-bad');
+  if (Math.abs(b.w - a.w) >= 0.3) floatNum('w', `${b.w > a.w ? '+' : ''}${(b.w - a.w).toFixed(1)} lb`, b.w > a.w ? 'tone-good' : 'tone-bad');
 }
 function feel(lines) {
   const cue = cueFor(lines); if (cue) sfx.play(cue);
@@ -3072,6 +3075,7 @@ const PAINT = {
   sprite(key, w, h, inner, s = 1) {
     let c = this.cache.get(key); if (c) return c.ready ? c.cv : null;
     c = { ready: false, cv: document.createElement('canvas') }; this.cache.set(key, c);
+    if (key.startsWith('int|')) { const old = [...this.cache.keys()].filter(k => k.startsWith('int|')); while (old.length > 6) this.cache.delete(old.shift()); } /* a room per size and kit: keep the latest few, not every one ever drawn */
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w * s}" height="${h * s}" viewBox="0 0 ${w} ${h}"><defs>${this.defs}</defs>${inner}</svg>`;
     const img = new Image(); img.onload = () => { c.cv.width = w * s; c.cv.height = h * s; c.cv.getContext('2d').drawImage(img, 0, 0); c.ready = true; }; img.onerror = () => { c.failed = true; };
     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); return null;
@@ -3329,6 +3333,7 @@ function banner(lines, keep) {
   while (bannerEl.children.length > 3) bannerEl.firstChild.remove();
 }
 function worldToast(lines, x, y) {
+  if (W.inside) { if (lines && lines.length) banner(lines, 4500); return; } /* the room is drawn, not the world: a toast there would never show */
   /* long lines wrap to fit the screen, read top to bottom, and stay inside its edges */
   const maxW = W.cam ? Math.max(120, W.cam.w - 20) : 300; const rows = [];
   if (cx) { cx.save(); cx.font = '700 13px ' + W.font; }
@@ -3415,7 +3420,7 @@ function update(dt) {
   W.t += dt; W.cellT = (W.cellT || 0) + dt; if (W.cellT > 0.5) { W.cellT = 0; ensureCells(); if (S && S.practice) { const before = (S.lessonsDone || []).length; lessonTick(); if ((S.lessonsDone || []).length !== before) updateHud(); } if (S && S.today && !S.today.drank && !W.desert && atShore() && !W.inside) { S.today.drank = true; if (S.practice) (S.everDone || (S.everDone = {})).drink_edge = 1; if (!(E.waterToday(S).how === 'ice')) { E.drinkUp(S); updateHud(); banner([['A long drink at the water\'s edge.', 'muted']], 1800); } }
     if (S && S.today && S.today.drank && !W.desert && atShore() && !W.inside && E.hydOf(S) < 60 && E.waterToday(S).how !== 'ice') { E.drinkUp(S); updateHud(); banner([['Knelt and drank your fill.', 'muted']], 1500); } /* a drink at the water's edge */ }
   W.revealT = (W.revealT || 0) + dt; if (W.revealT > 0.4) { W.revealT = 0; reveal(W.player.x, W.player.y, S.fog ? 150 : W.night ? 90 : 230); }
-  const p = W.player; const busy = !!(mini && !mini.free) || W.night || (S.event && S.event.id === 'wound');
+  const p = W.player; const busy = !!(mini && !mini.free) || W.night || W.inside || (S.event && S.event.id === 'wound');
   let v = keyVec() || (input.joy ? input.vec : null);
   if (W.pending) arrivePending(); if (popEl && (mini || W.night)) closePop();
   if (!v && input.target) { const d = dist(p, input.target); if (d < 6) input.target = null; else v = { x: (input.target.x - p.x) / d, y: (input.target.y - p.y) / d }; }
@@ -3464,7 +3469,7 @@ function update(dt) {
   if (mini && mini.deadline && W.t > mini.deadline) mini.cancel();
   const vw = cv.width / (W.scale * devicePixelRatio), vh = cv.height / (W.scale * devicePixelRatio);
   W.cam = { x: Math.max(0, Math.min(MAP.w - vw, p.x - vw / 2)), y: Math.max(0, Math.min(MAP.h - vh, p.y - vh / 2)), w: vw, h: vh };
-  refreshActs();
+  W.actsT = (W.actsT || 0) + dt; if (W.actsT > 0.12 || !lastActs) { W.actsT = 0; refreshActs(); } /* interactions() is not cheap: a few times a second is plenty */
 }
 
 // ------------------------------------------------------------ where you are, what you can do
@@ -3594,11 +3599,11 @@ function interactionsHere() {
   }
   if (atCamp()) {
     if (tired || E.hoursLeft(S) < 3 || S.hours >= 4) out.push(turnIn(tired));
-    if (S.shelterType) out.push({ label: 'Go inside', sub: S.storm || S.rain ? 'out of the weather' : E.canWorkInside(S) ? 'sit, whittle, craft' : 'crawl in and rest', primary: !!(S.storm || S.rain), fn: () => { W.inside = true; lastActs = ''; sfx.play('tap'); } });
+    if (S.shelterType) out.push({ label: 'Go inside', sub: S.storm || S.rain ? 'out of the weather' : E.canWorkInside(S) ? 'sit, whittle, craft' : 'crawl in and rest', primary: !!(S.storm || S.rain), fn: () => { W.inside = true; input.target = null; input.joy = false; lastActs = ''; sfx.play('tap'); } });
     if (tired) { nightJobs(push, out, av, false); return overflow(out); }
     push('light_fire', null, startFire); push('clean', null, startClean);
     if (!S.shelterGoal) { if (E.shelterOptions(S).length) out.push({ label: S.shelterType ? 'Upgrade shelter' : 'Build shelter', sub: S.shelterType ? 'pick what to build next' : 'pick a design', fn: openShelterChoice }); }
-    else if (push('shelter', null, startBuild)) out[out.length - 1].sub = E.available(S, 'shelter').odds + ` · next: ${STAGE_NAME[buildStage()] || 'build'}`;
+    else if (push('shelter', null, startBuild)) { const o = out[out.length - 1]; o.label = `Build the ${E.low(E.SHELTERS[S.shelterGoal].name)}`; o.sub = E.available(S, 'shelter').odds + ` · next: ${STAGE_NAME[buildStage()] || 'build'}`; }
     else { const miss = E.shelterMissing(S); if (miss && miss.length) out.push({ label: `${E.SHELTERS[S.shelterGoal].name}`, sub: 'Needs ' + miss.join(', '), fn: openNeeds, dim: true }); }
     push('change_dry'); push('cook', null, startCook); push('melt_snow', null, startMelt); push('melt_ice'); push('catch_rain'); push('star_fire'); push('photo'); push('cut_belt'); if (S.cachePlace === 'camp') push('repair_cache'); push('fire_in'); push('fire_out'); push('mend', null, () => startCraft('mend')); push('work_hide', null, () => startCraft('work_hide')); push('smoke_clothes'); push('read_sky'); push('shape_pot', null, () => startCraft('shape_pot')); push('fire_pots', null, () => startCraft('fire_pots')); push('clear_roof'); push('splint', null, () => startCraft('splint')); push('dig_latrine'); push('bed', null, () => startCraft('bed')); push('bury'); push('scrub'); push('check_roof'); push('caulk', null, () => startCraft('caulk')); push('fix_axe'); push('drink'); push('repair', S.sys && S.sys.damage ? { frame: 'Re-lash the frame', walls: 'Re-chink the walls', roof: 'Fix the roof' }[S.sys.damage] : null, startRepair); push('air_bed'); push('boil', null, muddy() ? startFilter : null); push('lay_out_camp', null, openLayout); push('needle_tea'); push('bone_broth'); push('dry'); if (push('smoke', 'Hot smoke', () => startSmoke('hot'))) { const ref = out[out.length - 1]; push('smoke', 'Cold smoke', () => startSmoke('cold')); if (out[out.length - 1] !== ref) out[out.length - 1].sub = 'a smoulder, no flame · slower, less wood, does not cook it'; } push('dry_food', null, () => E.blade(S) ? startSlice() : doAct('dry_food')); push('render_fat', null, startRender); push('talk_camera'); push('cordage', null, startCordage); push('sharpen', null, startSharpen); push('rest');
     { const ready = Object.keys(E.ACTIONS).some(k => k.startsWith('craft_') && av(k).ok); out.push({ label: 'Craft…', sub: ready ? '' : 'see what each thing needs', fn: () => openBuild(false) }); }
@@ -3616,14 +3621,14 @@ function interactionsHere() {
     if (push('fish', 'Cast a line', () => startFish(false)) && atRiver()) { const st = E.stockOf(S, 'river'); out[out.length - 1].sub = `river · ${Math.round(Math.min(0.95, E.fishOdds(S, 'river')) * 100)}%${E.stockWord(st) ? ' · ' + E.stockWord(st) : ''}`; } if (near(W.netSpot, 80)) { push('setnet', null, startNet); push('checknet', null, startCheckNet); }
     push('ice_hole'); push('raft_fish', null, startRaft); push('beach_raft');
     push('bait', null, () => startCollect('bait', 'worm')); push('setlines', null, startSetLines); if (bed) push('shellfish', null, () => startCollect('shellfish', 'shell', bed)); if (!atRiver()) push('seaweed', null, () => startCollect('seaweed', 'weed')); push('dig_clay', null, () => startCollect('dig_clay', 'clay'));
-    if (W.debris.some(d => !d.taken && near(d, 40))) push('search', 'Pick it up'); else push('search', W.desert ? 'Search the pool edge' : 'Walk the shore', startSearch); push('stones', null, () => startCollect('stones', 'stone'));
+    if (W.debris.some(d => !d.taken && near(d, 40))) push('search', 'Pick it up', () => { const d = W.debris.filter(x => !x.taken).sort((a, b) => dist(a, W.player) - dist(b, W.player))[0]; if (d) { d.taken = true; if (d.id) W.goneIds.add(d.id); } doAct('search', { debris: true }); }); else push('search', W.desert ? 'Search the pool edge' : 'Walk the shore', startSearch); push('stones', null, () => startCollect('stones', 'stone'));
   }
   if (poolNear(60)) push('water');
   if (!W.desert && (atShore() || (W.pond && near(W.pond, W.pond.r + 50)))) push('water', 'Fetch water');
   if (W.ruin && near(W.ruin, 70)) { if (push('search', 'Pick through the ruin', () => doAct('search', { ruin: true }, W.ruinUsed === S.day ? 1 : 2.2))) out[out.length - 1].sub = W.ruinUsed === S.day ? 'picked over today' : 'old camp · better odds'; }
   if (W.pond && near(W.pond, W.pond.r + 50) && !atShore()) { if (push('fish', 'Fish the pond', () => startFish(false))) { const st = E.stockOf(S, 'pond'); out[out.length - 1].sub = `small fish · ${Math.round(Math.min(0.95, E.fishOdds(S, 'pond')) * 100)}%${E.stockWord(st) ? ' · ' + E.stockWord(st) : ''}`; } W.pondCat = W.pondCat || { x: W.pond.x - W.pond.r * 0.6, y: W.pond.y + W.pond.r * 0.5, used: false, cat: 0 }; W.pondCat.used = (S.regrow || {}).pc > S.day; if (!W.pondCat.used) push('cattail', null, () => startCollect('cattail', 'root', W.pondCat)); push('bait', null, () => startCollect('bait', 'worm')); }
   if (ani) { if (push('hunt', `Draw on the ${ani.size >= 1.25 ? 'big ' : ani.size <= 0.85 ? 'young ' : ''}${E.low(D.foods[ani.sp].name)}`, () => startHunt(ani))) { const sc = scentOf(ani); out[out.length - 1].sub = sc === 'down' ? 'wind at your back: it will smell you' : sc === 'up' ? 'wind in your face' : 'crosswind'; } }
-  else if (onTrail() && !W.animals.some(a => !a.dead && !a.fled)) push('hunt', 'Stalk the trail', () => startHunt(null));
+  else if (onTrail() && !W.animals.some(a => !a.dead && !a.fled)) push('hunt', 'Stalk the trail', startStalk);
   if (track && !track.set) { push('scout'); push('snares', 'Set snares here', () => startSnare(track)); push('deadfalls', 'Set deadfalls here', () => startSnare(track, true)); }
   if (onTrail()) push('checktraps', null, startTrapline);
   if (tree) { const T = (use, id) => nearestOf(W.trees, 46, t => !t.gone && !t.used[use] && E.treeYield(S, id || use, t).n > 0);
@@ -3698,7 +3703,7 @@ function overflow(list) {
   tidySubs(list); W.fullActs = list;
   if (list.length <= 6) return list;
   const keep = list.slice(0, 5); const rest = list.slice(5);
-  keep.push({ label: 'More…', sub: `${rest.length} more`, fn: () => sheet((sh, close) => { sh.append($(`<h2>At camp</h2>`)); for (const a of rest) { const b = $(`<button class="act"><b>${esc(a.label)}</b><span class="o"></span><small>${esc(a.sub || '')}</small></button>`); b.onclick = () => { close(); a.late ? a.fn(true) : a.fn(); }; sh.append(b); } }) });
+  keep.push({ label: 'More…', sub: `${rest.length} more`, fn: () => sheet((sh, close) => { sh.append($(`<h2>At camp</h2>`)); for (const a of rest) { const b = $(`<button class="act"><b>${esc(a.label)}</b><span class="o"></span><small>${esc(a.sub || '')}</small></button>`); b.onclick = () => { if (a.late && !b.dataset.armed) { b.dataset.armed = 1; b.querySelector('small').textContent = 'Tap again to turn in with daylight left'; return; } close(); a.late ? a.fn(true) : a.fn(); }; sh.append(b); } }) });
   return keep;
 }
 // 3½ rather than 3.5: the way people say it
@@ -3805,7 +3810,7 @@ const FILLER = /^(the|a|an|your|and|up|to|of|for|some|it|them|from|at|on|in|into
 function shortLabel(a) { if (a.id && SHORT[a.id] && !(a.id === 'repair' && /^Re-|^Fix/.test(a.label || ''))) return SHORT[a.id]; const L = a.label || ''; if (L.length <= 14) return L; const w = L.replace(/^(Gather|Pick|Look at the|Look at|Cut|Make|Build|Go|Set|Check|Lay|Rig the|Melt|Fetch|Break a hole in the)\s+/i, (m) => /^(Pick|Cut|Build|Set|Check|Lay|Melt|Fetch)/i.test(m) ? m : '').split(' ').filter((x, i) => i === 0 || !FILLER.test(x)); /* never end on 'the' or 'your' */ const s = w.slice(0, 2).join(' '); return s.charAt(0).toUpperCase() + s.slice(1); }
 function tileChips(sub) {
   const parts = String(sub || '').split(' · ').map(x => x.trim()).filter(Boolean); const out = [];
-  const time = parts.find(x => /^\d+(\.\d+)?\s*(h|min)\b|^\d+½?\s*h\b/.test(x)); const odds = parts.find(x => /^\d+%/.test(x)); const rest = parts.filter(x => x !== time && x !== odds);
+  const time = parts.find(x => /^(\d+(\.\d+)?|\d*½)\s*(h|min)\b/.test(x)); const odds = parts.find(x => /^\d+%/.test(x)); const rest = parts.filter(x => x !== time && x !== odds);
   if (time) out.push(`<span class="ch t">${esc(time)}</span>`); if (odds) out.push(`<span class="ch o">${esc(odds)}</span>`); if (rest[0]) out.push(`<span class="ch r">${esc(rest[0].length > 26 ? rest[0].slice(0, 25) + '…' : rest[0])}</span>`);
   return out.join('');
 }
@@ -3990,9 +3995,27 @@ function startFish(run) {
   miniUI(W.desert ? '<div class="mtext">Cast into the pool. Catfish sit on the bottom.</div>' : atPond ? '<div class="mtext">Small water, small fish. Drop the bait by the beaver lodge.</div>' : atRiver() ? '<div class="mtext">Cast upstream and let it drift through the pool below the riffle.</div>' : '<div class="mtext">Hold Cast to throw further out. Deeper water, better odds.</div>'); p.dir = pool ? Math.atan2(pool.y - p.y, pool.x - p.x) : Math.PI; lastActs = ''; refreshActs();
 }
 // hunting: get close without spooking it, draw, release in the window
-function startHunt(animal) {
+function startStalk() {
+  autoResolve(); const p = W.player; let prog = 0, held = false, cracks = 0, onDry = false; const patches = [0.18 + urand() * 0.12, 0.45 + urand() * 0.12, 0.72 + urand() * 0.1].map(x => ({ x, hit: false }));
+  const tw = p.dir || 0; const wc = Math.cos((S.windDir || 0) - tw); const gust = S.wind || S.storm ? 'wind' : 'breeze'; const windTxt = wc > 0.5 ? `The ${gust} is at your back: whatever is ahead may smell you.` : wc < -0.5 ? `The ${gust} is in your face. Good.` : `A cross ${gust}. Keep low.`;
+  const bar = () => `<div class="mbar">${patches.map(q => `<b style="left:${q.x * 100}%;background:${q.hit ? '#a0603a' : '#c8a060'}"></b>`).join('')}<i style="width:${(prog * 100).toFixed(1)}%"></i></div>`;
+  const say = (t) => miniUI(`<div class="mtext">${t}</div>${bar()}`);
+  const end = () => { if (!mini) return; endMini(); p.aim = false; const noise = cracks + (wc > 0.5 ? 1 : 0); /* your scent goes ahead of you */
+    if (noise >= 3) { worldToast([['Something crashed off through the brush ahead. Too much noise on the way up.', 'bad']], p.x, p.y); doAct('hunt', { hit: 'none', spooked: true }, 0.6); return; }
+    const d = 150 + urand() * 40, a = tw + (urand() - 0.5) * 0.6; const an = makeAnimal(p.x + Math.cos(a) * d, p.y + Math.sin(a) * d, urand, false); if (an) { an.wait = 6; an.alert = noise * 0.3; W.animals.push(an); }
+    startHunt(an || null, noise === 0 ? 1.15 : noise === 1 ? 1 : 0.85); };
+  mini = { type: 'stalk', deadline: W.t + 45, update(dt) {
+      const was = onDry; onDry = patches.some(q => !q.hit && Math.abs(prog - q.x) < 0.04); if (onDry && !was) say('Dry leaves and twigs ahead. Stop, then step over them.'); else if (!onDry && was) say(windTxt);
+      if (held) { prog = Math.min(1, prog + dt * 0.11); for (const q of patches) if (!q.hit && Math.abs(prog - q.x) < 0.012) { q.hit = true; cracks++; sfx.play('stick'); buzz(15); say('Crack. A twig snapped under your boot.'); } }
+      const m = hudEl && hudEl.querySelector('#mini .mbar i'); if (m) m.style.width = (prog * 100).toFixed(1) + '%'; if (prog >= 1) end(); },
+    acts: [{ label: 'Ease forward', sub: 'hold to creep up the trail', primary: true, down: () => { held = true; }, up: () => { held = false; } },
+      { label: 'Step over', sub: 'past the dry patch, quietly', fn: () => { const q = patches.find(x => !x.hit && Math.abs(prog - x.x) < 0.06); if (q) { q.hit = true; q.safe = true; prog = Math.min(1, q.x + 0.05); say('Over it without a sound.'); } } },
+      { label: 'Give it up', sub: 'no time spent', fn: () => { endMini(); p.aim = false; } }], cancel: () => { endMini(); p.aim = false; } };
+  say(`${windTxt} Hold Ease forward to creep up the trail. Stop at dry patches and step over them.`); lastActs = ''; refreshActs();
+}
+function startHunt(animal, stalk = 1) {
   autoResolve(); const p = W.player; let t = 0, drawn = false, dt0 = 0, spooked = false, tired = 0, breath = 0, holding = false, gasp = 0;
-  const finish = (hit) => { if (!mini) return; endMini(); const extra = { hit, spooked, target: animal ? animal.sp : undefined, scent: animal ? scentOf(animal) : undefined, size: animal ? animal.size : undefined }; const mod = hit === 'good' ? 1.25 : hit === 'poor' ? 1.0 : hit === 'miss' ? 0.75 : 1;
+  const finish = (hit) => { if (!mini) return; endMini(); const extra = { hit, spooked, target: animal ? animal.sp : undefined, scent: animal ? scentOf(animal) : undefined, size: animal ? animal.size : undefined }; const mod = (hit === 'good' ? 1.25 : hit === 'poor' ? 1.0 : hit === 'miss' ? 0.75 : 1) * stalk;
     sfx.play('bow'); W.lastShot = animal ? { x: animal.x, y: animal.y, a: Math.atan2(animal.y - p.y, animal.x - p.x) } : null; const had = S.carcass; doAct('hunt', extra, mod); if (animal) { if (S.carcass && S.carcass !== had) animal.dead = true; else { animal.fled = true; animal.fleeT = 2.5; animal.tx = animal.x + (animal.x - p.x) * 4; animal.ty = animal.y + (animal.y - p.y) * 4; } } };
   /* steady aim (mini-game brief 4.2): the sight drifts slowly with your breathing and your arms; hold your breath to steady it for a moment, then you gasp and it shakes */
   mini = { type: 'hunt', animal, deadline: W.t + 25, get pos() { const A = (0.22 + this.wobble * 0.5) * (holding && breath < 2.5 ? 0.3 : 1) * (gasp > 0 ? 1.7 : 1); return 0.5 + A * Math.sin(dt0 * 1.3) * (0.7 + 0.3 * Math.sin(dt0 * 0.7 + 1)); }, get wobble() { return Math.min(0.35, dt0 * 0.035 + tired + (S.health < 50 ? 0.1 : 0)); },
@@ -4075,8 +4098,10 @@ function startCollect(id, kind, at) {
     if (left <= 0) { if (at) { if (at.used && typeof at.used === 'object') { at.used[id] = true; sharedParts(at, id); persistTree(at); } else if ('used' in at) { at.used = true; if (at === W.pondCat) { at.cat = (at.cat || 0) + 1; if (at.cat >= 3) markRegrow('pc', 'cattail'); else at.used = false; } else if (W.beds.includes(at)) markRegrow('s' + at.k, 'shellfish'); else if (W.bushes.includes(at)) { markRegrow('b' + at.k, at.kind); if (at.kind === 'berries' && S.berrySeason && S.day + 5 <= E.bushRipeDay(S, at.q || 0) + S.berrySeason.hold) S.regrow['b' + at.k] = S.day + 5; /* more ripen behind the ones you took */ } else { const mi = W.mossSpots.indexOf(at); if (mi >= 0) markRegrow('m' + mi, 'moss'); } } if (id === 'insects') { at.flipped = true; markRegrow('g' + at.k, 'insects'); } } }
     doAct(id, ex); };
   W.collect = items;
-  mini = { type: 'collect', free: true, deadline: W.t + 40, update() { if (dist(W.player, base) > 110) finish('walk'); }, tap(pt) { const it = items.find(x => !x.got && dist(x, pt) < 22); if (it) { it.got = true; picked++; sfx.play('tap'); buzz(8); mini.acts[0].sub = `${picked} of ${n} picked up`; lastActs = ''; if (picked >= n) finish('all'); return true; } return false; },
-    acts: [{ label: 'Leave the rest', sub: `0 of ${n} picked up`, fn: () => finish('leave') }], cancel: () => finish('leave') };
+  const p0 = { x: p.x, y: p.y }; const grab = (it) => { it.got = true; picked++; sfx.play('tap'); buzz(8); mini.acts[1].sub = `${picked} of ${n} picked up`; lastActs = ''; if (picked >= n) finish('all'); };
+  mini = { type: 'collect', free: true, deadline: W.t + 40, update() { if (dist(W.player, base) > 110) { finish('walk'); return; } if (dist(W.player, p0) > 8) { const it = items.find(x => !x.got && dist(x, W.player) < 15); if (it) grab(it); } /* walk over them */ }, tap(pt) { const it = items.find(x => !x.got && dist(x, pt) < 22); if (it) { grab(it); return true; } return false; },
+    acts: [{ label: 'Pick up the nearest', sub: 'or tap them, or walk over them', primary: true, fn: () => { const it = items.filter(x => !x.got).sort((a, b) => dist(a, W.player) - dist(b, W.player))[0]; if (it) { W.player.dir = Math.atan2(it.y - W.player.y, it.x - W.player.x); grab(it); } } },
+      { label: 'Leave the rest', sub: `0 of ${n} picked up`, fn: () => finish('leave') }], cancel: () => finish('leave') };
   miniUI(`<div class="mtext">${kind === 'nettle' ? 'Pinch the tops with the knife, not your fingers. ' : kind === 'cone' ? 'Pull the cones and shake the nuts out. ' : ''}Tap each of the ${n} ${noun} to pick ${n === 1 ? 'it' : 'them'} up${per > 1.05 ? ` (about ${Math.round(total)} in all)` : ''}.</div>`); lastActs = ''; refreshActs();
 }
 /* a knowledge puzzle: read the cap, cut one open, check your field notes. What you learn by eating stays in the notes */
@@ -4351,7 +4376,7 @@ function startLash(id, joints, text, shape, extra) {
 /* shelter stages (mini-game brief 5.4): each session of a build is its own job, and a job done badly shows up later as a named fault */
 const BUILD_STAGES = { tarp: ['frame'], leanto: ['frame'], hut: ['frame', 'shingle'], snowcave: ['dig', 'vent'], rock: ['stack', 'frame', 'chink'], cabin: ['sill', 'notch', 'roof', 'chink'] };
 function buildStage() { const st = BUILD_STAGES[S.shelterGoal] || ['frame']; const n = (E.shelterBill(S) || {}).sessions || 1, w = S.shelterWork || 0;
-  return n <= 1 ? st[0] : w >= n - 1 ? st[st.length - 1] : st[Math.min(st.length - 2, w)]; } /* the last session is always the finishing job */
+  return n <= 1 ? st[0] : st[Math.min(st.length - 1, Math.round(Math.min(w, n - 1) * (st.length - 1) / (n - 1)))]; } /* first and last stay put; the middle ones spread over the sessions, so a three-session cabin is sill, roof, chink */
 const STAGE_NAME = { sill: 'lay the sill logs', roof: 'roof it', frame: 'lash the frame', shingle: 'shingle the roof', dig: 'dig it out', vent: 'open an air hole', stack: 'stack the wall', chink: 'chink the gaps', notch: 'notch and lay logs' };
 function startBuild() {
   const g = S.shelterGoal; const st = buildStage();
@@ -4695,7 +4720,7 @@ function startStitch(id, inside, o) {
   let next = headStart(id, Math.min(3, n - 2)), last = 0, loose = 0, drag = false; const gap = 150 / skillTol();
   const svg = pad(`${o.art || ''}<g id="thr"></g>${holes.map((h, i) => `<circle class="sh2" data-i="${i}" cx="${h[0]}" cy="${h[1]}" r="5" fill="#2a2420" stroke="#e8e0cc" stroke-width="1"/>`).join('')}<circle id="ndl" cx="-20" cy="-20" r="3" fill="#e8e0cc"/>`, 300, 100);
   const seg = (i, slack) => { const a = holes[i - 1], b = holes[i]; const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2 + (slack ? 10 : 0); svg.querySelector('#thr').insertAdjacentHTML('beforeend', `<path d="M ${a[0]} ${a[1]} Q ${mx} ${my} ${b[0]} ${b[1]}" stroke="${o.col || '#e8d8b0'}" stroke-width="${slack ? 1.2 : 2}" fill="none" ${slack ? 'stroke-dasharray="3 2"' : ''}/>`); };
-  for (let i = 1; i < next; i++) seg(i, false); for (let i = 0; i < next; i++) { const c = svg && svg.querySelector(`.sh2[data-i="${i}"]`); if (c) c.setAttribute('fill', '#8a7a5a'); }
+  if (svg) for (let i = 1; i < next; i++) seg(i, false); for (let i = 0; i < next; i++) { const c = svg && svg.querySelector(`.sh2[data-i="${i}"]`); if (c) c.setAttribute('fill', '#8a7a5a'); }
   const hit = (q) => { if (next >= n) return; const h = holes[next]; if (Math.hypot(h[0] - q.x, h[1] - q.y) > 13) return; K.start(); const now = performance.now(); const slack = next > 0 && last && now - last < gap; last = now;
     if (slack) { loose++; sfx.play('bad'); buzz(12); padText(o.slip || 'Too quick. That stitch lies slack.'); } else { sfx.play('tap'); buzz(5); }
     if (next > 0) seg(next, slack); svg.querySelector(`.sh2[data-i="${next}"]`).setAttribute('fill', slack ? '#a0603a' : '#8a7a5a'); next++;
@@ -5018,7 +5043,8 @@ function openLessons() {
   sheet((sh, close) => { const done = new Set(lessonsDone().map(l => l[1]));
     sh.append($(`<h2>Camping lessons</h2>`)); if (done.size >= LESSONS.length) { const go = $(`<button class="act primary"><b>Try a real drop</b><small>leave the valley and pick a drop site</small></button>`); go.onclick = () => { close(); E.tapOut(S); save(); renderEnd.played = null; store.del(SAVE); S = null; W = null; renderSetup(); window.scrollTo(0, 0); }; sh.append(go); } sh.append($(`<div class="muted" style="font-size:13px">${done.size} of ${LESSONS.length} done. Everything here is close by and comes back overnight. Show me walks you to the place for it.</div>`));
     let g = ''; for (const l of LESSONS) { if (l[0] !== g) { g = l[0]; sh.append($(`<div class="sect">${esc(g)}</div>`)); }
-      const ok = done.has(l[1]); const row = $(`<div class="row" style="align-items:flex-start;gap:10px"><span style="flex:1;text-align:left"><b>${ok ? '✓ ' : ''}${esc(l[2])}</b><br><span class="muted" style="font-size:13px">${esc(l[3])}</span></span></div>`);
+      const ok = done.has(l[1]); const av = !ok && E.ACTIONS[l[1]] ? E.available(S, l[1]) : null; const gap = av && !av.ok && /^(No |Nothing|Needs? )/.test(av.why) ? av.why : '';
+      const row = $(`<div class="row" style="align-items:flex-start;gap:10px"><span style="flex:1;text-align:left"><b>${ok ? '✓ ' : ''}${esc(l[2])}</b><br><span class="muted" style="font-size:13px">${esc(l[3])}</span>${gap ? `<br><span class="tone-warn" style="font-size:12px">Not yet: ${esc(gap)}</span>` : ''}</span></div>`);
       if (!ok && l[5]) { const b = $(`<button class="act" style="flex:0 0 auto;padding:6px 10px"><b>Show me</b></button>`); b.onclick = () => { close(); showLesson(l); }; row.append(b); } if (ok) row.style.opacity = '.6'; sh.append(row); }
   });
 }
@@ -6958,7 +6984,7 @@ function spark() {
   const min = S.weight0 * (0.98 - E.status(S).medLimit), max = S.weight0;
   const x = i => pad + i / (h.length - 1) * (W - pad * 2), y = w => pad + (1 - (w - min) / (max - min)) * (H - pad * 2);
   const pts = h.map((d, i) => `${x(i).toFixed(1)},${y(d.weight).toFixed(1)}`);
-  const lim = y(S.weight0 * 0.7);
+  const lim = y(S.weight0 * (1 - E.status(S).medLimit));
   return $(`<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Weight over time">
     <path class="a" d="M${pts[0]} L${pts.join(' L')} L${x(h.length - 1)},${H} L${x(0)},${H} Z"/><path class="l" d="M${pts.join(' L')}"/>
     <line x1="0" x2="${W}" y1="${lim}" y2="${lim}"/><text x="${W - 4}" y="${lim - 3}" text-anchor="end">${Math.round(E.status(S).medLimit * 100)}% limit</text></svg>`);
@@ -7081,6 +7107,9 @@ function openRecords() {
     for (const se of D.seasons) { const r = records.seasons[se.key]; if (!r) continue; any = true; rows.append($(`<div class="row"><span>${esc(se.name)} · ${esc(se.location)}</span><span><span class="num">${r.bestDays}</span> days · best place <span class="num">${r.bestPlace}</span>${r.wins ? ` · <span class="tone-big">won ${r.wins}x</span>` : ''} · ${r.runs} run${r.runs === 1 ? '' : 's'}</span></div>`)); }
     if (!any) rows.append($(`<div class="muted">No runs finished yet.</div>`));
     sh.append(rows);
+    { const wk = Object.entries(records.wrecks || {}); if (wk.length || records.camper) { sh.append($(`<div class="sect">Odd things</div>`)); const r2 = $(`<div class="rows"></div>`);
+      for (const [k, d] of wk) { const se = D.seasons.find(x => x.key === k); r2.append($(`<div class="row"><span>The wreck${se ? ' · ' + esc(se.name) : k === E.PRACTICE_KEY ? ' · Camping' : ''}</span><span>found day <span class="num">${d}</span></span></div>`)); }
+      if (records.camper) r2.append($(`<div class="row"><span>Every Camping lesson</span><span>done ${esc(records.camper)}</span></div>`)); sh.append(r2); } }
     if (records.bestCamp) sh.append($(`<div class="sect">Best camp</div><div class="muted" style="font-size:14px">${esc(records.bestCamp.text)}, ${esc(records.bestCamp.place)}, day ${records.bestCamp.day}.</div>`));
     sh.append($(`<div class="sect">Badges <span class="num muted" style="font-family:var(--mono);font-size:13px">${Object.keys(records.badges).length}/${BADGES.length}</span></div>`));
     const g = $(`<div class="badges"></div>`);
