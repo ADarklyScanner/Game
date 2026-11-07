@@ -11,7 +11,8 @@ const OUT = process.argv[2] || path.join(__dirname, '..', 'design', 'sheet.png')
   const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 430, height: 900 }, deviceScaleFactor: 2 });
   await p.goto('file://' + TMP); await p.evaluate(() => localStorage.clear()); await p.reload(); await p.waitForTimeout(700);
   await p.evaluate(() => [...document.querySelectorAll('button')].find(e => /Camping/.test(e.textContent)).click()); await p.waitForTimeout(2000);
-  const index = await p.evaluate(() => {
+  const IDX = path.join(__dirname, '..', 'design', 'sheet-index.json'); const prev = fs.existsSync(IDX) ? JSON.parse(fs.readFileSync(IDX, 'utf8')) : [];
+  const index = await p.evaluate((prev) => {
     const A = window.__a, W = A.W(); const items = []; const defs = (A.PAINT && A.PAINT.defs) || '';
     const add = (group, name, make) => { try { const v = make(); if (!v) return; let svg;
       if (typeof v === 'string') svg = /^\s*<svg/.test(v) ? v : `<svg viewBox="-20 -20 40 40">${v}</svg>`;
@@ -39,17 +40,19 @@ const OUT = process.argv[2] || path.join(__dirname, '..', 'design', 'sheet.png')
     for (const k of ['pine', 'boulder', 'knoll', 'stone', 'blaze']) add('Landmarks', k, () => A.landmarkArt(k, false)); add('Landmarks', 'boulder (small)', () => A.boulderArt(false, 0));
     for (let v = 0; v < 4; v++) add('Beach debris', 'debris ' + (v + 1), () => A.debrisArt(v));
     for (const [id, name] of A.BADGES || []) add('Badges', name, () => A.badgeArt(id, true));
+    /* numbers never move: a picture keeps the number it had; anything new goes on the end */
+    const key = it => it.group + '|' + it.name, old = new Map(prev.map(x => [x.group + '|' + x.name, x.n])); items.sort((a, b) => (old.get(key(a)) ?? 1e6 + items.indexOf(a)) - (old.get(key(b)) ?? 1e6 + items.indexOf(b)));
     window.__items = items;
     // the sheet: dark like a keyboard tray, square keys, a number on each
     document.body.innerHTML = ''; document.body.style.cssText = 'margin:0;background:#1d1f1c;font-family:system-ui,sans-serif;color:#e8e4d8';
-    const st = document.createElement('style'); st.textContent = `.sh{padding:10px 8px 24px}.gt{font:600 12px system-ui;letter-spacing:.08em;text-transform:uppercase;color:#a9b39a;margin:14px 4px 6px}.gr{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.k{position:relative;color:#ece6d2;background:#2c2f2a;border-radius:10px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;overflow:hidden}.k{align-items:flex-start;padding-top:14%}.k svg{width:70%;height:62%}.k svg.line,.k svg.hi{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.n{position:absolute;top:3px;left:5px;font:700 11px ui-monospace,monospace;color:#f2d58a}.t{position:absolute;bottom:2px;left:3px;right:3px;font:9px system-ui;color:#c9c4b4;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}h1{font:600 18px system-ui;margin:6px 4px 2px}.sub{font:12px system-ui;color:#a8a596;margin:0 4px}`; document.head.append(st);
+    const st = document.createElement('style'); st.textContent = `.sh{padding:10px 8px 24px}.gt{font:600 12px system-ui;letter-spacing:.08em;text-transform:uppercase;color:#a9b39a;margin:14px 4px 6px}.gr{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.k{position:relative;color:#ece6d2;background:#2c2f2a;border-radius:10px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;overflow:hidden}.k{align-items:flex-start;padding-top:14%}.k svg{width:70%;height:62%}.k.paper{background:#e6dcc4;color:#3a3226}.k.paper .t{color:#5a5040}.k.paper .n{color:#9a5a2a}.k.ground{background:#6e6c50}.k.ground .t{color:#ece6d2;text-shadow:0 1px 2px #0008}.k.ground .n{color:#ffe7a0;text-shadow:0 1px 2px #0008}.k svg.line,.k svg.hi{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.n{position:absolute;top:3px;left:5px;font:700 11px ui-monospace,monospace;color:#f2d58a}.t{position:absolute;bottom:2px;left:3px;right:3px;font:9px system-ui;color:#c9c4b4;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}h1{font:600 18px system-ui;margin:6px 4px 2px}.sub{font:12px system-ui;color:#a8a596;margin:0 4px}`; document.head.append(st);
     window.__page = (from, to, page, pages) => { document.querySelectorAll('.sh').forEach(x => x.remove());
     const sh = document.createElement('div'); sh.className = 'sh'; sh.innerHTML = `<h1>Last One Out · every picture <span style="font-size:13px;color:#a8a596">page ${page} of ${pages}</span></h1><div class="sub">${items.length} pictures, ${from + 1}–${to} here. Say the number to change one.</div>`; document.body.append(sh);
     let g = null, grid = null; items.slice(from, to).forEach((it, j) => { const i = from + j; if (it.group !== g) { g = it.group; const t = document.createElement('div'); t.className = 'gt'; t.textContent = g; grid = document.createElement('div'); grid.className = 'gr'; sh.append(t, grid); }
-      const k = document.createElement('div'); k.className = 'k'; k.innerHTML = `${it.svg}<span class="n">${i + 1}</span><span class="t">${it.name.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</span>`; grid.append(k); });
+      const k = document.createElement('div'); k.className = 'k' + (/Job icons|Badges/.test(it.group) ? ' paper' : /Top|Tool/.test(it.group) ? '' : ' ground'); /* each on the background it has in the game */ k.innerHTML = `${it.svg}<span class="n">${i + 1}</span><span class="t">${it.name.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</span>`; grid.append(k); });
     for (const svg of document.querySelectorAll('.k > svg')) { try { const bb = svg.getBBox(); if (bb.width > 0 && bb.height > 0) { const pad = Math.max(bb.width, bb.height) * 0.06; svg.setAttribute('viewBox', `${bb.x - pad} ${bb.y - pad} ${bb.width + pad * 2} ${bb.height + pad * 2}`); } } catch (e) {} } /* each picture fills its key */ };
     return items.map((it, i) => ({ n: i + 1, group: it.group, name: it.name }));
-  });
+  }, prev);
   /* pages a phone screen tall: whole groups where they fit, about seven rows of six */
   const per = 42, pages = Math.ceil(index.length / per); const dir = path.dirname(OUT); fs.mkdirSync(dir, { recursive: true });
   for (const f of fs.readdirSync(dir)) if (/^sheet(-\d+)?\.png$/.test(f)) fs.unlinkSync(path.join(dir, f));

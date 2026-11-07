@@ -1053,5 +1053,15 @@
   "n": 211,
   "group": "Badges",
   "name": "Trapline"
+ },
+ {
+  "n": 212,
+  "group": "Badges",
+  "name": "Daily challenge"
+ },
+ {
+  "n": 213,
+  "group": "Badges",
+  "name": "Under canvas"
  }
 ]
