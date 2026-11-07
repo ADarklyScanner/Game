@@ -10,7 +10,7 @@ const SRC = process.env.GAME_FILE || path.join(__dirname, '..', 'index.html'); c
 const html = fs.readFileSync(SRC, 'utf8'); const hook = 'window.claude?.hot?.snapshot?.(() => ({ game: S }));';
 if (!html.includes(hook)) throw new Error('hook point not found');
 fs.writeFileSync(TMP, html.replace(hook, 'window.__x = { update, W: () => W, S: () => S, input, SCALE, dist };\n' + hook));
-const SPEEDS = (process.env.SPEEDS || '3,6,11,22,44').split(',').map(Number); const PLACES = (process.env.PLACES || 'US-S6,US-S8,AU-S1').split(','); const SEEDS = [5, 17, 29];
+const SPEEDS = (process.env.SPEEDS || '3,6,11,22,44').split(',').map(Number); const PLACES = (process.env.PLACES || 'US-S6,US-S8,AU-S1').split(','); const SEEDS = (process.env.SEEDS_LIST || '5,17,29').split(',').map(Number);
 const HOURS = Number(process.env.HOURS || 8);
 const KIT = ['Knife', 'Ferro rod', 'Axe', 'Bow and arrows', 'Pot', 'Fishing gear', 'Sleeping bag', 'Tarp', 'Paracord', 'Saw'];
 (async () => {
