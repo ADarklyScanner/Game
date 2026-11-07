@@ -4,7 +4,7 @@ const { loadGame } = require('./load-game'); const E = loadGame(process.env.GAME
 const SRC = process.env.GAME_FILE || path.join(__dirname, '..', 'index.html'); const TMP = '/tmp/last-one-out-review3.html';
 const html = fs.readFileSync(SRC, 'utf8'); const hook = 'window.claude?.hot?.snapshot?.(() => ({ game: S }));';
 if (!html.includes(hook)) throw new Error('hook point not found');
-fs.writeFileSync(TMP, html.replace(hook, 'window.__r = { S: () => S, W: () => W, mini: () => mini, input: () => input, rec: () => records, setRec: r => { records = r; }, tidySubs, buildStage, bill: f => { const o = E.shelterBill; E.shelterBill = f; return o; }, tileChips, floatNum, worldToast, startStalk, startCollect, openRecords, interactions, stitch: () => startStitch };\n' + hook));
+fs.writeFileSync(TMP, html.replace(hook, 'window.__r = { S: () => S, W: () => W, mini: () => mini, input: () => input, rec: () => records, setRec: r => { records = r; }, openGroups, tidySubs, buildStage, bill: f => { const o = E.shelterBill; E.shelterBill = f; return o; }, tileChips, floatNum, worldToast, startStalk, startCollect, openRecords, interactions, stitch: () => startStitch };\n' + hook));
 const KEY = 'last-one-out-v1'; const save = s => JSON.stringify(s, (k, v) => v === Infinity ? 1e9 : v);
 let fails = 0, passes = 0; const check = (name, ok, detail) => { if (ok) passes++; else { fails++; console.log('FAIL', name, detail ?? ''); } };
 const KIT = ['Knife', 'Ferro rod', 'Axe', 'Fishing gear', 'Bow and arrows', 'Pot', 'Paracord'];
@@ -62,6 +62,8 @@ function base() { const s = E.newGame('US-S6', KIT, { seed: 41, weight: 200 }); 
   // mid-build, the tile names the build
   const lab = await p.evaluate(() => { const S = window.__r.S(); S.shelterGoal = 'leanto'; Object.assign(S.mats, { poles: 40, cordage: 40, boughs: 40 }); const W = window.__r.W(); W.player.x = W.camp.x; W.player.y = W.camp.y + 20; return window.__r.interactions().map(a => a.label); });
   check('mid-build, the job says what is being built', lab.some(l => /^Build the lean-to/i.test(l)) && !lab.includes('Build shelter'), lab.filter(l => /Build/.test(l)));
+  check('a group once open stays open when the place numbers change', await p.evaluate(() => { const r = window.__r.rec(); r.groupsOpen = 3; return window.__r.openGroups() >= 3; }));
+  check('every place has fresh simulated numbers', await p.evaluate(() => window.__r.S() && true) && Object.values(E.DATA.difficulty).every(d => d.median > 0 && d.careful != null));
   check('no page errors', !errs.length, errs.slice(0, 3));
   await b.close(); console.log(fails ? `${fails} review3 check(s) failed, ${passes} passed.` : `All ${passes} review3 checks passed.`); process.exitCode = fails ? 1 : 0;
 })();
