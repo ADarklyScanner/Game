@@ -202,6 +202,24 @@ Checked and left as they are: a wrong-sized snare is still set (it catches less,
 | 140 | Cooking: once the middle was done, the turn-it warning hid the take-it-off message, so following the prompts burned the food | Done-through comes first; just right needs it taken off promptly and browned evenly |
 | 141 | A tree beside camp offered no jobs (camp jobs took over) | Its pop-up lists what the tree offers |
 | 142 | Resting and sleeping every day, doing nothing else, lasted 30 to 35 days in most places (day 16 with 80 health) | Neglect now costs will in full from the start (still no fire, still no roof, days of doing nothing, worse each day in a row); only loneliness and sameness creep in slowly. Long stretches with almost nothing to eat wear health down. A do-nothing run now taps out around day 9 to 11; a working player is unaffected (median 63 to 63 days, mean -3.2%) |
+| 143 | A Camping game was marked unreadable on reload (the save check only knew the drop sites) | The practice valley is a known place to the save check |
+| 144 | A bad accident, a serious fall, a snakebite or a collapse ended a Camping run, though practice is meant never to end but by the button | In practice these become a heavy condition, and the game says it would have ended a real drop |
+| 145 | The morning after a run had ended could still run (a 2 s timer) | It checks the run is still going |
+| 146 | Hands-on jobs rolled their chances with the browser's own random numbers, so the daily challenge was not the same for everyone once you played by hand | Each job draws from the run's seed, the day, the hour and the job count; visual-only randomness is left alone |
+| 147 | The first session of the food cache skipped the lashing | Both sessions are lashed by hand |
+| 148 | At a river the float was dropped toward the lake shore | It lands in the river |
+| 149 | Camp sounds only started after the first job | They start with the first touch or key |
+| 150 | The layout grid let the latrine go on the kitchen's square, removing the kitchen | The other zone's square is not offered |
+| 151 | Older browsers without canvas roundRect could not draw the world | A small fallback |
+| 152 | In fog the cairns you built for finding your way vanished under the fog | Nearby cairns loom through it |
+| 153 | A loose raft cover was recorded and never mattered | It drips in the rain |
+| 154 | A food portion saved as text was thrown away on repair | It is read as the number it is |
+| 155 | Low shelter scores often showed no reason | Every low score says why |
+| 156 | The mushroom check was text only | The mushroom is drawn from its description, and cut open |
+| 157 | The hand mini-games could not be played without a pointer | Arrows move a cursor over the drawing, E presses (hold to drag) |
+| 158 | "Hands remember" gave no head start on knapping, coiling, netting, pemmican, scraping or shingling | It does now |
+| 159 | The cabin's first three sessions were the same job | Sill logs, notched walls, the roof, then chinking |
+| 160 | Dead code: an empty block on a never-set field, an unread counter, an unread view variable, checks for gear that does not exist | Removed |
 
 ### Test-side problems (not game bugs)
 

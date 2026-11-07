@@ -16,6 +16,9 @@ const KIT = ['Knife', 'Pot', 'Ferro rod', 'Axe', 'Fishing gear', 'Sleeping bag',
   const t = E.newGame(E.PRACTICE_KEY, KIT, { seed: 4, weight: 200 }); E.beginDay(t); t.event = null; t.campChosen = true;
   for (let d = 0; d < 25 && t.status === 'playing'; d++) { E.endDay(t); if (t.event) try { E.choose(t, 0); } catch (e) {} E.beginDay(t); if (t.event) try { E.choose(t, 0); } catch (e) {} }
   check('nothing ends a practice run but the button', t.status === 'playing' && t.health >= 30 && t.morale >= 35, [t.status, t.health, t.morale]);
+  const u = E.newGame(E.PRACTICE_KEY, KIT, { seed: 5, weight: 200 }); E.beginDay(u); u.event = null; u.campChosen = true; u.health = -5; u.hours = 1; E.act(u, 'rest');
+  check('even a collapse does not end a practice run', u.status === 'playing' && u.health >= 30, [u.status, u.health]);
+  const v = E.newGame('US-S6', KIT, { seed: 5, weight: 200 }); E.beginDay(v); v.event = null; v.health = -5; v.hours = 1; E.act(v, 'rest'); check('it still does in a real drop', v.status === 'medical', v.status);
 }
 (async () => { const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 390, height: 844 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto('file://' + TMP); await p.evaluate(() => localStorage.clear()); await p.reload(); await p.waitForTimeout(700);
@@ -34,5 +37,8 @@ const KIT = ['Knife', 'Pot', 'Ferro rod', 'Axe', 'Fishing gear', 'Sleeping bag',
   check('a lesson done is announced', await p.evaluate(() => (window.__t.S().lessonsDone || []).includes('camp')));
   await p.evaluate(() => { const S = window.__t.S(); S.status = 'tapped'; S.endReason = 'test'; }); await p.evaluate(() => { try { renderEnd(); } catch (e) { window.__e = e.message; } }).catch(() => {});
   await p.waitForTimeout(300); check('practice runs are not recorded', await p.evaluate(() => !Object.keys(window.__t.rec().seasons || {}).length));
+  { const p2 = await b.newPage({ viewport: { width: 390, height: 844 } }); await p2.goto('file://' + TMP); await p2.evaluate(() => localStorage.clear()); await p2.reload(); await p2.waitForTimeout(600);
+    await p2.evaluate(() => [...document.querySelectorAll('button')].find(e => /Camping/.test(e.textContent)).click()); await p2.waitForTimeout(1500); await p2.reload(); await p2.waitForTimeout(1500);
+    check('a practice run survives a reload', await p2.evaluate(() => !!(window.__t.S() && window.__t.S().practice && window.__t.W())), await p2.evaluate(() => [!!window.__t.S(), localStorage.getItem('last-one-out-v1-unreadable') ? 'marked unreadable' : ''])); await p2.close(); }
   check('no page errors', !errs.length, errs.slice(0, 3));
   await b.close(); console.log(fails ? `${fails} camping check(s) failed, ${passes} passed.` : `All ${passes} camping checks passed.`); process.exitCode = fails ? 1 : 0; })();

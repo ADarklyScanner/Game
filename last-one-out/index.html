@@ -413,7 +413,7 @@ function setTune(key, t, harsh) { const se = DATA.seasons.find(x => x.key === ke
 const has = (s, id) => s.gear.includes(id);
 const foundCount = (s, cls) => s.found.filter(f => f.cls === cls).length;
 const blade = s => has(s, 'Knife') || has(s, 'Multitool') || s.crafts.stoneblade >= 1; // a knapped stone blade cuts, but it is brittle
-const chopper = s => (has(s, 'Axe') || has(s, 'Hatchet')) && !(s.sys && s.sys.axeOff); // no axe while its head is off
+const chopper = s => has(s, 'Axe') && !(s.sys && s.sys.axeOff); // no axe while its head is off
 const cutter = s => chopper(s) || has(s, 'Saw');
 /* an axe or saw opens the ice whenever you need it; without one, a hole broken by hand stays open for the day */
 const cutsIce = s => cutter(s) || !!(s.today && s.today.iceHole);
@@ -615,6 +615,7 @@ function layoutNotes(s, L) { const t = { sys: Object.assign({}, s.sys, { layout:
 const kitchenMult = s => { const k = zoneOf(s, 'kitchen'); return !k ? 1 : k.ring <= 1 ? 1.5 : k.down > 0.3 ? 0.6 : 0.85; };
 function shelterScores(s) { const t = s.shelterType, sd = SHELTERS[t]; const st = sd ? (sd.stats || { warmth: sd.lvl, dry: sd.lvl, wind: sd.lvl, strong: sd.lvl }) : { warmth: 0, dry: 0, wind: 0, strong: 0 }; const sys = s.sys || {}, c = s.shelterCond ?? 1; const cl = n => Math.max(0, Math.min(3, Math.round(n)));
   const chim = s.crafts.chimney >= 2 || s.crafts.stove >= 1 || (sd && sd.safeFire); const bed = bedOf(s), damp = bedDampOf(s);
+  const why0 = (n, why, base) => why || (n <= 1 ? base : ''); /* a low score always says why */
   return [
     ['Warmth', cl(st.warmth + (bed >= 0.5 && damp < 0.5 ? 0.5 : 0) - (sys.gaps ? 1 : 0) - (c < 0.5 ? 1 : 0)), sys.gaps ? 'gaps in the walls' : c < 0.5 ? 'it is coming apart' : ''],
     ['Dry', cl(st.dry - (sys.leaky ? 1 : 0) - (c < 0.5 ? 1 : 0)), sys.leaky ? 'a leak in the roof' : c < 0.5 ? 'the roof is open' : ''],
@@ -624,7 +625,7 @@ function shelterScores(s) { const t = s.shelterType, sd = SHELTERS[t]; const st 
     ['Bedding', cl(bed * 3 - damp * 3), damp >= 0.5 ? 'damp' : bed < 0.3 ? 'none to speak of' : ''],
     ['Fire safety', cl(3 - (s.flueRisk || 0) * 4 - ((sys.soot || 0) > 0.6 ? 1 : 0)), (sys.soot || 0) > 0.6 ? 'soot in the flue' : (s.flueRisk || 0) > 0.4 ? 'sparks near the roof' : ''],
     ['Pests', cl(3 - fouling(s) * 3 - (kitchenMult(s) > 1 ? 1 : 0)), kitchenMult(s) > 1 ? 'cooking by the bed' : fouling(s) > 0.4 ? 'fouled ground' : ''],
-  ]; }
+  ].map(([k, n, why]) => [k, n, why0(n, why, { Warmth: 'an open, light design', Dry: 'a thin roof', Wind: 'open to the weather', Strength: 'a light build', Air: '', Bedding: 'no real bed yet', 'Fire safety': '', Pests: '' }[k] || '')]); }
 /* where the fish lie: down where it is cool in the heat and under the ice, up in the shallows on a spawning run, in the middle otherwise */
 function fishDepth(s) { const T = temperature(s); return windowOn(s, 'run') ? 'shallow' : (T > 15 || frozen(s) || T < 2) ? 'deep' : 'mid'; }
 const latrineOk = s => !!(s.sys && s.sys.latrineDay != null && s.day - s.sys.latrineDay < 30);
@@ -1140,7 +1141,7 @@ function available(s, id) {
     case 'dry': return s.wet < 0.2 ? r(false, 'You are dry') : !s.fire ? r(false, 'Needs a fire') : r(true, '', 'warm up and dry your clothes');
     case 'repair': { if (!s.shelterLvl) return r(false, 'Nothing to patch'); if (s.shelterCond >= 0.85 && !(s.sys && s.sys.leaky)) return r(false, 'The shelter is sound'); const k = repairMat(s); return !k ? r(false, s.shelterType === 'cabin' || s.shelterType === 'rock' ? 'Needs 4 moss or 2 poles' : 'Needs 4 boughs or 2 poles') : r(true, '', `${Math.round(s.shelterCond * 100)}% sound · ${k === 'poles' ? '2 poles' : '4 ' + MATS[k][0].toLowerCase()}`); }
     case 'sharpen': return !chopper(s) ? r(false, 'No axe') : s.axeEdge > 0.8 ? r(false, 'The edge is fine') : has(s, 'Sharpening stone') ? r(true, '', '') : s.mats.stone < 1 ? r(false, 'Needs a sharpening stone or a flat stone') : s.axeEdge >= 0.7 ? r(false, 'As sharp as a river stone will get it') : r(true, '', 'on a flat stone · a rough edge');
-    case 'fix_axe': { if (!(has(s, 'Axe') || has(s, 'Hatchet'))) return r(false, 'No axe'); const off = s.sys && s.sys.axeOff; if (!off && haftOf(s) >= 0.6) return r(false, 'The head is tight'); if (!blade(s) && off) return r(false, 'Needs a knife to carve a wedge'); return r(true, '', s.mats.hide >= 1 ? 'a new wedge and a wet rawhide wrap' : 'a new wedge'); }
+    case 'fix_axe': { if (!has(s, 'Axe')) return r(false, 'No axe'); const off = s.sys && s.sys.axeOff; if (!off && haftOf(s) >= 0.6) return r(false, 'The head is tight'); if (!blade(s) && off) return r(false, 'Needs a knife to carve a wedge'); return r(true, '', s.mats.hide >= 1 ? 'a new wedge and a wet rawhide wrap' : 'a new wedge'); }
     case 'search': return r(true, '', pct(se.found.rate * Math.pow(0.82, s.stats.found) * (s.day - s.lastStorm <= 1 ? 2 : 1)) + ' to find salvage' + (s.day - s.lastStorm <= 1 ? ' · storm wrack' : ''));
     case 'rest': return r(true, '', '');
     /* fire is a tool: a star fire banks the night with less wood, char cloth takes a spark in damp air, the coals harden green stakes */
@@ -1302,7 +1303,7 @@ function beginDay(s) {
   if (s.sys && s.sys.sparesWet && !s.rain && !s.storm && !s.snowfall && !s.fog && chance(s, 0.6)) { s.sys.sparesWet = false; lines.push(['The spare clothes dried on the line overnight.', 'muted']); }
   for (const w of s.windows) if (w.from === s.day) lines.push([w.text, w.id === 'freezeup' || w.id === 'redtide' ? 'warn' : 'good']);
   if (se.climate.snow && s.day === se.climate.snow - 8) lines.push(['First hard frost. The greens are gone black; the cranberries just got sweet.', 'info']);
-  if (s.storm && s.day > 1 && !s.snowfallPrev) {} s.spate = (s.day - s.lastStorm === 1) && !frozen(s) && se.climate.water !== 'scarce'; if (s.spate) { lines.push(['The river is up and brown after the storm. The ford will not go today.', 'warn']); if (s.crafts.bridge >= 2 && chance(s, poorly(s, 'bridge') ? 0.55 : 0.3)) { s.crafts.bridge = 1; lines.push(['The flood tore one of the bridge logs loose from its lashings. It needs re-lashing before it will take your weight.', 'bad']); } }
+  s.spate = (s.day - s.lastStorm === 1) && !frozen(s) && se.climate.water !== 'scarce'; if (s.spate) { lines.push(['The river is up and brown after the storm. The ford will not go today.', 'warn']); if (s.crafts.bridge >= 2 && chance(s, poorly(s, 'bridge') ? 0.55 : 0.3)) { s.crafts.bridge = 1; lines.push(['The flood tore one of the bridge logs loose from its lashings. It needs re-lashing before it will take your weight.', 'bad']); } }
   if (s.setlines) { s.setlines = false; const lg = s.lineGear || { hooks: 2, cord: true, line: 0 }; s.lineGear = null; let lostHooks = 0; const iced = frozen(s) && temperature(s) < -15; for (let k = 0; k < lg.hooks; k++) if (chance(s, iced ? 0.4 : 0.12)) lostHooks++; if (iced && lostHooks) lines.push(['The set-line holes froze solid overnight with the lines in them.', 'muted']); s.hooks += lg.hooks - lostHooks; if (lg.cord) s.mats.cordage += 2; else s.line += lg.line; if (lostHooks) { s.stats.hooksLost += lostHooks; lines.push([`Pulled the set lines in. ${lostHooks === 1 ? 'One hook' : 'Both hooks'} snagged and gone.`, 'muted']); } if (chance(s, 0.4 * se.mult.fish * stockOf(s, 'lake') * (lg.bare ? 0.3 : 1) * (lg.depthOk == null ? 1 : 0.55 + 0.9 * lg.depthOk))) { const n = 1 + Math.floor(rnd(s) * 2); takeStock(s, 'lake', n); for (let k = 0; k < n; k++) addRaw(s, pickW(s, se.pools.fish), lines, 'On the set lines:'); } else lines.push(['The set lines were bare, bait gone.', 'muted']); }
   if (snowy(s) && !s.storm && !s.fog && !s.snowfall && !has(s, 'Sunglasses') && chance(s, 0.03) && !s.conditions.some(c => /Snow blind/.test(c.name))) { addCond(s, { name: 'Snow blindness', days: 2, dmg: 1 }); s.morale -= 4; lines.push(['Bright sun on new snow all day yesterday. Your eyes feel full of sand and the world is a glare.', 'bad']); }
   if (s.snowfall) s.wet = Math.min(1, s.wet + 0.15);
@@ -1392,7 +1393,7 @@ function doAction(s, id, lines, mod, opts) {
     if (X.good) p *= 0.5; if (X.fight === 'snap') p *= 3;
     if (chance(s, p)) {
       const serious = chance(s, 0.05);
-      if (serious) { end(s, 'medical', `Medically evacuated: ${what}.`); lines.push([`Bad accident: ${what}. The medics pull you out.`, 'bad']); }
+      if (serious) { if (end(s, 'medical', `Medically evacuated: ${what}.`)) lines.push([`Bad accident: ${what}. The medics pull you out.`, 'bad']); else { addCond(s, { name: what.charAt(0).toUpperCase() + what.slice(1), days: 6, dmg: 1.2 }); lines.push([`Bad accident: ${what}.`, 'bad']); } }
       else { addCond(s, { name: what, days: 6, dmg: 1.2, wound: true }); s.health -= 8; s.morale -= 5; lines.push([`Injury: ${what}.`, 'bad']); maybeEvent(s, 'injury', lines); }
     }
   };
@@ -1489,7 +1490,7 @@ function doAction(s, id, lines, mod, opts) {
       if (X.total) { por = X.got > 0 ? Math.max(1, Math.round(foodPortions(s, id, X, mod) * X.got / X.total)) : 0; if (!por) { lines.push(['Walked away with nothing picked.', 'muted']); break; } }
       else { por = Math.max(1, Math.round(foodPortions(s, id, X, mod))); if (!chance(s, 0.45 + 0.4 * se.mult.forage * s.skill.forage)) { por = Math.max(1, Math.round(por * 0.4)); lines.push(['Slim pickings here.', 'muted']); } }
       if (id === 'mushrooms') { const bad = X.tox != null ? X.tox : chance(s, 0.12 / s.skill.forage); if (bad) { addFood(s, 'mushrooms', por); s.stores[s.stores.length - 1].tox = true; if (X.look) s.stores[s.stores.length - 1].look = X.look; lines.push([`Picked ${por} handful${por > 1 ? 's' : ''} of mushrooms. You are fairly sure about them.`, 'info']); } else { addFood(s, 'mushrooms', por); if (X.look) s.stores[s.stores.length - 1].look = X.look; lines.push([`Picked ${por} handful${por > 1 ? 's' : ''} of ${X.name ? low(X.name) : 'mushrooms'} (${Math.round(por * 25)} kcal).`, 'good']); } }
-      else { addFood(s, id, por); lines.push([`Gathered ${X.name ? low(X.name) : low(DATA.foods[id].name)} (${Math.round(por * DATA.foods[id].kcal)} kcal).`, 'good']); if (X.name) { const sys = sysOf(s); sys.known = sys.known || {}; if (!sys.known['plant:' + X.name]) { sys.known['plant:' + X.name] = 'good'; lines.push([`Into the field notes: ${low(X.name)}, where it grows and how it tastes.`, 'muted']); } }
+      else { addFood(s, id, por); lines.push([`Gathered ${X.name ? low(X.name) : low(DATA.foods[id].name)} (${Math.round(por * DATA.foods[id].kcal)} kcal).`, 'good']); if (X.name) { const sys = sysOf(s); sys.known = sys.known || {}; if (!sys.known['plant:' + X.name]) { sys.known['plant:' + X.name] = 'good'; (sys.knownDay || (sys.knownDay = {}))['plant:' + X.name] = s.day; lines.push([`Into the field notes: ${low(X.name)}, where it grows and how it tastes.`, 'muted']); } }
         if (LOOKALIKE[id] && chance(s, (s.sys && s.sys.inspectDay === s.day) ? 0.004 : 0.03 * (s.skill.forage > 1.25 ? 0.5 : 1))) { const x = s.stores[s.stores.length - 1]; x.tox = true; x.look = LOOKALIKE[id]; } }
       if (X.total == null) { s.patch = s.patch || {}; s.patch[id] = Math.max(0.1, (s.patch[id] == null ? 1 : s.patch[id]) - (PATCH[id] || 0.05)); }
       s.skill.forage = Math.min(1.3, s.skill.forage + 0.02); s.morale += 1;
@@ -1630,13 +1631,13 @@ function doAction(s, id, lines, mod, opts) {
     case 'dig_latrine': { const sys = sysOf(s); sys.latrineDay = s.day; lines.push([digger(s) ? 'Dug a deep trench downhill from camp and well away from the water, with a pile of earth and a stick to cover each use.' : 'Scraped a trench by hand downhill from camp, well away from the water. It will do.', 'info']); break; }
     case 'climb': {
       const sys = sysOf(s); sys.climbDay = s.day;
-      if (chance(s, fallChance(s))) { const serious = !climbAnchor(s) && chance(s, 0.15); if (serious && chance(s, 0.5)) { addCond(s, { name: 'Broken wrist from a fall', days: 14, dmg: 1.6 }); s.health -= 12; s.morale -= 10; lines.push(['A handhold broke away and you fell onto the scree. Your wrist is wrong: swollen and bent where it should not bend. Splint it.', 'bad']); break; } if (serious) { end(s, 'medical', 'Medically evacuated: fell from the rock face.'); lines.push(['A handhold broke away and you fell the height of a house onto the scree. The medics came for you.', 'bad']); break; }
+      if (chance(s, fallChance(s))) { const serious = !climbAnchor(s) && chance(s, 0.15); if (serious && chance(s, 0.5)) { addCond(s, { name: 'Broken wrist from a fall', days: 14, dmg: 1.6 }); s.health -= 12; s.morale -= 10; lines.push(['A handhold broke away and you fell onto the scree. Your wrist is wrong: swollen and bent where it should not bend. Splint it.', 'bad']); break; } if (serious) { if (end(s, 'medical', 'Medically evacuated: fell from the rock face.')) lines.push(['A handhold broke away and you fell the height of a house onto the scree. The medics came for you.', 'bad']); else { addCond(s, { name: 'Battered from a fall', days: 8, dmg: 1.4 }); lines.push(['A handhold broke away and you fell the height of a house onto the scree.', 'bad']); } break; }
         addCond(s, { name: 'Sprained ankle from a fall', days: 6, dmg: 1 }); s.health -= 6; s.morale -= 6; lines.push([climbAnchor(s) ? 'Your foot slipped on the wet rock and the rope caught you, but not before you smashed an ankle into the face.' : 'A hold crumbled and you slid down the face on your front, landing hard on one foot.', 'bad']); break; }
       sys.lookout = s.day; s.morale += 4; lines.push(['From the top the whole country is laid out: the shore, the river, the timber, the bare ground beyond. You fix it in your head.', 'good']); break;
     }
     case 'raft_cover': { const rf = raftOf(s); s.mats.poles -= 2; s.mats.cordage -= 2; if (!has(s, 'Tarp')) s.mats.boughs -= 6; rf.cover = X.good === false ? 'loose' : true; lines.push([has(s, 'Tarp') ? 'Lashed a low ridge pole on the deck and stretched the tarp over it. Somewhere dry to sit out the rain on the water.' : 'Lashed a low frame on the deck and thatched it with boughs. Somewhere dry to sit out the rain on the water.', 'good']); if (X.good === false) lines.push(['The lashings are loose; it shifts when the raft rocks.', 'muted']); break; }
     case 'raft_fish': {
-      const rf = raftOf(s); rf.inWater = true; if (s.rain) { if (rf.cover) lines.push(['Rain on the cover all afternoon. You fished from under it, dry.', 'muted']); else { s.wet = Math.min(1, s.wet + 0.25); lines.push(['Nowhere to get out of the rain on the open raft.', 'muted']); } }
+      const rf = raftOf(s); rf.inWater = true; if (s.rain) { if (rf.cover === 'loose') { s.wet = Math.min(1, s.wet + 0.1); lines.push(['Rain on the cover all afternoon. The loose lashings let it drip through at the seams.', 'muted']); } else if (rf.cover) lines.push(['Rain on the cover all afternoon. You fished from under it, dry.', 'muted']); else { s.wet = Math.min(1, s.wet + 0.25); lines.push(['Nowhere to get out of the rain on the open raft.', 'muted']); } }
       if (X.spot == null && s.wind && drand(s, 'drift' + s.hours) < 0.25) { s.hours = round1(s.hours + 0.5); s.phase = phaseOf(s); lines.push(['The wind kept pushing the raft down the lake. Half an hour of poling to hold your spot.', 'muted']); }
       if (X.spot === false) { mod *= 0.75; lines.push(['You never got out over the drop-off. Fished the shallows where the wind left you.', 'muted']); } else if (X.spot === true) lines.push(['Held the raft over the drop-off where the water goes dark.', 'muted']);
       if (X.capsize === true || (X.capsize == null && s.wind && chance(s, (X.good === true ? 0.05 : 0.15) * (rf.cover ? 1.3 : 1)))) { /* the cover catches the wind */ s.wet = 1; s.morale -= 6; s.health -= 3; addCond(s, { name: 'Chilled after a capsize', days: 2, dmg: 1.5 }); lines.push(['A gust caught the raft broadside and rolled it. You came up under it in water that took your breath, and swam it in.', 'bad']); break; }
@@ -1915,7 +1916,7 @@ const EVENTS = {
     title: 'Snake', text: s => pick1(s, ['A snake under the log you just lifted, thick as your wrist, not moving.', 'Something slides off the woodpile as you reach for it. Banded, and fast.', 'A snake sunning on the path, a yard from your boot.']),
     options: [
       { label: 'Freeze, then back away', sub: 'The sensible thing.', go(s, L) { s.morale -= 2; if (chance(s, 0.15)) { s.morale -= 3; L.push(['It struck at your shin as you stepped back and hit the snake gaiter. You stand there shaking for a minute.', 'warn']); } else L.push(['It goes its way and you go yours.', 'muted']); } },
-      { label: 'Pin it with a stick and take it', sub: 'Meat, if you are quick. A bite if you are not.', cond: s => !!DATA.foods.snake, go(s, L) { if (chance(s, 0.75)) { addRaw(s, 'snake', L, 'Pinned and killed'); s.morale += 3; } else { s.health -= 10; s.morale -= 10; if (chance(s, 0.35)) { end(s, 'medical', 'Snakebite. The medics flew you out.'); L.push(['It gets you on the wrist. The swelling climbs your arm. You press the button.', 'bad']); } else { addCond(s, { name: 'Snakebite, dry', days: 4, dmg: 1.5 }); L.push(['It bites, but a dry bite, or near enough. A bad day and a swollen hand.', 'bad']); } } } },
+      { label: 'Pin it with a stick and take it', sub: 'Meat, if you are quick. A bite if you are not.', cond: s => !!DATA.foods.snake, go(s, L) { if (chance(s, 0.75)) { addRaw(s, 'snake', L, 'Pinned and killed'); s.morale += 3; } else { s.health -= 10; s.morale -= 10; if (chance(s, 0.35)) { if (end(s, 'medical', 'Snakebite. The medics flew you out.')) L.push(['It gets you on the wrist. The swelling climbs your arm. You press the button.', 'bad']); else { addCond(s, { name: 'Snakebite', days: 5, dmg: 1.5 }); L.push(['It gets you on the wrist. The swelling climbs your arm.', 'bad']); } } else { addCond(s, { name: 'Snakebite, dry', days: 4, dmg: 1.5 }); L.push(['It bites, but a dry bite, or near enough. A bad day and a swollen hand.', 'bad']); } } } },
     ] },
   baboons: { when: 'act', p: 0.04, cond: s => hasPred(s, /baboon/) && ['fish', 'water', 'hunt', 'checktraps', 'search', 'berries', 'forage'].includes(s.lastAction) && (s.stores.length || s.raw.length),
     title: 'Baboons in camp', text: () => 'Barking from camp. A troop of baboons is in your things, and they are not in a hurry.',
@@ -2040,7 +2041,7 @@ function nightAndBody(s, burn, done, lines) {
     if (s.storm && s.crafts.smoker >= 2 && drand(s, 'wksmoker') < 0.08 * (pegged(s) ? 0.4 : 1)) { s.crafts.smoker = 1; for (const z of s.stores) if (z.where === 'smoker') delete z.where; wk.push('The storm tore the boughs off the smoker and knocked the racks loose. A session of work puts it right.'); }
     if ((s.snowfall || s.storm) && snowy(s) && s.crafts.woodshed >= 1 && drand(s, 'wkshed') < 0.06 * (pegged(s) ? 0.4 : 1)) { s.crafts.woodshed = 0; s.mats.poles += 2; wk.push('The woodshed roof came down under the weight of snow. The wood is buried and wet; the shed needs building again.'); }
     if (s.spate && s.crafts.bridge >= 2 && drand(s, 'wkbridge') < 0.25) { s.crafts.bridge = 1; wk.push('The high water took a log out of the bridge. A session of work and it will carry you again.'); }
-    for (const t of wk) lines.push([t, 'bad']); void sys; }
+    for (const t of wk) lines.push([t, 'bad']); }
 
   // raw hides go off in about a week unless they are dried in the smoke
   s.hideRaw = Math.min(s.hideRaw || 0, s.mats.hide); if (s.hideRaw > 0) { s.hideAge = (s.hideAge || 0) + (temperature(s) > 2 ? 1 : 0.4); if (s.hideAge > 6 && chance(s, 0.35)) { s.hideRaw -= 1; s.mats.hide -= 1; lines.push(['One of the hides has gone off, slipping hair and crawling. Dry them in the smoke.', 'muted']); } } else s.hideAge = 0;
@@ -2163,7 +2164,7 @@ function nightAndBody(s, burn, done, lines) {
   if ((s.rain || s.storm || s.wetStreak >= 2) && !(s.shelterType === 'cabin' || s.shelterType === 'rock') && !has(s, 'Ground sheet') && s.stores.some(x => isDry(x) && !x.where) && chance(s, 0.08)) { let n = 0; for (const x of s.stores) if (isDry(x) && !x.where && x.left > 6) { x.left -= 6; n++; } if (n) lines.push(['The dried meat is going furry in this damp. It will not keep as long as it should.', 'warn']); }
   if (fire && has(s, 'Sleeping bag') && (s.fireInside || s.shelterLvl < 2) && chance(s, 0.012)) { s.bagHoles = (s.bagHoles || 0) + 1; s.morale -= 2; lines.push(['A spark from the fire burned a hole in the sleeping bag. Feathers in the morning.', 'bad']); }
   if (biomeOf(s.seasonKey).spiders && !snowy(s) && temperature(s) > 8 && !has(s, 'Hammock') && !s.once_spider && chance(s, 0.004)) { s.once_spider = true; addCond(s, { name: 'Spider bites', days: 4, dmg: 0.5 }); s.morale -= 3; lines.push(['Woke with a row of bites down one side, hot and swollen. Spiders in the bedding.', 'bad']); }
-  if (!snowy(s) && temperature(s) > 8 && s.day < 40 && !se.climate.coast && se.climate.t1 < 5 && !has(s, 'Bug net') && chance(s, 0.5)) { s.morale -= fire ? 0.5 : 1.5; if (chance(s, 0.2)) lines.push([fire ? 'Mosquitoes in the smoke, fewer than there would be.' : 'Mosquitoes all night. No sleep worth the name.', 'muted']); }
+  if (!snowy(s) && temperature(s) > 8 && s.day < 40 && !se.climate.coast && se.climate.t1 < 5 && chance(s, 0.5)) { s.morale -= fire ? 0.5 : 1.5; if (chance(s, 0.2)) lines.push([fire ? 'Mosquitoes in the smoke, fewer than there would be.' : 'Mosquitoes all night. No sleep worth the name.', 'muted']); }
   if (se.predators.length && chance(s, 0.02)) { const who = pickW(s, se.predators); s.morale -= /bear|grizzly|cougar|lion|puma|rhino|wolves|wolf|buffalo/.test(who) ? 9 : 4;
     const txt = /wolves|wolf/.test(who) ? pick1(s, ['Wolves howling across the water, answering each other, for an hour.', 'Wolf tracks through camp in the morning, big as your hand.']) : /bear|grizzly/.test(who) ? pick1(s, ['Something heavy walked past the shelter in the dark, breathing. Bear scat on the path at first light.', 'A bear huffing and popping its jaws out in the trees. You lay with the axe until it went quiet.', 'Fresh claw marks on the tree by the water, higher than your head.']) : /cougar|puma|lion|lynx/.test(who) ? 'Cat tracks on top of yours, from after dark.' : /boar/.test(who) ? 'Pigs squealing and crashing in the brush outside the tent half the night.' : /baboon/.test(who) ? 'Baboons barking from the kopje until dawn.' : /snake/.test(who) ? 'A snake skin, shed, on the path to the water.' : /wolverine/.test(who) ? 'Wolverine tracks round the cache, and a smell like a skunk.' : /fox|jackal/.test(who) ? `A ${who} screaming out past the fire ring. Its tracks are all round the food.` : /marten|mink|fisher/.test(who) ? `${cap(who)} on the woodpile at dusk, looking straight at you.` : `${cap(who)} near camp in the night.`;
     lines.push([txt, 'bad']); }
@@ -2266,7 +2267,7 @@ function nightAndBody(s, burn, done, lines) {
   if (ate.tox) { const what = ate.toxWhat === 'mushrooms' || !ate.toxWhat ? 'mushrooms' : low(DATA.foods[ate.toxWhat].name); addCond(s, { name: what === 'mushrooms' ? 'Mushroom poisoning' : 'Poisoned by a look-alike plant', days: 4, dmg: 4 }); s.morale -= 10; lines.push([`Those ${what} were not what you thought. Vomiting all night.`, 'bad']); note(s, `Ate ${what}${ate.toxLook ? ` (${ate.toxLook})` : ''}. Sick all night.`); }
   else if (ate.okLook) note(s, `Ate mushrooms (${ate.okLook}). No trouble.`);
   /* what you eat teaches you: the field notes remember which mushrooms were fine and which made you sick */
-  if (ate.toxLook || ate.okLook) { const sys = sysOf(s); sys.known = sys.known || {}; if (ate.toxLook) sys.known[ate.toxLook] = 'bad'; if (ate.okLook && sys.known[ate.okLook] !== 'bad') sys.known[ate.okLook] = 'good'; }
+  if (ate.toxLook || ate.okLook) { const sys = sysOf(s); sys.known = sys.known || {}; sys.knownDay = sys.knownDay || {}; for (const l of [ate.toxLook, ate.okLook]) if (l && sys.knownDay[l] == null) sys.knownDay[l] = s.day; if (ate.toxLook) sys.known[ate.toxLook] = 'bad'; if (ate.okLook && sys.known[ate.okLook] !== 'bad') sys.known[ate.okLook] = 'good'; }
 
   const ceiling = Math.max(0, 100 - 5 * early - 15 * serious - 10 * excess - Math.max(0, lf - 0.2) * 200);
   const fed = kcalIn / tdee;
@@ -2434,8 +2435,8 @@ function eat(s, target) {
 // how hard the long game on the mind bites by day: barely at all for the first few weeks, full strength at twice the median rival exit day (six weeks at the least)
 function willRamp(s, se) { const full = Math.max(42, 2 * (se.realMedian || 21)); const f = clamp(s.day / full, 0, 1); return 0.08 + 0.92 * Math.pow(f, 2.5); }
 function addCond(s, c) { const o = s.conditions.find(x => x.name === c.name); if (o) { o.days = Math.max(o.days, c.days); o.dmg = Math.max(o.dmg, c.dmg); return o; } s.conditions.push(c); return c; }
-function floorHealth(s, lines) { if (!Number.isFinite(s.health)) s.health = 50; if (!Number.isFinite(s.morale)) s.morale = 50; if (!Number.isFinite(s.weight)) s.weight = (s.weight0 || 180) * 0.9; if (s.health > 100) s.health = 100; if (s.health <= 0) { s.health = 0; if (s.status === 'playing') { lines.push(['Your legs go and you cannot get up. You press the button.', 'bad']); end(s, 'medical', 'Collapsed. The medical team pulled you out.'); } } }
-function end(s, status, reason) { if (s.status !== 'playing') return; s.status = status; s.endReason = reason; }
+function floorHealth(s, lines) { if (!Number.isFinite(s.health)) s.health = 50; if (!Number.isFinite(s.morale)) s.morale = 50; if (!Number.isFinite(s.weight)) s.weight = (s.weight0 || 180) * 0.9; if (s.health > 100) s.health = 100; if (s.health <= 0) { s.health = 0; if (s.status === 'playing') { if (end(s, 'medical', 'Collapsed. The medical team pulled you out.')) lines.push(['Your legs go and you cannot get up. You press the button.', 'bad']); } } }
+function end(s, status, reason) { if (s.status !== 'playing') return false; if (s.practice && status !== 'tapped') { s.health = Math.max(30, Math.min(s.health, 45)); s.morale = Math.max(35, s.morale); (s.today && s.today.lines || []).push([`In a real drop this would have ended it (${reason.replace(/\.$/, '').toLowerCase()}). Here in the valley, you patch up and carry on.`, 'warn']); return false; } s.status = status; s.endReason = reason; return true; }
 function tapOut(s) { if (s.status === 'playing') { end(s, 'tapped', 'You tapped out.'); logDay(s, s.day, [['You pressed the button. The boat is on its way.', 'info']]); } }
 function logDay(s, day, lines) { s.log.push({ day, lines }); if (s.log.length > 140) s.log.shift(); }
 function placing(s) { const all = season(s).rivals.filter(r => r.days != null); const others = s.rivals.map(r => r.days); const ahead = s.rivals.filter(r => r.days > s.day || (r.place === 1 && r.days === s.day)).length; const tied = others.filter(d => d === s.day).length; return { place: s.status === 'won' ? 1 : ahead + 1, of: others.length + 1, tied, cast: all }; }
@@ -2542,13 +2543,14 @@ const sfx = (() => {
     apply() { if (!ctx) return; master.gain.linearRampToValueAtTime(settings.sound ? settings.volume : 0, ctx.currentTime + 0.2); },
     ambience(key, want) { // want: {fire, wind, water, owls, birds}
       if (!ctx) return; const k = JSON.stringify(want); if (k === ambState) return; ambState = k;
-      for (const [n, on] of Object.entries(want)) { if (on) layer(n, { fire: crackle(), wind: loopNoise('bandpass', 400, 0.4, 0.35, [0.15, 250]), water: loopNoise('lowpass', 500, 0.5, 0.18, [0.25, 180]), owls: owls(), birds: birds() }[n]); else drop(n); }
+      const make = { fire: () => crackle(), wind: () => loopNoise('bandpass', 400, 0.4, 0.35, [0.15, 250]), water: () => loopNoise('lowpass', 500, 0.5, 0.18, [0.25, 180]), owls: () => owls(), birds: () => birds() }; /* build only the layer asked for */
+      for (const [n, on] of Object.entries(want)) { if (on) layer(n, make[n]()); else drop(n); }
     },
     stopAll() { if (!ctx) return; for (const n of Object.keys(amb)) drop(n); ambState = ''; },
   };
 })();
-document.addEventListener('pointerdown', () => sfx.unlock(), { once: false, passive: true });
-document.addEventListener('keydown', () => sfx.unlock(), { passive: true });
+document.addEventListener('pointerdown', () => { sfx.unlock(); if (typeof updateAmbience === 'function') updateAmbience(); }, { once: false, passive: true });
+document.addEventListener('keydown', () => { sfx.unlock(); if (typeof updateAmbience === 'function') updateAmbience(); }, { passive: true });
 document.addEventListener('visibilitychange', () => { if (document.hidden) sfx.stopAll(); else updateAmbience(); });
 function updateAmbience() {
   if (!S || S.status !== 'playing' || app.className !== 'play') { sfx.stopAll(); return; }
@@ -2587,7 +2589,6 @@ function feel(lines) {
 
 let S = null;            // game state (engine owns it)
 let setup = { season: null, gear: [], weight: 180, showRemaining: false, budget: false };
-let view = null;         // transient card: {kind:'result'|'night'|'morning', lines, title}
 let mini = null;         // running mini-game
 
 // how hard a season is comes from the rival exit days: when the middle of the pack went home, against the winner
@@ -2652,7 +2653,7 @@ function recordRun(s, place) { // once per run; returns {newBest, newBadges}
 }
 function dailyKey() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function dailyPlan(key = dailyKey()) { let h = 2166136261; for (const ch of key) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return { key, seed: h, season: D.seasons[h % D.seasons.length] }; }
-function startGame(seasonKey, gear, opts) { S = E.newGame(seasonKey, gear, opts); S.big = !S.practice; view = { kind: 'morning', title: 'Drop day', lines: S.log[0].lines, first: true }; save(); renderGame(); window.scrollTo(0, 0); }
+function startGame(seasonKey, gear, opts) { S = E.newGame(seasonKey, gear, opts); S.big = !S.practice; save(); renderGame(); window.scrollTo(0, 0); }
 function summaryText() {
   const se = E.season(S); const place = S.status === 'won' ? 1 : placeOf();
   return `Last One Out · ${se.name}, ${se.location}${S.daily ? ` · daily challenge ${S.daily}` : ''}\n${S.status === 'won' ? 'Won' : `Day ${S.day}`} · place ${place} of ${S.rivals.length + 1} · lost ${Math.round((1 - S.weight / S.weight0) * 100)}% body weight\n${S.endReason}`;
@@ -3021,7 +3022,7 @@ function drawLook(t, snow, sway, look) {
 }
 
 // ------------------------------------------------------------ the world: a top-down camp you walk around in
-// view and mini are declared above
+// mini is declared above
 const HOME = { w: 3200, h: 2200, top: 320, right: 2720 }; // the old design space: camp and its ring of places are laid out in this, then set down somewhere on the big map
 const MAP = { w: 15300, h: 15300, top: 320, right: 15140 }; // 1.6 km a side: a square mile, at 9.5 px per metre
 const BIGMAP = { ...MAP }; let AREA = (MAP.w * (MAP.h - MAP.top)) / (HOME.w * (HOME.h - HOME.top));
@@ -3100,6 +3101,7 @@ function phaseName() {
   if (S.phase < 0) return 'dawn';
   const f = S.hours / E.dayHours(S); return f < 0.3 ? 'morning' : f < 0.65 ? 'afternoon' : f < 0.92 ? 'evening' : 'dusk';
 }
+if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) { r = Math.max(0, Math.min(typeof r === 'number' ? r : (Array.isArray(r) ? r[0] : 0) || 0, Math.abs(w) / 2, Math.abs(h) / 2)); this.moveTo(x + r, y); this.arcTo(x + w, y, x + w, y + h, r); this.arcTo(x + w, y + h, x, y + h, r); this.arcTo(x, y + h, x, y, r); this.arcTo(x, y, x + w, y, r); this.closePath(); return this; }; /* older browsers */
 function seeded(key) { let h = 2166136261; for (const ch of key) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return () => { h = (h + 0x6D2B79F5) >>> 0; let t = Math.imul(h ^ (h >>> 15), h | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
@@ -3406,7 +3408,7 @@ function reveal(x, y, r) {
   if (!W.exp) { let ex = S.explored || []; if (S.exploredCell !== CELL) { const oc = S.exploredCell || 80, ocols = Math.ceil(HOME.w / oc); ex = [...new Set(ex.map(k => cellOf((k % ocols) * oc + oc / 2, Math.floor(k / ocols) * oc + oc / 2)))]; S.exploredCell = CELL; S.explored = ex; } W.exp = new Set(ex); }
   let added = false; const c0 = Math.floor((x - r) / CELL), c1 = Math.floor((x + r) / CELL), r0 = Math.floor((y - r) / CELL), r1 = Math.floor((y + r) / CELL);
   for (let ry = Math.max(0, r0); ry <= r1; ry++) for (let cx2 = Math.max(0, c0); cx2 <= Math.min(COLS - 1, c1); cx2++) { const k = ry * COLS + cx2; if (W.exp.has(k)) continue; const mx = cx2 * CELL + CELL / 2, my = ry * CELL + CELL / 2; if (Math.hypot(mx - x, my - y) <= r) { W.exp.add(k); added = true; } }
-  if (added) { S.explored = [...W.exp]; W.fogKey = (W.fogKey || 0) + 1; }
+  if (added) S.explored = [...W.exp];
 }
 function update(dt) {
   if (W.paused) return;
@@ -3457,6 +3459,7 @@ function update(dt) {
   if (W.prints) { for (const f of W.prints) f.age += dt; W.prints = W.prints.filter(f => f.age < 25); }
   for (const x of W.toasts) x.age += dt; W.toasts = W.toasts.filter(x => x.age < x.life);
   for (const f of W.fx) f.age += dt; W.fx = W.fx.filter(f => f.age < f.life);
+  if (W.cam && !W.night && !W.inside && W.fx.length < 60) { const V = vis(), fd = V.fallDay || 40; if (S.day >= fd && S.day < fd + 18 && !W.snowNow) { W.leafT = (W.leafT || 0) + dt * (S.wind || S.storm ? 3 : 1); if (W.leafT > 0.18) { W.leafT = 0; const near = W.trees.filter(t => !t.gone && t.kind !== 'conifer' && t.kind !== 'snag' && t.kind !== 'log' && t.x > W.cam.x && t.x < W.cam.x + W.cam.w && t.y > W.cam.y && t.y < W.cam.y + W.cam.h); const t = near[Math.floor(Math.random() * near.length)]; if (t) W.fx.push({ kind: 'leaf', x: t.x + (Math.random() - 0.5) * 30, y: t.y - 40 - Math.random() * 20, age: 0, life: 3.5, ph: Math.random() * 6.28, c: V.fall || '#c8862a' }); } } } /* autumn leaves come down */
   if (mini && mini.update) mini.update(dt);
   if (mini && mini.deadline && W.t > mini.deadline) mini.cancel();
   const vw = cv.width / (W.scale * devicePixelRatio), vh = cv.height / (W.scale * devicePixelRatio);
@@ -3878,7 +3881,8 @@ function guideText() {
 }
 
 // ------------------------------------------------------------ doing jobs through the engine
-function autoResolve() { const ev = S.event; if (!ev || ev.id === 'wound' || ev.id === 'bear') return; const lines = E.choose(S, ev.options.length - 1); banner(lines); W.actor = null; W.carcassEv = null; W.run = false; }
+let URNG = null; const urand = () => (URNG ? URNG() : Math.random());
+function autoResolve() { if (S) URNG = seeded(`${S.seed}|${S.day}|${S.hours}|${(S.today && S.today.done || []).length}|mini`); const ev = S.event; if (!ev || ev.id === 'wound' || ev.id === 'bear') return; const lines = E.choose(S, ev.options.length - 1); banner(lines); W.actor = null; W.carcassEv = null; W.run = false; }
 // ---------- hauling: heavy things go on your back, what does not fit is stacked where you cut it
 const BULKY = ['logs', 'poles', 'firewood', 'stone', 'clay', 'boughs', 'moss'];
 const BULKY_NAME = { logs: 'logs', poles: 'poles', firewood: 'days of firewood', stone: 'stones', clay: 'clay', boughs: 'boughs', moss: 'moss' };
@@ -3959,7 +3963,7 @@ function endMini() { mini = null; miniUI(''); W.floatOn = null; W.player.cast = 
 function startFish(run) {
   if (S.event && S.event.id !== 'fishrun') autoResolve();
   const atPond = W.pond && near(W.pond, W.pond.r + 50) && (!atShore() || dist(W.player, W.pond) < W.pond.r + 30);
-  const p = W.player; const ice = E.status(S).frozen; const trail = []; const temper = ['nibbler', 'striker', 'runner'][Math.floor(Math.random() * 3)]; let fishCue = ''; let cast = 0, state = 'cast', castDone = false, t = 0, dipAt = 0, dipT = 0, fightT = 0, tension = 0.5, hold = false, out = 0, good = 0;
+  const p = W.player; const ice = E.status(S).frozen; const trail = []; const temper = ['nibbler', 'striker', 'runner'][Math.floor(urand() * 3)]; let fishCue = ''; let cast = 0, state = 'cast', castDone = false, t = 0, dipAt = 0, dipT = 0, fightT = 0, tension = 0.5, hold = false, out = 0, good = 0;
   const fl = { x: p.x - 40, y: p.y, dip: 0 }; const pool = W.desert ? (poolNear(120) || W.pool) : atPond ? W.pond : null; if (!pool) fl.x = Math.min(fl.x, W.shoreX(fl.y) - 20); else { const a = Math.atan2(pool.y - p.y, pool.x - p.x); fl.x = pool.x - Math.cos(a) * 8; fl.y = pool.y - Math.sin(a) * 5; }
   let bites = true; const finish = (mod, fight, fumble, landed, nobite) => { if (!mini) return; const extra = { fight, fumble, landed, nobite, water: atRiver() ? 'river' : atPond ? 'pond' : 'lake' }; endMini(); if (run) { const before = snap(); const lines = E.choose(S, 0); W.run = false; afterAct('fish', lines, before); } else doAct('fish', extra, mod); };
   const m = mini = { type: 'fish', float: fl, ice, deadline: W.t + 40,
@@ -3981,7 +3985,7 @@ function startFish(run) {
     acts: [{ label: 'Cast', sub: 'hold, then let go', primary: true, fn: () => {} }, { label: 'Reel in', sub: 'not now, no time spent', fn: () => { if (mini && state === 'cast') endMini(); } }],
     cancel: () => finish(1, undefined, state === 'cast' ? 0.5 : 1) };
   // cast button is a hold: we drive it from pointer events on the act button
-  m.acts[0].down = () => { hold = true; }; m.acts[0].up = () => { if (castDone) return; castDone = true; hold = false; m.acts.length = 1; lastActs = ''; const d = 40 + cast * 90; if (!W.desert && !atPond) { fl.x = Math.min(p.x - d, W.shoreX(fl.y) - 20); } state = 'wait'; t = 0; dipAt = 1 + Math.random() * 2.5 - cast * 0.5; bites = Math.random() < Math.min(0.95, E.fishOdds(S, atRiver() ? 'river' : atPond ? 'pond' : 'lake') * (0.9 + 0.3 * cast)); /* the game's own odds decide whether anything takes the bait; a long cast reaches deeper water */ W.floatOn = fl; p.cast = true; sfx.play('splash'); m.acts = [{ label: 'Set the hook', sub: ice ? 'when the line twitches' : 'when the float dips', primary: true, fn: () => { if (state === 'dip') { state = 'fight'; fightT = 0; tension = 0.5; sfx.play('tap'); m.acts = [{ label: 'Hold the rod', sub: 'tension', primary: true, down: () => { hold = true; }, up: () => { hold = false; } }]; lastActs = ''; } else if (state === 'wait') { state = 'spooked'; miniUI('<div class="mtext">Too early. Spooked it.</div>'); setTimeout(() => finish(1, undefined, 0.6), 700); } } },
+  m.acts[0].down = () => { hold = true; }; m.acts[0].up = () => { if (castDone) return; castDone = true; hold = false; m.acts.length = 1; lastActs = ''; const d = 40 + cast * 90; if (!W.desert && !atPond) { if (atRiver() && W.river && p.x < W.river.xEnd) { const mid = (W.river.y0 + W.river.y1) / 2; fl.x = p.x + (urand() - 0.5) * 30; fl.y = mid + (p.y < mid ? -1 : 1) * Math.max(0, (W.river.y1 - W.river.y0) / 2 - 12 - cast * 10); } else fl.x = Math.min(p.x - d, W.shoreX(fl.y) - 20); } state = 'wait'; t = 0; dipAt = 1 + urand() * 2.5 - cast * 0.5; bites = urand() < Math.min(0.95, E.fishOdds(S, atRiver() ? 'river' : atPond ? 'pond' : 'lake') * (0.9 + 0.3 * cast)); /* the game's own odds decide whether anything takes the bait; a long cast reaches deeper water */ W.floatOn = fl; p.cast = true; sfx.play('splash'); m.acts = [{ label: 'Set the hook', sub: ice ? 'when the line twitches' : 'when the float dips', primary: true, fn: () => { if (state === 'dip') { state = 'fight'; fightT = 0; tension = 0.5; sfx.play('tap'); m.acts = [{ label: 'Hold the rod', sub: 'tension', primary: true, down: () => { hold = true; }, up: () => { hold = false; } }]; lastActs = ''; } else if (state === 'wait') { state = 'spooked'; miniUI('<div class="mtext">Too early. Spooked it.</div>'); setTimeout(() => finish(1, undefined, 0.6), 700); } } },
     { label: 'Reel in', sub: 'give up on this cast', fn: () => { if (state !== 'wait' && state !== 'dip') return; state = 'done'; miniUI('<div class="mtext">Reeled in. Maybe something follows the bait in; maybe not.</div>'); setTimeout(() => finish(1, undefined, 0.4, undefined, !bites), 500); } }]; lastActs = ''; };
   miniUI(W.desert ? '<div class="mtext">Cast into the pool. Catfish sit on the bottom.</div>' : atPond ? '<div class="mtext">Small water, small fish. Drop the bait by the beaver lodge.</div>' : atRiver() ? '<div class="mtext">Cast upstream and let it drift through the pool below the riffle.</div>' : '<div class="mtext">Hold Cast to throw further out. Deeper water, better odds.</div>'); p.dir = pool ? Math.atan2(pool.y - p.y, pool.x - p.x) : Math.PI; lastActs = ''; refreshActs();
 }
@@ -4011,7 +4015,7 @@ function startTrack() {
   const RIGHT = ['Blood on the underside of the leaves, low, and a scuff where it stumbled.', 'Bright drops on the stones, and hair caught on a snag at shoulder height.', 'The prints are deep and uneven, the steps short. It is hurt.'];
   const WRONG = ['Prints, but the edges have crumbled and dried. Older.', 'A clean track, long even strides. Something healthy went this way.', 'Droppings beside the trail, but no blood anywhere near them.'];
   const giveUp = () => ({ label: 'Give up the trail', sub: `${found} of ${W.blood.length} drops`, fn: finish });
-  const fork = () => { forked = true; const right = RIGHT[Math.floor(Math.random() * RIGHT.length)], wrong = WRONG[Math.floor(Math.random() * WRONG.length)]; const leftIsRight = Math.random() < 0.5;
+  const fork = () => { forked = true; const right = RIGHT[Math.floor(urand() * RIGHT.length)], wrong = WRONG[Math.floor(urand() * WRONG.length)]; const leftIsRight = urand() < 0.5;
     const pick = ok => { lost = !ok; mini.acts = [giveUp()]; miniUI(`<div class="mtext">${ok ? 'The blood again. On you go.' : 'Nothing. No blood for a long way. You lost time on that.'} Walk to the next drop.</div>`); sfx.play(ok ? 'tap' : 'bad'); lastActs = ''; };
     mini.acts = [{ label: 'Bear left', sub: leftIsRight ? right : wrong, fn: () => pick(leftIsRight) }, { label: 'Bear right', sub: leftIsRight ? wrong : right, fn: () => pick(!leftIsRight) }, giveUp()];
     miniUI('<div class="mtext">The trail splits. Read the sign.</div>'); lastActs = ''; refreshActs(); };
@@ -4040,7 +4044,7 @@ function startChop(tree, id, fell) {
   let fellEx = null; /* the last swing of a felling: it cracks, and you step clear */
   const crack = () => { if (!mini) return; const ad = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b))); let cleared = false; sfx.play('bad'); buzz(40); W.fx.push({ kind: 'chip', x: tree.x, y: tree.y, age: 0, life: 0.8 });
     mini.acts = [{ label: 'Step clear', sub: 'now, back and to the side', primary: true, fn: () => { cleared = true; } }]; lastActs = ''; refreshActs(); miniUI('<div class="mtext">It cracks. It is going!</div>');
-    setTimeout(() => { if (!mini) return; const off = ad(fell.aim, fell.lean.a); const held = good >= need - 1 && (off <= 1.2 || Math.random() < (off > 2 ? 0.35 : 0.65) * (good >= need ? 1.2 : 0.8)); const dir = held ? fell.aim : fell.lean.a;
+    setTimeout(() => { if (!mini) return; const off = ad(fell.aim, fell.lean.a); const held = good >= need - 1 && (off <= 1.2 || urand() < (off > 2 ? 0.35 : 0.65) * (good >= need ? 1.2 : 0.8)); const dir = held ? fell.aim : fell.lean.a;
       fellEx = { fell: held ? 'aimed' : 'lean', hung: fell.near.some(o => ad(o.a, dir) < 0.35 && o.d < 110), hitCamp: fell.camp != null && ad(fell.camp, dir) < 0.45, kick: !cleared }; finish(); }, 1300); };
   mini = { type: 'chop', tree, deadline: W.t + 30, get pos() { return (Math.sin(t * 1.4 * Math.PI) + 1) / 2; }, update(dt) { t += dt; },
     acts: [{ label: E.chopper(S) || E.cutter(S) ? 'Swing' : 'Haul', sub: `0 of ${need}`, primary: true, fn: () => { n++; if (mini.acts.length > 1) { mini.acts.length = 1; lastActs = ''; } const hit = Math.abs(mini.pos - 0.5) < 0.12; if (hit) good++; tree.shake = 0.25; sfx.play('axe'); buzz(hit ? 20 : 8); W.fx.push({ kind: 'chip', x: tree.x, y: tree.y, age: 0, life: 0.5 }); mini.acts[0].sub = `${n} of ${need}${hit ? ' · clean hit' : ''}`; lastActs = ''; if (n >= need) { if (fell) crack(); else finish(); } } }], cancel: finish };
@@ -4060,7 +4064,7 @@ function startCollect(id, kind, at) {
   const key = srcKey(at, id); const P = S.partial || (S.partial = {});
   const full = Math.max(1, E.collectSize(S, id, { tree, ripe }));
   const total = key && P[key] ? Math.min(P[key], full) : full; const n = Math.min(10, total); const per = total / n;
-  for (let i = 0; i < n; i++) { const a = i * (6.283 / n) + Math.random() * 0.5; const r = 26 + (i % 2) * 14 + Math.random() * 8; items.push({ x: base.x + Math.cos(a) * r, y: base.y + Math.sin(a) * r * 0.75, kind, got: false }); }
+  for (let i = 0; i < n; i++) { const a = i * (6.283 / n) + urand() * 0.5; const r = 26 + (i % 2) * 14 + urand() * 8; items.push({ x: base.x + Math.cos(a) * r, y: base.y + Math.sin(a) * r * 0.75, kind, got: false }); }
   let picked = 0; const noun = COLLECT_NOUN[kind] || 'items';
   const finish = (how) => { if (!mini) return; endMini(); W.collect = null;
     const got = Math.round(picked * per), left = total - got;
@@ -4092,24 +4096,33 @@ function startForage() {
 function startSearch() {
   autoResolve(); const C = 10, R = 3, seen = new Set(); let drag = false, worked = false;
   const finish = () => { if (!mini) return; endMini(); doAct('search', { cover: seen.size / (C * R) }); }; const quit = () => { if (mini) endMini(); };
-  const svg = pad(`<rect x="0" y="0" width="300" height="90" fill="#cbb98e"/>${Array.from({ length: 60 }, () => `<circle cx="${(Math.random() * 300).toFixed(0)}" cy="${(Math.random() * 90).toFixed(0)}" r="${(0.6 + Math.random()).toFixed(1)}" fill="#a8956a"/>`).join('')}<g id="swept"></g>`, 300, 90);
+  const svg = pad(`<rect x="0" y="0" width="300" height="90" fill="#cbb98e"/>${Array.from({ length: 60 }, () => `<circle cx="${(urand() * 300).toFixed(0)}" cy="${(urand() * 90).toFixed(0)}" r="${(0.6 + urand()).toFixed(1)}" fill="#a8956a"/>`).join('')}<g id="swept"></g>`, 300, 90);
   const sweep = (p) => { const cx = Math.floor(p.x / 30), cy = Math.floor(p.y / 30); if (cx < 0 || cy < 0 || cx >= C || cy >= R) return; const k = cx + ',' + cy; if (seen.has(k)) return; seen.add(k); worked = true;
-    if (svg) svg.querySelector('#swept').insertAdjacentHTML('beforeend', `<rect x="${cx * 30}" y="${cy * 30}" width="30" height="30" fill="#9e8c62" opacity=".55"/>${Math.random() < 0.3 ? `<circle cx="${cx * 30 + 8 + Math.random() * 14}" cy="${cy * 30 + 8 + Math.random() * 14}" r="2.5" fill="#e8e2d2"/>` : ''}`);
+    if (svg) svg.querySelector('#swept').insertAdjacentHTML('beforeend', `<rect x="${cx * 30}" y="${cy * 30}" width="30" height="30" fill="#9e8c62" opacity=".55"/>${urand() < 0.3 ? `<circle cx="${cx * 30 + 8 + urand() * 14}" cy="${cy * 30 + 8 + urand() * 14}" r="2.5" fill="#e8e2d2"/>` : ''}`);
     padText(`${Math.round(seen.size / (C * R) * 100)}% of the strip turned over.`); if (seen.size >= C * R) setTimeout(finish, 250); };
   if (svg) { svg.onpointerdown = (e) => { drag = true; svg.setPointerCapture(e.pointerId); sweep(svg.toLocal(e)); }; svg.onpointermove = (e) => { if (drag) sweep(svg.toLocal(e)); }; svg.onpointerup = () => { drag = false; }; }
   mini = { type: 'craft', deadline: W.t + 30, update() {}, acts: [{ label: 'Done looking', sub: 'take what you found', fn: () => worked ? finish() : quit() }], cancel: () => worked ? finish() : quit() };
   padText(W.desert ? 'Drag your hand through the silt at the pool edge.' : 'Drag your hand across the wrack line. Turn the sand over.'); lastActs = ''; refreshActs();
 }
+function mushArt(desc, cutInside) { const d = desc.toLowerCase(); const cap = /red/.test(d) ? '#b8402e' : /orange/.test(d) ? '#d07a2e' : /honey/.test(d) ? '#c8963c' : /white cap/.test(d) ? '#ece6d6' : /grey/.test(d) ? '#8a8a84' : /tan/.test(d) ? '#b8946a' : /pitted|honeycomb/.test(d) ? '#a8865a' : /brain|folded/.test(d) ? '#9a5a3a' : '#8a6040';
+  const long = /long stem/.test(d), cluster = /cluster/.test(d), pitted = /pitted|honeycomb/.test(d), brain = /brain|folded/.test(d), sponge = /spongy/.test(d), ring = /ring/.test(d) && !/no ring/.test(d), cup = /cup at the base/.test(d), fleck = /fleck/.test(d);
+  const one = (x, k) => { const sh = long ? 46 : 30; const top = 78 - sh; let g = `<rect x="${x - 5 * k}" y="${top}" width="${10 * k}" height="${sh}" rx="4" fill="#ede6d4"/>`;
+    if (pitted || brain) g += `<ellipse cx="${x}" cy="${top - 8}" rx="${14 * k}" ry="${20 * k}" fill="${cap}"/>` + Array.from({ length: 8 }, (_, i) => pitted ? `<circle cx="${x - 7 + (i % 3) * 7}" cy="${top - 20 + Math.floor(i / 3) * 9}" r="2.6" fill="#5a4630"/>` : `<path d="M ${x - 10} ${top - 22 + i * 4} q 10 -4 20 0" stroke="#5a2a1a" stroke-width="1.4" fill="none"/>`).join('');
+    else { g += `<path d="M ${x - 28 * k} ${top} Q ${x} ${top - 30 * k} ${x + 28 * k} ${top} Z" fill="${cap}"/>` + (sponge ? `<rect x="${x - 26 * k}" y="${top}" width="${52 * k}" height="5" fill="#c8b070" opacity=".9"/>` : Array.from({ length: 9 }, (_, i) => `<path d="M ${x - 24 * k + i * 6 * k} ${top + 1} L ${x - 20 * k + i * 5 * k} ${top + 5}" stroke="#d8d0be" stroke-width="1"/>`).join(''));
+      if (fleck) g += Array.from({ length: 6 }, (_, i) => `<circle cx="${x - 16 * k + i * 6 * k}" cy="${top - 8 - (i % 2) * 6}" r="2.2" fill="#f4efe2"/>`).join(''); if (ring) g += `<rect x="${x - 8 * k}" y="${top + 10}" width="${16 * k}" height="3" rx="1.5" fill="#d8d0be"/>`; }
+    if (cup) g += `<ellipse cx="${x}" cy="80" rx="${12 * k}" ry="6" fill="#e2dccb" stroke="#bdb5a0"/>`; return g; };
+  let art = cluster ? one(120, 0.75) + one(150, 0.9) + one(178, 0.7) : one(150, 1);
+  if (cutInside) { const blue = /blue/.test(cutInside), hollow = /hollow/.test(cutInside), cotton = /cotton|fibre/.test(cutInside); art += `<g transform="translate(232 0)"><rect x="-6" y="38" width="12" height="42" rx="4" fill="${blue ? '#6a8ac8' : '#f2ecdc'}"/>${hollow ? '<rect x="-3" y="40" width="6" height="38" fill="#3a3028"/>' : cotton ? '<rect x="-3" y="40" width="6" height="38" fill="#e8e0cc" stroke="#c8c0aa" stroke-dasharray="1 2"/>' : ''}<path d="M -22 38 Q 0 18 22 38 Z" fill="${blue ? '#6a8ac8' : '#f2ecdc'}" stroke="${cap}" stroke-width="3"/></g>`; }
+  return `<rect x="0" y="80" width="300" height="20" fill="#5a4a32"/>${art}`; }
 function startMushroom(bush) {
   autoResolve(); const [look, risky] = bush.look; const i = MUSH_LOOKS.indexOf(bush.look); const name = MUSH_NAMES[i] || 'Mushrooms'; const known = ((S.sys || {}).known || {})[look];
-  let sure = Math.random() < 0.6 + 0.3 * (S.skill.forage - 1), cut = false;
+  let sure = urand() < 0.6 + 0.3 * (S.skill.forage - 1), cut = false;
   const hint = () => known === 'good' ? `Your notes: ${name}. Fine last time.` : known === 'bad' ? `Your notes: ${name}. These made you sick.` : cut ? `Inside: ${MUSH_INSIDE[i] || 'nothing you recognise'}.` : sure ? (risky ? 'Something about it looks wrong.' : 'You are fairly sure these are good.') : 'You cannot tell.';
-  const pick = () => { endMini(); bush.used = true; markRegrow('b' + bush.k, 'mushrooms'); doAct('mushrooms', { tox: known === 'good' ? false : known === 'bad' ? true : risky && Math.random() < (cut ? 0.85 : 0.7), look, name: known ? name : null }); };
+  const pick = () => { endMini(); bush.used = true; markRegrow('b' + bush.k, 'mushrooms'); doAct('mushrooms', { tox: known === 'good' ? false : known === 'bad' ? true : risky && urand() < (cut ? 0.85 : 0.7), look, name: known ? name : null }); };
   const acts = () => [{ label: 'Pick them', sub: hint(), primary: known === 'good' || (sure && !risky && !known), fn: pick },
-    ...(!cut && !known ? [{ label: 'Cut one open', sub: 'look inside first', fn: () => { cut = true; mini.acts = acts(); miniUI(`<div class="mtext">${esc(MUSH_INSIDE[i] ? MUSH_INSIDE[i].charAt(0).toUpperCase() + MUSH_INSIDE[i].slice(1) : 'Nothing you recognise')}.</div>`); lastActs = ''; } }] : []),
+    ...(!cut && !known ? [{ label: 'Cut one open', sub: 'look inside first', fn: () => { cut = true; mini.acts = acts(); pad(mushArt(look, MUSH_INSIDE[i] || 'white'), 300, 100); padText(`${MUSH_INSIDE[i] ? MUSH_INSIDE[i].charAt(0).toUpperCase() + MUSH_INSIDE[i].slice(1) : 'Nothing you recognise'}.`); lastActs = ''; } }] : []),
     { label: 'Leave them', sub: '', fn: () => { endMini(); } }];
-  mini = { type: 'look', free: true, deadline: W.t + 60, update() { if (dist(W.player, bush) > 60) endMini(); }, acts: [], cancel: () => endMini() }; mini.acts = acts();
-  miniUI(`<div class="mtext">${known ? `<b>${esc(name)}</b>: ` : ''}${esc(look.charAt(0).toUpperCase() + look.slice(1))}.</div>`); lastActs = ''; refreshActs();
+  mini = { type: 'look', free: true, deadline: W.t + 60, update() { if (dist(W.player, bush) > 60) endMini(); }, acts: [], cancel: () => endMini() }; mini.acts = acts(); pad(mushArt(look), 300, 100); padText(`${known ? name + ': ' : ''}${look.charAt(0).toUpperCase() + look.slice(1)}.`); lastActs = ''; refreshActs();
 }
 // ---------- the hands-on close-ups, painted (phase 7): the still part of each picture becomes one watercolour; what moves stays live
 function muteCol(v, k = 0.24) { if (typeof v !== 'string') return v; let h = v.trim(); if (/^#[0-9a-f]{3}$/i.test(h)) h = '#' + h.slice(1).split('').map(c => c + c).join(''); if (!/^#[0-9a-f]{6}$/i.test(h) || /^#f{6}$/i.test(h)) return v; const n = parseInt(h.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255; const l = 0.3 * r + 0.59 * g + 0.11 * b; r = Math.round(r + (l - r) * k); g = Math.round(g + (l - g) * k); b = Math.round(b + (l - b) * k); return '#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1); }
@@ -4170,7 +4183,7 @@ function framePoles(d, C) { const segs = []; let cur = null; const tok = d.match
 function pad(inner, w, h, cls) {
   const m = hudEl && hudEl.querySelector('#mini'); if (!m) return null;
   m.innerHTML = `<svg class="pad ${cls || ''}" viewBox="0 0 ${w} ${h}" width="${Math.min(w, 340)}" height="${Math.min(w, 340) * h / w}">${padPaint(inner, w, h)}</svg><div class="mtext" id="padtext"></div>`;
-  const svg = m.querySelector('svg'); svg.toLocal = (e) => { const r = svg.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * w, y: (e.clientY - r.top) / r.height * h }; };
+  const svg = m.querySelector('svg'); KPAD.x = w / 2; KPAD.y = h / 2; KPAD.down = false; svg.toLocal = (e) => { const r = svg.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * w, y: (e.clientY - r.top) / r.height * h }; };
   return svg;
 }
 function padText(t) { const el = hudEl && hudEl.querySelector('#padtext'); if (el && el.textContent !== t) el.textContent = t; }
@@ -4212,7 +4225,7 @@ function startDress() {
 }
 /* plucking: swipe with the lie of the feathers, toward the tail. Against the grain tears the skin */
 function startPluck(next) {
-  const F = []; for (let i = 0; i < 46; i++) F.push({ x: 70 + Math.random() * 170, y: 38 + Math.random() * 40, on: true }); let rip = 0, last = null;
+  const F = []; for (let i = 0; i < 46; i++) F.push({ x: 70 + urand() * 170, y: 38 + urand() * 40, on: true }); let rip = 0, last = null;
   const svg = pad(`<path d="M 34 62 C 40 36, 120 26, 196 34 C 236 38, 262 50, 268 62 C 258 82, 190 92, 120 90 C 64 88, 36 80, 34 62 Z" fill="#e8c4a8"/><circle cx="262" cy="44" r="15" fill="#7a6650"/><g id="fe">${F.map((f, i) => `<path data-i="${i}" d="M ${f.x.toFixed(0)} ${f.y.toFixed(0)} q -9 -3 -14 2 q 6 3 14 -2" fill="#8a7458" stroke="#6e5a42" stroke-width=".6"/>`).join('')}</g><text x="20" y="18" font-size="9" fill="#e8e0cc" opacity=".75">tail ←</text>`, 300, 110);
   if (!svg) return next(false);
   const left = () => F.filter(f => f.on).length;
@@ -4253,7 +4266,7 @@ function startGuts(next) {
 }
 /* quartering: feel for each joint along the leg and cut there. Tap wrong and you are cutting bone */
 function startQuarter(next) {
-  const legs = [[60, 88, 56, 108], [90, 90, 88, 108], [190, 90, 190, 108], [230, 86, 236, 108]].map(([x1, y1, x2, y2]) => ({ x1: x1, y1: y1 - 34, x2, y2, j: 0.3 + Math.random() * 0.45, done: false })); let bone = 0;
+  const legs = [[60, 88, 56, 108], [90, 90, 88, 108], [190, 90, 190, 108], [230, 86, 236, 108]].map(([x1, y1, x2, y2]) => ({ x1: x1, y1: y1 - 34, x2, y2, j: 0.3 + urand() * 0.45, done: false })); let bone = 0;
   const pt = (l, f) => [l.x1 + (l.x2 - l.x1) * f, l.y1 + (l.y2 - l.y1) * f];
   const svg = pad(`<path d="M 30 50 C 50 20, 120 12, 200 16 C 250 18, 275 30, 278 50 C 270 70, 200 76, 120 74 C 60 72, 36 66, 30 50 Z" fill="#a04a3a"/>${legs.map((l, i) => `<path class="leg" data-i="${i}" d="M ${l.x1} ${l.y1} L ${l.x2} ${l.y2}" stroke="#8a3e30" stroke-width="10" stroke-linecap="round"/>`).join('')}<g id="qm"></g>`, 300, 110);
   if (!svg) return next(0);
@@ -4336,13 +4349,14 @@ function startLash(id, joints, text, shape, extra) {
   padText(text); lastActs = ''; refreshActs();
 }
 /* shelter stages (mini-game brief 5.4): each session of a build is its own job, and a job done badly shows up later as a named fault */
-const BUILD_STAGES = { tarp: ['frame'], leanto: ['frame'], hut: ['frame', 'shingle'], snowcave: ['dig', 'vent'], rock: ['stack', 'frame', 'chink'], cabin: ['notch', 'notch', 'notch', 'chink'] };
+const BUILD_STAGES = { tarp: ['frame'], leanto: ['frame'], hut: ['frame', 'shingle'], snowcave: ['dig', 'vent'], rock: ['stack', 'frame', 'chink'], cabin: ['sill', 'notch', 'roof', 'chink'] };
 function buildStage() { const st = BUILD_STAGES[S.shelterGoal] || ['frame']; const n = (E.shelterBill(S) || {}).sessions || 1, w = S.shelterWork || 0;
   return n <= 1 ? st[0] : w >= n - 1 ? st[st.length - 1] : st[Math.min(st.length - 2, w)]; } /* the last session is always the finishing job */
-const STAGE_NAME = { frame: 'lash the frame', shingle: 'shingle the roof', dig: 'dig it out', vent: 'open an air hole', stack: 'stack the wall', chink: 'chink the gaps', notch: 'notch and lay logs' };
+const STAGE_NAME = { sill: 'lay the sill logs', roof: 'roof it', frame: 'lash the frame', shingle: 'shingle the roof', dig: 'dig it out', vent: 'open an air hole', stack: 'stack the wall', chink: 'chink the gaps', notch: 'notch and lay logs' };
 function startBuild() {
   const g = S.shelterGoal; const st = buildStage();
-  if (st === 'shingle') return startShingle();
+  if (st === 'shingle' || st === 'roof') return startShingle(st === 'roof');
+  if (st === 'sill') return startTaps('shelter', [[50, 80], [250, 80], [50, 30], [250, 30]], `<rect x="40" y="26" width="220" height="60" fill="none" stroke="rgba(255,255,255,.25)" stroke-dasharray="4 4"/><rect x="34" y="74" width="232" height="12" rx="5" fill="#7a5a3a"/><rect x="34" y="24" width="232" height="12" rx="5" fill="#7a5a3a" opacity=".55"/>`, 'Set the four sill logs on flat stones at the corners, level, so the walls start square. Tap each corner to bed it.', { col: '#9a7a4a' });
   if (st === 'chink') return startStrokes('shelter', { need: 6, art: `<rect x="20" y="18" width="260" height="14" rx="3" fill="#7a6a52"/><rect x="20" y="38" width="260" height="14" rx="3" fill="#6f5f48"/><rect x="20" y="58" width="260" height="14" rx="3" fill="#7a6a52"/>`, y: 35, intro: 'Press moss into the gaps between the courses: long, even strokes.', rough: 'Too hard. The moss tears out again.' });
   if (st === 'dig') return startStrokes('shelter', { need: 7, art: `<path d="M20 84 Q150 0 280 84Z" fill="#e8ece8"/><ellipse cx="150" cy="70" rx="40" ry="16" fill="#c9d2d6"/>`, y: 66, intro: 'Dig the room out of the drift: long scoops, not jabs, or the roof goes thin.', rough: 'Too hard. The roof is getting thin there.' });
   if (st === 'vent') return startTaps('shelter', [[150, 20]], `<path d="M20 92 Q150 4 280 92Z" fill="#e8ece8"/><ellipse cx="150" cy="80" rx="30" ry="10" fill="#2a3036"/>`, 'Push a stick up through the roof for an air hole. Sleep sealed in without one and the air goes bad.', {});
@@ -4351,7 +4365,7 @@ function startBuild() {
   startLash('shelter', n, g === 'rock' ? 'Lash the frame poles where they meet the stone.' : g === 'cabin' ? 'Tap each corner notch to seat the log.' : 'Tap each joint to lash it. Every one, or it comes down in the first blow.');
 }
 /* shingling: lay the boughs from the bottom up, each over the one below; out of order and rain runs in behind */
-function startShingle() {
+function startShingle(cabinRoof) {
   autoResolve(); const rows = [80, 66, 52, 38, 24]; const placed = []; let errors = 0, worked = false;
   const finish = (good) => { if (!mini) return; endMini(); handsDone('shingle', good); doAct('shelter', { good }); }; const quit = () => { if (mini) endMini(); };
   const svg = pad(`<path d="M30 92 L150 14 L270 92" stroke="#8a6a44" stroke-width="4" fill="none"/>${rows.map((y, i) => `<rect class="sh" data-i="${i}" x="${(40 + (92 - y) * 0.9).toFixed(0)}" y="${y - 6}" width="${(220 - (92 - y) * 1.8).toFixed(0)}" height="12" rx="5" fill="rgba(255,255,255,.12)" stroke="#fff" stroke-dasharray="3 3"/>`).join('')}`, 300, 100);
@@ -4360,7 +4374,8 @@ function startShingle() {
     const wrong = placed.length !== i; if (wrong) errors++; placed.push(i); const r = svg.querySelector(`.sh[data-i="${i}"]`); r.setAttribute('fill', wrong ? '#7d6a3a' : '#5d7a3a'); r.removeAttribute('stroke-dasharray'); r.setAttribute('stroke', wrong ? '#c86a4a' : '#3d5a2a'); sfx.play(wrong ? 'bad' : 'stick'); buzz(wrong ? 20 : 8);
     padText(wrong ? 'That layer went on before the one below it. Rain will run in behind it.' : `${placed.length} of ${rows.length} layers, each over the last.`); if (placed.length === rows.length) setTimeout(() => finish(errors === 0), 400); };
   mini = { type: 'craft', deadline: W.t + 40, update() {}, acts: [{ label: 'Not now', sub: 'no time spent', fn: quit }], cancel: () => worked ? finish(false) : quit() };
-  padText('Lay the boughs from the bottom up, each layer over the one below, like shingles.'); lastActs = ''; refreshActs();
+  { const k = headStart('shingle', 2); for (let i = 0; i < k; i++) { placed.push(i); const r = svg && svg.querySelector(`.sh[data-i="${i}"]`); if (r) { r.setAttribute('fill', '#5d7a3a'); r.removeAttribute('stroke-dasharray'); r.setAttribute('stroke', '#3d5a2a'); } } if (k) { padText(`Your hands remember: the bottom ${k} layers are on. Keep going up.`); lastActs = ''; refreshActs(); return; } }
+  padText(cabinRoof ? 'Roof it: lay the bark slabs from the eaves up, each course over the one below, so the rain runs off.' : 'Lay the boughs from the bottom up, each layer over the one below, like shingles.'); lastActs = ''; refreshActs();
 }
 function startRepair() { const d = S.sys && S.sys.damage;
   if (d === 'walls') return startStrokes('repair', { need: 5, art: `<rect x="20" y="18" width="260" height="14" rx="3" fill="#7a6a52"/><rect x="20" y="38" width="260" height="14" rx="3" fill="#6f5f48"/><rect x="20" y="58" width="260" height="14" rx="3" fill="#7a6a52"/>`, y: 35, intro: 'Press fresh moss into the gaps the storm blew out: long, even strokes.', rough: 'Too hard. The moss tears out again.' });
@@ -4435,7 +4450,7 @@ function startFilter() {
 }
 /* cooking (brief 4.6): hold it into the coals or keep it at the edge; turn it so neither side chars; take it off when the middle is done */
 function startCook() {
-  autoResolve(); let heat = 0.35, inside = 0, side = [0, 0], down = 0, holding = false, done = false, turns = 0, ended = false, ct = 0; const ph = Math.random() * 6.28;
+  autoResolve(); let heat = 0.35, inside = 0, side = [0, 0], down = 0, holding = false, done = false, turns = 0, ended = false, ct = 0; const ph = urand() * 6.28;
   const finish = (how) => { if (!mini || ended) return; ended = true; endMini(); handsDone('cook', how === 'right'); doAct('cook', { heat: how }); };
   const quit = () => { if (mini) endMini(); };
   const svg = pad(`<text x="8" y="12" font-size="9" fill="#e8e0cc" opacity=".8">middle</text><rect x="62" y="5" width="230" height="7" rx="3.5" fill="rgba(0,0,0,.35)"/><rect id="bin" x="62" y="5" width="0" height="7" rx="3.5" fill="#8fc477"/><text x="8" y="24" font-size="9" fill="#e8e0cc" opacity=".8">underside</text><rect x="62" y="17" width="230" height="7" rx="3.5" fill="rgba(0,0,0,.35)"/><rect id="bch" x="62" y="17" width="0" height="7" rx="3.5" fill="#d9a35a"/><rect x="60" y="80" width="180" height="14" rx="7" fill="#3a2a22"/><g id="coals"></g><path d="M 20 34 L 280 34" stroke="#7d6648" stroke-width="3"/><g id="food"></g>`, 300, 100);
@@ -4463,7 +4478,7 @@ function startCook() {
 function startTrapline() {
   autoResolve(); const sets = W.tracks.filter(t => t.set); if (!sets.length) { doAct('checktraps'); return; }
   const fishIds = new Set(E.season(S).pools.fish.map(x => x[0])); const caught = S.trapsCatch.filter(f => !fishIds.has(f)); const sys = S.sys || {};
-  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(urand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const order = shuffle(sets.slice()); const st = new Map(order.map(t => [t, { got: [], robbed: 0, sprung: 0 }]));
   caught.forEach((f, i) => st.get(order[i % order.length]).got.push(f));
   const rest = order.filter(t => !st.get(t).got.length); let ri = 0; const next = () => rest.length ? rest[ri++ % rest.length] : order[ri++ % order.length];
@@ -4474,7 +4489,7 @@ function startTrapline() {
     if (x.robbed) return ['Fur, blood and a snapped wire. A fox got here first.', 'bad'];
     if (x.sprung) return [`${x.sprung > 1 ? x.sprung + ' loops' : 'The loop'} knocked flat, empty. Reset.`, 'info'];
     if (sys.snaresBuried) return ['Buried in the drift. Dug out and reset.', 'info'];
-    return Math.random() < sign ? ['Empty, but fresh sign on the trail. Leave it.', 'muted'] : ['Empty, and no sign for days. A poor spot.', 'muted']; };
+    return urand() < sign ? ['Empty, but fresh sign on the trail. Leave it.', 'muted'] : ['Empty, and no sign for days. A poor spot.', 'muted']; };
   const seen = new Set(); const p = W.player; let reached = 0;
   const finish = () => { if (!mini) return; endMini(); const leave = order.filter(t => !seen.has(t)).reduce((n, t) => n + st.get(t).got.length, 0); doAct('checktraps', { good: seen.size >= sets.length, total: sets.length, checked: seen.size, leave }); };
   const tally = () => `<div class="mtext">Walk the line. ${seen.size} of ${sets.length} sets checked${reached ? `, ${reached} with something in` : ''}.</div>`;
@@ -4539,12 +4554,12 @@ function startTaps(id, pts, art, text, o = {}) {
 }
 // tillering: shave the stiffer limb until both bend the same. Take too much and the bow goes weak
 function startTiller(id, inside) {
-  autoResolve(); const base = 0.5 + Math.random() * 0.1, d = 0.2 + Math.random() * 0.2; const stiffLeft = Math.random() < 0.5; let L = stiffLeft ? base - d : base, R = stiffLeft ? base : base - d;
+  autoResolve(); const base = 0.5 + urand() * 0.1, d = 0.2 + urand() * 0.2; const stiffLeft = urand() < 0.5; let L = stiffLeft ? base - d : base, R = stiffLeft ? base : base - d;
   const finish = (good, weak) => { if (!mini) return; endMini(); doAct(id, weak ? { good: false, weak: true } : { good }, 1, inside); };
   const svg = pad(`<g id="bow"></g>`, 300, 100);
   const draw = () => { if (!svg) return; const tip = b => 70 - 46 * Math.min(1.2, b); const even = Math.abs(L - R) < 0.05;
     svg.querySelector('#bow').innerHTML = `<path d="M 150 72 Q 95 ${72 - 30 * L} 40 ${tip(L)}" stroke="${L > 0.95 ? '#b25346' : '#846b4e'}" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M 150 72 Q 205 ${72 - 30 * R} 260 ${tip(R)}" stroke="${R > 0.95 ? '#b25346' : '#846b4e'}" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M 40 ${tip(L)} L 150 ${92 - 10 * (L + R)} L 260 ${tip(R)}" stroke="${even ? '#e6e0ce' : '#9e9886'}" stroke-width="1.2" fill="none"/><rect x="142" y="66" width="16" height="14" rx="3" fill="#554135"/>`; };
-  const shave = side => { const k = 0.04 + Math.random() * 0.05; if (side === 'L') L += k; else R += k; sfx.play('stick'); draw();
+  const shave = side => { const k = 0.04 + urand() * 0.05; if (side === 'L') L += k; else R += k; sfx.play('stick'); draw();
     if (L > 1 || R > 1) { sfx.play('bad'); padText('Too much off. That limb is thin and soft now.'); setTimeout(() => finish(false, true), 600); return; }
     padText(Math.abs(L - R) < 0.05 ? 'They come round together. String it.' : `${L < R ? 'Left' : 'Right'} limb is stiffer.`); if (mini) { mini.acts[2].primary = Math.abs(L - R) < 0.05; lastActs = ''; } };
   mini = { type: 'craft', deadline: W.t + 50, update() {}, acts: [{ label: 'Shave left', sub: 'a few curls', fn: () => shave('L') }, { label: 'Shave right', sub: 'a few curls', fn: () => shave('R') }, { label: 'String it', sub: '', fn: () => finish(Math.abs(L - R) < 0.05 && L < 0.95 && R < 0.95) }], cancel: () => finish(false) };
@@ -4670,6 +4685,7 @@ function startKnap(id, inside) {
       if (sel == null) { h.innerHTML = ''; svg.querySelector('#angt').textContent = ''; return; } const p = spots[sel], a = ang * Math.PI / 180, ok = ang >= lo && ang <= hi;
       h.innerHTML = `<line x1="${p[0]}" y1="${p[1]}" x2="${(p[0] - Math.cos(a) * 38).toFixed(1)}" y2="${(p[1] - Math.sin(a) * 38).toFixed(1)}" stroke="${ok ? '#9ec08a' : '#d8cfbd'}" stroke-width="2" stroke-dasharray="3 3"/><ellipse cx="${(p[0] - Math.cos(a) * 44).toFixed(1)}" cy="${(p[1] - Math.sin(a) * 44).toFixed(1)}" rx="9" ry="7" fill="${ok ? '#a8a294' : '#8a857a'}"/>`; svg.querySelector('#angt').textContent = ok ? 'now' : ''; },
     acts: [{ label: 'Strike', sub: 'when the stone is at a slant', primary: true, fn: strike }, ...K.tail()], cancel: K.cancel() };
+  { const k = headStart(id, 3); for (let i = 0; i < k; i++) { done.add(i); const p = spots[i]; if (svg) { svg.querySelector('#scars').insertAdjacentHTML('beforeend', `<path d="M ${p[0] - 14} ${p[1] + 2} Q ${p[0]} ${p[1] + 18} ${p[0] + 14} ${p[1] + 2} Q ${p[0]} ${p[1] + 6} ${p[0] - 14} ${p[1] + 2} Z" fill="#6a6a7c" opacity=".9"/>`); const c = svg.querySelector(`.ks[data-i="${i}"]`); c.setAttribute('fill', 'rgba(170,200,160,.35)'); c.setAttribute('stroke', '#9ec08a'); } } if (k) { padText(`Your hands remember: ${k} flakes off already. Tap a spot on the edge, then strike at a glancing slant.`); lastActs = ''; refreshActs(); return; } }
   padText('Tap a spot on the edge, then strike as the hammerstone swings in at a glancing slant.'); lastActs = ''; refreshActs();
 }
 
@@ -4691,7 +4707,7 @@ function startStitch(id, inside, o) {
 
 /* scraping a hide: slow strokes press hard and lift the membrane; keep working a clean spot and it thins, then tears */
 function startScrape(id, inside) {
-  autoResolve(); const K = craftKit(id, inside); const C = 14, R = 4, x0 = 44, y0 = 26, cw = 16, ch = 12; const fat = [], thin = []; for (let i = 0; i < C * R; i++) { fat.push(0.6 + Math.random() * 0.5); thin.push(0); }
+  autoResolve(); const K = craftKit(id, inside); const C = 14, R = 4, x0 = 44, y0 = 26, cw = 16, ch = 12; const fat = [], thin = []; for (let i = 0; i < C * R; i++) { fat.push(0.6 + urand() * 0.5); thin.push(0); }
   let last = null, tears = 0, over = false; const total = fat.reduce((a, b) => a + b, 0);
   const svg = pad(`<path d="M 38 22 C 80 12, 220 12, 266 22 L 268 78 C 220 88, 80 88, 36 78 Z" fill="#c8a882"/><g id="cells">${fat.map((f, i) => `<rect data-i="${i}" x="${x0 + (i % C) * cw}" y="${y0 + Math.floor(i / C) * ch}" width="${cw + 4}" height="${ch + 4}" fill="#f2ead2" rx="5" opacity="${(f * 0.8).toFixed(2)}" transform="translate(-2 -2) scale(1)" style="filter:blur(1.2px)"/>`).join('')}</g><circle id="tool" cx="-20" cy="-20" r="6" fill="none" stroke="#fff" stroke-width="1.5"/>`, 300, 100);
   const cell = i => svg.querySelector(`#cells rect[data-i="${i}"]`);
@@ -4704,7 +4720,7 @@ function startScrape(id, inside) {
     svg.onpointermove = (e) => { const q = svg.toLocal(e); const tl = svg.querySelector('#tool'); tl.setAttribute('cx', q.x); tl.setAttribute('cy', q.y); if (!last || over) return; const now = performance.now(); const d = Math.hypot(q.x - last.x, q.y - last.y); const v = d / Math.max(8, now - last.t) * 1000; last = Object.assign(q, { t: now }); if (d > 0.5) work(q, d, v); };
     svg.onpointerup = () => { last = null; }; }
   mini = { type: 'craft', deadline: W.t + 60, update() {}, acts: K.tail(), cancel: K.cancel() };
-  padText('Draw the scraper over the hide. Slow strokes bite deep and lift the fat; stay on a clean spot and it thins and tears.'); lastActs = ''; refreshActs();
+  { const k = headStart(id, 3); if (k) { const cols = Math.round(C * k / 8); for (let i = 0; i < C * R; i++) if (i % C < cols) { fat[i] = 0; const c = svg && svg.querySelector(`#cells rect[data-i="${i}"]`); if (c) c.setAttribute('opacity', '0'); } } padText((k ? 'Your hands remember: the near edge is clean already. ' : '') + 'Draw the scraper over the hide. Slow strokes bite deep and lift the fat; stay on a clean spot and it thins and tears.'); } lastActs = ''; refreshActs();
 }
 
 /* coiling a pot: roll each coil to the same thickness and smooth it into the one below before the next */
@@ -4716,12 +4732,12 @@ function startCoil(id, inside) {
   const smooth = { label: 'Smooth it in', sub: 'join the coil to the last', fn: () => { if (joined || over) return; joined = true; sfx.play('stick'); padText(`Joined. ${coils.length} of ${N}.`); draw(); } };
   const finishPot = () => { over = true; setTimeout(() => { const bad = coils.filter(c => !c.ok).length; K.finish(bad <= 1 && unjoined === 0, { uneven: bad, unjoined }); }, 500); };
   mini = { type: 'craft', deadline: W.t + 70, update(dt) { if (rolling) { th += dt * 0.32; if (th > 1.05) { roll.up(); } draw(); } }, acts: [roll, smooth, ...K.tail()], cancel: K.cancel() };
-  padText('Hold to roll a coil and let go when it reaches the mark, then smooth it into the one below. Even walls survive the fire.'); draw(); lastActs = ''; refreshActs();
+  { const k = headStart(id, 3); for (let i = 0; i < k; i++) coils.push({ t: (lo + hi) / 2, ok: true, j: true }); if (k) padText(`Your hands remember: ${k} coils laid already. Roll the next to the mark and smooth it in.`); else padText('Hold to roll a coil and let go when it reaches the mark, then smooth it into the one below. Even walls survive the fire.'); } draw(); lastActs = ''; refreshActs();
 }
 
 /* straightening arrow shafts: warm each bend over the coals until it gives, then bend it true; bent cold it springs back, held too long it scorches */
 function startStraighten(id, inside) {
-  autoResolve(); const K = craftKit(id, inside); const kinks = [70, 150, 230].map(x => ({ x, off: (Math.random() < 0.5 ? -1 : 1) * (9 + Math.random() * 6) })); let k = 0, heat = 0, warming = false, scorch = 0, springs = 0, drag = null, over = false;
+  autoResolve(); const K = craftKit(id, inside); const kinks = [70, 150, 230].map(x => ({ x, off: (urand() < 0.5 ? -1 : 1) * (9 + urand() * 6) })); let k = 0, heat = 0, warming = false, scorch = 0, springs = 0, drag = null, over = false;
   const svg = pad(`<rect x="0" y="82" width="300" height="18" fill="#3a2a22"/><g id="coals">${[30, 70, 110, 150, 190, 230, 270].map(x => `<circle cx="${x}" cy="90" r="6" fill="#b8482a"/>`).join('')}</g><path id="shaft" stroke="#c8a878" stroke-width="4" fill="none" stroke-linecap="round"/><circle id="mark" r="10" fill="none" stroke="#fff" stroke-width="1.2" stroke-dasharray="3 3"/><rect x="10" y="8" width="80" height="6" rx="3" fill="rgba(0,0,0,.35)"/><rect x="${10 + 80 * 0.5}" y="8" width="${80 * 0.35}" height="6" fill="rgba(150,210,120,.4)"/><rect id="heat" x="10" y="8" width="0" height="6" rx="3" fill="#e0a050"/>`, 300, 100);
   const y0 = 46; const draw = () => { if (!svg) return; let d = `M 20 ${y0}`; for (const q of kinks) d += ` L ${q.x - 18} ${y0} L ${q.x} ${(y0 + q.off).toFixed(1)} L ${q.x + 18} ${y0}`; d += ` L 280 ${y0}`; svg.querySelector('#shaft').setAttribute('d', d); const c = kinks[k] || kinks[kinks.length - 1]; const m = svg.querySelector('#mark'); m.setAttribute('cx', c.x); m.setAttribute('cy', y0 + c.off); m.setAttribute('opacity', over ? 0 : 1); const hb = svg.querySelector('#heat'); hb.setAttribute('width', (Math.min(1.1, heat) * 80).toFixed(1)); hb.setAttribute('fill', heat > 0.85 ? '#d0503a' : heat >= 0.5 ? '#9ec08a' : '#e0a050'); };
   const warm = { label: 'Warm it', sub: 'hold over the coals', primary: true, down: () => { K.start(); warming = true; }, up: () => { warming = false; } };
@@ -4743,7 +4759,7 @@ function startMesh(id, inside) {
   const draw = () => { if (!svg) return; svg.querySelector('#loop').setAttribute('r', r.toFixed(1)); svg.querySelector('#row').innerHTML = meshes.map((m, i) => { const x = 32 + i * 26, s = 4 + m.r / G * 7; return `<path d="M ${x} ${84 - s} L ${x + s * 0.8} 84 L ${x} ${84 + s} L ${x - s * 0.8} 84 Z" fill="none" stroke="${m.ok ? '#d8cfbd' : '#d06a4a'}" stroke-width="1.4"/>`; }).join(''); };
   const pull = { label: 'Pull the loop', sub: 'hold; let go at the gauge', primary: true, down: () => { if (over) return; K.start(); pulling = true; r = 2; }, up: () => { if (!pulling) return; pulling = false; const ok = Math.abs(r - G) <= tol; meshes.push({ r, ok }); sfx.play(ok ? 'tap' : 'bad'); padText(ok ? `Snug to the gauge. ${meshes.length} of ${N}.` : r < G ? 'Pulled short. A small mesh: fish slip past it.' : 'Too loose. A big mesh: it will sag open.'); r = 0; draw(); if (meshes.length >= N) { over = true; setTimeout(() => K.finish(meshes.filter(m => !m.ok).length <= 2, { off: meshes.filter(m => !m.ok).length }), 400); } } };
   mini = { type: 'craft', deadline: W.t + 60, update(dt) { if (pulling) { r += dt * 11; if (r > G * 1.9) pull.up(); draw(); } }, acts: [pull, ...K.tail()], cancel: K.cancel() };
-  padText('Hold to pull the twine round the gauge stick, and let go when the loop sits in the green ring. Every mesh the same.'); draw(); lastActs = ''; refreshActs();
+  { const k = headStart(id, 3); for (let i = 0; i < k; i++) meshes.push({ r: G, ok: true }); padText((k ? `Your hands remember: ${k} meshes tied already. ` : '') + 'Hold to pull the twine round the gauge stick, and let go when the loop sits in the green ring. Every mesh the same.'); } draw(); lastActs = ''; refreshActs();
 }
 
 /* pemmican: pound the dried meat to powder, then pour in warm tallow to about half and half */
@@ -4757,7 +4773,7 @@ function startPemmican(id, inside) {
   const pour = { label: 'Pour tallow', sub: 'hold; about half', primary: true, down: () => { if (!stage || over) { padText('Pound it to powder first: drag back and forth over the stone.'); return; } pouring = true; }, up: () => { pouring = false; } };
   const mix = { label: 'Work it together', sub: 'done', fn: () => { if (!stage || over) return; over = true; const ok = fat >= 0.5 && fat <= 0.62; padText(ok ? 'Firm, dark and greasy to the touch. It will keep.' : fat < 0.5 ? 'Too little fat. It crumbles and will not keep as long.' : 'Too much fat. It slumps in the warm.'); sfx.play(ok ? 'good' : 'bad'); setTimeout(() => K.finish(ok && fine >= 1, { ratio: Math.round(fat * 100) }), 500); } };
   mini = { type: 'craft', deadline: W.t + 60, update(dt) { if (pouring) { fat = Math.min(1.1, fat + dt * 0.22); draw(); } }, acts: [pour, mix, ...K.tail()], cancel: K.cancel() };
-  padText('Drag back and forth over the stone to pound the dried meat to powder.'); draw(); lastActs = ''; refreshActs();
+  { const k = headStart(id, 3); fine = Math.min(0.8, k * 0.25); padText((k ? 'Your hands remember: half pounded already. ' : '') + 'Drag back and forth over the stone to pound the dried meat to powder.'); } draw(); lastActs = ''; refreshActs();
 }
 function startCraft(id, inside, extra) {
   const ring = n => Array.from({ length: n }, (_, i) => [150 + 70 * Math.cos(i / n * 6.283), 50 + 30 * Math.sin(i / n * 6.283)]);
@@ -4821,15 +4837,15 @@ function openLayout() {
     const L = Object.assign({}, (S.sys && S.sys.layout) || {}); L.water = waterDirFromCamp(); let sel = L.kitchen ? 'latrine' : 'kitchen';
     sh.append($(`<h2>Lay out the camp</h2>`)); sh.append($(`<div class="muted" style="font-size:13px">Each square is about ten metres. Pick what to place, then tap where it goes.</div>`));
     const tabs = $(`<div class="rules" role="group" aria-label="What to place"><button class="rule" data-z="kitchen">Kitchen</button><button class="rule" data-z="latrine">Latrine</button></div>`); sh.append(tabs);
-    const grid = $(`<div class="lgrid" style="position:relative;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;max-width:300px;margin:10px auto 4px"></div>`); sh.append(grid);
+    const grid = $(`<div class="lgrid" role="grid" aria-label="Camp layout, the shelter in the middle, north at the top" style="position:relative;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;max-width:300px;margin:10px auto 4px"></div>`); sh.append(grid);
     const notes = $(`<div class="rows" style="min-height:3.2em"></div>`); sh.append(notes);
     const fixed = {}; for (const [k, c] of Object.entries(E.CAMP_FIXED)) fixed[c.join(',')] = k; const LABEL = { fire: 'fire', wood: 'wood', cache: 'cache', rack: 'rack', smoker: 'smoker', kitchen: 'kitchen', latrine: 'latrine' };
     const show = { fire: true, wood: S.firewood > 0 || S.crafts.woodshed >= 1, cache: S.crafts.cache >= 2 && S.cachePlace === 'camp', rack: S.crafts.rack >= 1, smoker: S.crafts.smoker >= 2 };
     const deg = a => a == null ? null : ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east'][Math.round(((a % 6.283) + 6.283) % 6.283 / 6.283 * 8) % 8];
     const draw = () => { tabs.querySelectorAll('.rule').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.z === sel))); grid.innerHTML = '';
       for (let y = -2; y <= 2; y++) for (let x = -2; x <= 2; x++) { const key = `${x},${y}`; const f = fixed[key]; const z = ['kitchen', 'latrine'].find(k => L[k] && L[k][0] === x && L[k][1] === y);
-        const what = x === 0 && y === 0 ? 'shelter' : f && show[f] ? f : z; const b = $(`<button class="lcell ${what ? 'has' : ''} ${z ? 'z-' + z : ''}" aria-label="${what || 'empty'} ${x},${y}" style="aspect-ratio:1;border-radius:8px;border:1px solid var(--line, rgba(255,255,255,.18));background:${what === 'shelter' ? 'rgba(140,110,70,.45)' : z === 'kitchen' ? 'rgba(200,130,80,.35)' : z === 'latrine' ? 'rgba(120,100,70,.4)' : f && show[f] ? 'rgba(255,255,255,.08)' : 'transparent'};font:inherit;font-size:11px;color:inherit;padding:0">${what ? esc(what === 'shelter' ? 'shelter' : LABEL[what]) : ''}</button>`);
-        b.disabled = what === 'shelter' || !!f; /* the fire's spot, the cache's spot: kept clear even before they are built */ b.onclick = () => { L[sel] = [x, y]; for (const k of ['kitchen', 'latrine']) if (k !== sel && L[k] && L[k][0] === x && L[k][1] === y) delete L[k]; if (sel === 'kitchen' && !L.latrine) sel = 'latrine'; draw(); }; grid.append(b); }
+        const what = x === 0 && y === 0 ? 'shelter' : f && show[f] ? f : z; const where = (x || y) ? [y ? `${Math.abs(y) * 10} m ${y < 0 ? 'north' : 'south'}` : '', x ? `${Math.abs(x) * 10} m ${x < 0 ? 'west' : 'east'}` : ''].filter(Boolean).join(' and ') + ' of the shelter' : 'the shelter'; const b = $(`<button class="lcell ${what ? 'has' : ''} ${z ? 'z-' + z : ''}" role="gridcell" aria-label="${what && what !== 'shelter' ? what + ', ' : ''}${where}" style="aspect-ratio:1;border-radius:8px;border:1px solid var(--line, rgba(255,255,255,.18));background:${what === 'shelter' ? 'rgba(140,110,70,.45)' : z === 'kitchen' ? 'rgba(200,130,80,.35)' : z === 'latrine' ? 'rgba(120,100,70,.4)' : f && show[f] ? 'rgba(255,255,255,.08)' : 'transparent'};font:inherit;font-size:11px;color:inherit;padding:0">${what ? esc(what === 'shelter' ? 'shelter' : LABEL[what]) : ''}</button>`);
+        b.disabled = what === 'shelter' || !!f || (!!z && z !== sel); /* the fire's spot, the cache's spot: kept clear even before they are built; the other zone's square is taken */ b.onclick = () => { L[sel] = [x, y]; for (const k of ['kitchen', 'latrine']) if (k !== sel && L[k] && L[k][0] === x && L[k][1] === y) delete L[k]; if (sel === 'kitchen' && !L.latrine) sel = 'latrine'; draw(); }; grid.append(b); }
       const n = E.layoutNotes(S, L); notes.innerHTML = '';
       notes.append($(`<div class="row muted" style="font-size:12.5px"><span>Storm winds blow toward the ${deg(E.prevailOf(S))}${L.water != null ? `; the water is to the ${deg(L.water)}` : ''}.</span></div>`));
       for (const k of ['kitchen', 'latrine']) if (n[k]) notes.append($(`<div class="row"><span><b>${k === 'kitchen' ? 'Kitchen' : 'Latrine'}:</b> <span class="tone-${n[k][1]}">${esc(n[k][0])}</span></span></div>`)); };
@@ -4848,7 +4864,7 @@ function openRaftLogs() {
 }
 /* on the raft: pole against the drift to the dark water over the drop-off and hold there; when a gust comes across the water, crouch */
 function startRaft() {
-  autoResolve(); const windy = !!(S.wind || S.storm); const wa = S.windDir || 0, ws = windy ? 16 : 5; let x = 60, y = 70, vx = 0, vy = 0, held = 0, tgt = null, crouch = false, gustAt = windy ? 4 + Math.random() * 4 : 1e9, warn = false, capsized = false, safe = 0, ended = false, ending = false; const t0 = W.t;
+  autoResolve(); const windy = !!(S.wind || S.storm); const wa = S.windDir || 0, ws = windy ? 16 : 5; let x = 60, y = 70, vx = 0, vy = 0, held = 0, tgt = null, crouch = false, gustAt = windy ? 4 + urand() * 4 : 1e9, warn = false, capsized = false, safe = 0, ended = false, ending = false; const t0 = W.t;
   const spot = { x: 205, y: 42, r: 26 };
   const finish = (left) => { if (!mini || ended) return; ended = true; endMini(); const onSpot = held >= 4; handsDone('raft', onSpot && !capsized); doAct('raft_fish', { spot: onSpot, capsize: capsized ? true : windy ? false : undefined, good: !capsized }); };
   const quit = () => { if (mini) endMini(); };
@@ -4860,7 +4876,7 @@ function startRaft() {
       vx += Math.cos(wa) * ws * dt; vy += Math.sin(wa) * ws * dt; vx *= 1 - 1.6 * dt; vy *= 1 - 1.6 * dt; x = Math.max(12, Math.min(288, x + vx * dt)); y = Math.max(10, Math.min(90, y + vy * dt));
       const on = Math.hypot(x - spot.x, y - spot.y) < spot.r; if (on) held += dt;
       if (windy && !warn && t > t0 + gustAt - 1.4) { warn = true; sfx.play('tap'); buzz(15); }
-      if (windy && warn && t > t0 + gustAt) { if (crouch) { safe++; msg('The gust hit and you rode it out, low on the logs.'); } else { capsized = true; sfx.play('bad'); buzz(60); msg('The gust caught you standing and rolled the raft.'); ending = true; setTimeout(() => finish(), 900); return; } warn = false; gustAt += 6 + Math.random() * 5; { const k = E.raftOf(S) && E.raftOf(S).cover ? 56 : 40; vx += Math.cos(wa) * k; vy += Math.sin(wa) * k; } } /* a roofed raft catches more wind */
+      if (windy && warn && t > t0 + gustAt) { if (crouch) { safe++; msg('The gust hit and you rode it out, low on the logs.'); } else { capsized = true; sfx.play('bad'); buzz(60); msg('The gust caught you standing and rolled the raft.'); ending = true; setTimeout(() => finish(), 900); return; } warn = false; gustAt += 6 + urand() * 5; { const k = E.raftOf(S) && E.raftOf(S).cover ? 56 : 40; vx += Math.cos(wa) * k; vy += Math.sin(wa) * k; } } /* a roofed raft catches more wind */
       if (svg) { const g = svg.querySelector('#raft'); g.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${(Math.atan2(vy, vx) * 57.3 * 0.2).toFixed(1)})`); svg.querySelector('#me').setAttribute('r', crouch ? 2.6 : 3.5);
         svg.querySelector('#ripples').innerHTML = warn ? `<path d="M ${(150 - Math.cos(wa) * 120).toFixed(0)} ${(50 - Math.sin(wa) * 40).toFixed(0)} l ${(Math.cos(wa) * 30).toFixed(0)} ${(Math.sin(wa) * 12).toFixed(0)}" stroke="#e8f0f4" stroke-width="2" opacity=".8"/>` : ''; }
       if (held >= 4) { msg('Over the drop-off. Let the line down.'); ending = true; setTimeout(() => finish(), 500); return; }
@@ -5000,20 +5016,21 @@ function lessonTarget(where) { if (!W || !W.player) return null; const p = W.pla
 function showLesson(l) { if (!W || !W.player || !S || S.status !== 'playing') return; const t = l[5] && lessonTarget(l[5]); if (!t) { banner([[l[3], 'info']], 6000); return; } W.ring = { x: t.x, y: t.y, keep: true }; input.target = { x: t.x, y: t.y + 24 }; banner([[l[2] + ': ' + l[3], 'info']], 6500); setTimeout(() => { if (W.ring && W.ring.keep) W.ring = null; }, 15000); }
 function openLessons() {
   sheet((sh, close) => { const done = new Set(lessonsDone().map(l => l[1]));
-    sh.append($(`<h2>Camping lessons</h2>`)); sh.append($(`<div class="muted" style="font-size:13px">${done.size} of ${LESSONS.length} done. Everything here is close by and comes back overnight. Show me walks you to the place for it.</div>`));
+    sh.append($(`<h2>Camping lessons</h2>`)); if (done.size >= LESSONS.length) { const go = $(`<button class="act primary"><b>Try a real drop</b><small>leave the valley and pick a drop site</small></button>`); go.onclick = () => { close(); E.tapOut(S); save(); renderEnd.played = null; store.del(SAVE); S = null; W = null; renderSetup(); window.scrollTo(0, 0); }; sh.append(go); } sh.append($(`<div class="muted" style="font-size:13px">${done.size} of ${LESSONS.length} done. Everything here is close by and comes back overnight. Show me walks you to the place for it.</div>`));
     let g = ''; for (const l of LESSONS) { if (l[0] !== g) { g = l[0]; sh.append($(`<div class="sect">${esc(g)}</div>`)); }
       const ok = done.has(l[1]); const row = $(`<div class="row" style="align-items:flex-start;gap:10px"><span style="flex:1;text-align:left"><b>${ok ? '✓ ' : ''}${esc(l[2])}</b><br><span class="muted" style="font-size:13px">${esc(l[3])}</span></span></div>`);
       if (!ok && l[5]) { const b = $(`<button class="act" style="flex:0 0 auto;padding:6px 10px"><b>Show me</b></button>`); b.onclick = () => { close(); showLesson(l); }; row.append(b); } if (ok) row.style.opacity = '.6'; sh.append(row); }
   });
 }
 function lessonTick() { if (!S || !S.practice || S.status !== 'playing') return; const have = new Set(S.lessonsDone || []); const now = lessonsDone().map(l => l[1]); const fresh = now.filter(k => !have.has(k));
-  if (fresh.length) { S.lessonsDone = now; const l = LESSONS.find(x => x[1] === fresh[0]); const n = nextLesson(); banner([[`Lesson done: ${l[2]}. ${now.length} of ${LESSONS.length}.`, 'good'], ...(n ? [[`Next: ${n[2]}.`, 'info']] : [])], 5000); sfx.play('good'); } }
+  if (fresh.length) { S.lessonsDone = now; const l = LESSONS.find(x => x[1] === fresh[0]); const n = nextLesson(); banner([[`Lesson done: ${l[2]}. ${now.length} of ${LESSONS.length}.`, 'good'], ...(n ? [[`Next: ${n[2]}.`, 'info']] : [['Every lesson done. You know every job the valley can teach. A real drop is waiting: open the lessons for the way out.', 'big']])], n ? 5000 : 9000); sfx.play('good'); if (!n) { records.camper = new Date().toISOString().slice(0, 10); saveRecords(); } } }
 function openCachePlace() {
+  if (!W || !W.player) return;
   sheet((sh, close) => {
     sh.append($(`<h2>Where to hang the cache</h2>`));
     sh.append($(`<div class="muted" style="font-size:13px">A bear follows its nose. Food at camp is handy. Food a walk away is still there in the morning.</div>`));
-    const a = $(`<button class="act"><b>At the edge of camp</b><span class="o"></span><small>No walk. Bears and martens know where the smell is.</small></button>`); a.onclick = () => { close(); doAct('craft_cache', { place: 'camp' }); };
-    const b = $(`<button class="act"><b>A good walk from camp</b><span class="o"></span><small>Out of the fire smell, up a tree. Much safer.</small></button>`); b.onclick = () => { close(); doAct('craft_cache', { place: 'away' }); };
+    const a = $(`<button class="act"><b>At the edge of camp</b><span class="o"></span><small>No walk. Bears and martens know where the smell is.</small></button>`); a.onclick = () => { close(); startLash('craft_cache', 5, 'Lash the cache frame together at the edge of camp. Every joint, or a bear pulls it apart.', null, { place: 'camp' }); };
+    const b = $(`<button class="act"><b>A good walk from camp</b><span class="o"></span><small>Out of the fire smell, up a tree. Much safer.</small></button>`); b.onclick = () => { close(); startLash('craft_cache', 5, 'Lash the cache frame up in the tree, a good walk from camp. Every joint, or a marten gets in.', null, { place: 'away' }); };
     sh.append(a, b);
   });
 }
@@ -5076,7 +5093,7 @@ function sleep() {
   }, 1300);
 }
 function morning() {
-  if (S.phase !== -1) return;
+  if (!S || S.phase !== -1 || S.status !== 'playing' || !W) return;
   const lines = E.beginDay(S); W.night = false; if (W.wokeRough) { W.player.x = W.wokeRough.x; W.player.y = W.wokeRough.y; W.wokeRough = null; lines.unshift(['Stiff and cold, under the same tree. Camp is a walk away.', 'muted']); } else { W.player.x = W.camp.x; W.player.y = W.camp.y + 80; W.carrying = false; } input.target = null; W.inside = false;
   dayStart(); W.raided = (S.log[S.log.length - 1] || { lines: [] }).lines.some(l => /got into the food|tore the net|came down in the night|tore the shelter/.test(l[0])) ? S.day : 0; sfx.play('morning'); banner([[`Day ${S.day} · ${E.dayHours(S)} hours of light`, 'info'], ...lines.filter(l => !(S.event && l[0] === S.event.text))]);
   if (S.event) spawnEvent();
@@ -5332,6 +5349,7 @@ function draw() {
   /* things you are picking up sit on top of trees and bushes, with a soft ring so they can be found */
   if (W.collect) for (const it of W.collect) if (!it.got) { cx.strokeStyle = `rgba(255,240,190,${0.45 + 0.3 * Math.sin(W.t * 5)})`; cx.lineWidth = 1.5; cx.beginPath(); cx.arc(it.x, it.y, 12, 0, 6.283); cx.stroke(); drawItem(it); }
   // effects
+  for (const f of W.fx) if (f.kind === 'leaf') { const k = f.age / f.life, wd = (S.wind || S.storm) ? Math.cos(S.windDir || 0) * 40 : 0; const x = f.x + Math.sin(f.age * 2.4 + f.ph) * 8 + wd * k, y = f.y + k * 46; cx.save(); cx.globalAlpha = 1 - k * k; cx.fillStyle = f.c; cx.translate(x, y); cx.rotate(Math.sin(f.age * 3 + f.ph)); cx.beginPath(); cx.ellipse(0, 0, 5, 2.6, 0, 0, 6.28); cx.fill(); cx.restore(); }
   for (const f of W.fx) { if (f.kind === 'chip') { cx.fillStyle = '#d8b07a'; for (let i = 0; i < 5; i++) { const k = f.age / f.life; cx.fillRect(f.x - 12 + i * 6 + k * 26 * (i % 2 ? 1 : -1), f.y + 2 + k * 30 - 16 * Math.sin(k * 3.14) * (1 + i % 3), 2.5, 2.5); } } if (f.kind === 'spark') { const k = f.age / f.life; cx.fillStyle = '#ffd070'; for (let i = 0; i < 8; i++) { cx.globalAlpha = 1 - k; cx.fillRect(f.x - 8 + i * 2.5 + k * 34 * (i % 2 ? 1 : -1) * ((i % 3) / 3 + 0.3), f.y - 8 + k * 40 - 10 * Math.sin(k * 3.14), 1.8, 1.8); } cx.globalAlpha = 1; } }
   // weather
   if (S.storm || S.rain) { cx.fillStyle = `rgba(50,60,70,${S.storm ? .34 : .18})`; cx.fillRect(cam.x, cam.y, cam.w, cam.h); const cold = snow || st.temp < 0; const n = S.storm ? 70 : 34; cx.strokeStyle = cold ? 'rgba(240,240,234,.85)' : 'rgba(200,210,214,.5)'; cx.lineWidth = 1.2; cx.lineCap = 'round'; for (let i = 0; i < n; i++) { const x = cam.x + ((i * 97 + t * (S.storm ? 240 : 150)) % (cam.w + 40)) - 20, y = cam.y + ((i * 61 + t * (cold ? 110 : 430)) % (cam.h + 40)) - 20; if (cold) { cx.fillStyle = 'rgba(255,255,255,.85)'; cx.beginPath(); cx.arc(x + Math.sin(t * 2 + i) * 4, y, 1.6, 0, 6.28); cx.fill(); } else { cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x - (S.storm ? 6 : 3), y + 12); cx.stroke(); } } if (S.storm) { cx.strokeStyle = 'rgba(255,255,255,.12)'; for (let i = 0; i < 8; i++) { const y = cam.y + ((i * 131 + t * 60) % cam.h), x = cam.x + ((i * 223 + t * 520) % (cam.w + 100)) - 50; cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x + 40, y - 2); cx.stroke(); } }
@@ -5341,10 +5359,12 @@ function draw() {
   else if (snow) { cx.fillStyle = 'rgba(255,255,255,.75)'; for (let i = 0; i < (S.snowfall ? 70 : 16); i++) { const x = cam.x + ((i * 131 + t * 15 + Math.sin(t + i) * 10) % (cam.w + 20)) - 10, y = cam.y + ((i * 71 + t * 35) % (cam.h + 20)) - 10; cx.beginPath(); cx.arc(x, y, 1.4, 0, 6.28); cx.fill(); } }
   // light
   const tint = { dawn: 'rgba(220,160,120,.13)', morning: 'rgba(235,220,185,.06)', afternoon: 'rgba(0,0,0,0)', evening: 'rgba(190,120,80,.15)', dusk: 'rgba(58,47,72,.32)', night: 'rgba(8,12,26,.62)' }[ph];
+  if (W.night && W.player && (W.nightT || 0) < 3.2) { const p = W.player, t0 = W.nightT || 0; cx.save(); cx.font = '600 13px ' + W.font; cx.fillStyle = 'rgba(235,230,210,.85)'; for (let i = 0; i < 3; i++) { const q = ((t0 * 0.6 + i / 3) % 1); cx.globalAlpha = Math.sin(q * 3.14) * 0.9; cx.fillText('z', p.x + 8 + q * 14 + i * 3, p.y - 22 - q * 26); } cx.restore(); } /* asleep */
   if (W.night) { const k = Math.min(1, (W.nightT = (W.nightT || 0) + 0.016)); cx.fillStyle = `rgba(5,12,35,${(S.moon === 'full' && !S.storm && !S.rain ? 0.48 : S.moon === 'new' ? 0.72 : 0.62) * k})`; } else cx.fillStyle = tint;
   cx.fillRect(cam.x, cam.y, cam.w, cam.h);
   if (W.night && !S.storm && !S.rain && !S.fog) { const mx = cam.x + cam.w - 48, my = cam.y + 92; const ph2 = S.moon || 'waxing'; if (ph2 !== 'new') { cx.fillStyle = 'rgba(245,240,220,.85)'; cx.beginPath(); cx.arc(mx, my, 11, 0, 6.28); cx.fill(); if (ph2 !== 'full') { cx.fillStyle = 'rgba(8,14,38,.9)'; cx.beginPath(); cx.arc(mx + (ph2 === 'waxing' ? -7 : 7), my, 10, 0, 6.28); cx.fill(); } } cx.fillStyle = 'rgba(255,255,255,.8)'; for (let i = 0; i < 24; i++) { const sx = cam.x + ((i * 173) % cam.w), sy = cam.y + ((i * 97) % (cam.h * 0.5)); const tw = 0.5 + Math.sin(t * 2 + i) * 0.4; cx.globalAlpha = tw; cx.fillRect(sx, sy, 1.5, 1.5); } cx.globalAlpha = 1;
     if (S.aurora) { for (let i = 0; i < 3; i++) { const g = cx.createLinearGradient(0, cam.y + 200 + i * 70, 0, cam.y + 420 + i * 70); g.addColorStop(0, 'rgba(120,214,166,0)'); g.addColorStop(0.4, `rgba(120,214,166,${0.16 + Math.sin(t * 0.7 + i) * 0.06})`); g.addColorStop(1, 'rgba(130,110,190,0)'); cx.fillStyle = g; cx.beginPath(); cx.moveTo(cam.x, cam.y + 200 + i * 70); for (let x = cam.x; x <= cam.x + cam.w + 30; x += 30) cx.lineTo(x, cam.y + 200 + i * 70 + Math.sin(x / 90 + t * 0.6 + i) * 22); cx.lineTo(cam.x + cam.w, cam.y + 440 + i * 70); cx.lineTo(cam.x, cam.y + 440 + i * 70); cx.closePath(); cx.fill(); } } }
+  if ((S.fog || S.storm || W.night) && S.sys && S.sys.cairns) { cx.save(); cx.fillStyle = 'rgba(40,36,30,.7)'; for (const ca of S.sys.cairns) if (ca.x != null && dist(ca, W.player) < 320 && dist(ca, W.player) > 80) { cx.beginPath(); cx.ellipse(ca.x, ca.y - 2, 9, 4, 0, 0, 6.28); cx.ellipse(ca.x, ca.y - 8, 7, 3.5, 0, 0, 6.28); cx.ellipse(ca.x, ca.y - 13, 4.5, 3, 0, 0, 6.28); cx.fill(); } cx.restore(); } /* cairns loom out of the murk */
   if (S.fog && !W.night) { const k = E.dayFrac(S) < 0.25 ? 1 : Math.max(0, 0.45 - E.dayFrac(S)) / 0.45 * 0.5; if (k > 0.02) { const r0 = 90 + (1 - k) * 200; const fg = cx.createRadialGradient(W.player.x, W.player.y, r0 * 0.4, W.player.x, W.player.y, r0 * 2.2); fg.addColorStop(0, `rgba(215,222,225,${0.1 * k})`); fg.addColorStop(1, `rgba(215,222,225,${0.92 * k})`); cx.fillStyle = fg; cx.fillRect(cam.x, cam.y, cam.w, cam.h); cx.fillStyle = `rgba(225,230,232,${0.12 * k})`; for (let i = 0; i < 6; i++) { cx.beginPath(); cx.ellipse(cam.x + ((i * 173 + t * 9) % (cam.w + 200)) - 100, cam.y + (i * 131) % cam.h, 120, 26, 0, 0, 6.28); cx.fill(); } } }
   if (S.heat && E.midday(S) && !W.night) { cx.fillStyle = 'rgba(255,190,110,.1)'; cx.fillRect(cam.x, cam.y, cam.w, cam.h); }
   if (S.storm && W.desert && !W.night) { const fl = Math.sin(t * 7.3) > 0.985 || Math.sin(t * 11.1 + 2) > 0.99; if (fl) { cx.fillStyle = 'rgba(255,255,255,.55)'; cx.fillRect(cam.x, cam.y, cam.w, cam.h); cx.strokeStyle = '#fff'; cx.lineWidth = 2; cx.beginPath(); let x = cam.x + cam.w * 0.3 + Math.sin(t) * 80, y = cam.y; cx.moveTo(x, y); for (let i = 0; i < 7; i++) { x += (i % 2 ? 1 : -1) * 18 + Math.sin(t * 3 + i) * 10; y += cam.h / 7; cx.lineTo(x, y); } cx.stroke(); } }
@@ -5532,7 +5552,7 @@ function paintedTree(t, snow, sway) {
 }
 
 function drawTree(t, snow) {
-  const P = pal(); const kind = t.kind || 'conifer'; const sway = (S.storm ? Math.sin(W.t * 2.2 + t.k) * 2.5 : S.wind ? Math.sin(W.t * 1.8 + t.k) * 1.6 : Math.sin(W.t * 0.9 + t.k) * 0.6) + (t.shake > 0 ? Math.sin(W.t * 60) * 2 : 0);
+  const P = pal(); const kind = t.kind || 'conifer'; const sway = (S.storm ? Math.sin(W.t * 2.2 + t.k) * 2.5 + Math.cos(S.windDir || 0) * 2.2 : S.wind ? Math.sin(W.t * 1.8 + t.k) * 1.6 + Math.cos(S.windDir || 0) * 1.3 : Math.sin(W.t * 0.9 + t.k) * 0.6) /* gusts, and a lean the way the wind is blowing */ + (t.shake > 0 ? Math.sin(W.t * 60) * 2 : 0);
   if (t.gone) { if (t.kind === 'log') { cx.fillStyle = 'rgba(60,45,30,.25)'; cx.beginPath(); cx.ellipse(t.x, t.y + 2, 22, 5, t.lie, 0, 6.28); cx.fill(); } else { cx.fillStyle = '#644f3b'; cx.beginPath(); cx.ellipse(t.x, t.y, 3.5, 2.2, 0, 0, 6.28); cx.fill(); } return; }
   const cut = t.cut || t.used.logs || t.used.firewood;
   if (cut) {
@@ -6878,7 +6898,7 @@ function pageCamp(sh, close) {
     const traps = []; if (S.snares) traps.push(`${S.snares} snares`); if (S.deadfalls) traps.push(`${S.deadfalls} deadfalls`); if (S.fishTrap) traps.push('fish trap');
     const built = Object.entries(S.crafts).filter(([k, v]) => v >= ({ smoker: 2, cache: 2, fishtrap: 3, net: 2, stove: 1, rack: 1, hearth: 1, lamp: 1, reflector: 1, platform: 1, bow: 2, staff: 1, stoneblade: 1 }[k] || 99)).map(([k]) => ({ stoneblade: 'stone blade', bow: `bow (${S.arrows} arrows${S.sys && S.sys.tiller < 1 ? ', uneven limbs' : ''})`, staff: 'wading staff', reflector: 'fire reflector', platform: 'raised bed frame', lamp: 'fat lamp', hearth: 'stone hearth', smoker: 'smoker', cache: 'food cache', fishtrap: 'fish trap', net: 'rigged net', stove: 'can stove', rack: S.sys && S.sys.rackRoof ? 'drying rack (roofed)' : 'drying rack (open)' }[k]));
     sh.append($(`<div class="rows">
-      ${S.gear.includes('Axe') || S.gear.includes('Hatchet') ? `<div class="row"><span>Axe</span><span>${S.sys && S.sys.axeOff ? 'head off the handle' : `${S.axeEdge > 0.8 ? 'sharp' : S.axeEdge > 0.5 ? 'getting dull' : 'dull'} · ${E.haftOf(S) < 0.35 ? 'head loose' : 'head tight'}`}</span></div>` : ''}
+      ${S.gear.includes('Axe') ? `<div class="row"><span>Axe</span><span>${S.sys && S.sys.axeOff ? 'head off the handle' : `${S.axeEdge > 0.8 ? 'sharp' : S.axeEdge > 0.5 ? 'getting dull' : 'dull'} · ${E.haftOf(S) < 0.35 ? 'head loose' : 'head tight'}`}</span></div>` : ''}
       <div class="row"><span>Fire</span><span>${S.fire ? 'Burning' : 'Out'} · <span class="num">${Math.round(S.firewood)}</span> days of wood · ${st.igniter === 'ferro' ? 'ferro rod' : st.igniter === 'bowdrill' ? 'bow drill' : 'no way to light one'} · ${S.mats.tinder > 0 ? `${S.mats.tinder} tinder${E.tinderDamp(S) > 0.2 ? ', damp' : ''}` : 'no tinder'}</span></div>
       <div class="row"><span>Shelter</span><span>${esc(st.shelter)}${S.shelterLvl ? ` · ${Math.round(st.shelterCond * 100)}% sound${S.sys && S.sys.leaky ? ', a leak in the roof' : ''}` : ''}${S.shelterLvl < 3 ? ` · next: ${esc(E.SHELTER_NAMES[S.shelterLvl + 1])}` : ''}</span></div>
       ${S.shelterLvl ? `<div class="row" style="display:block"><span>How it holds up</span><div class="scores" style="display:grid;grid-template-columns:auto auto 1fr;gap:3px 10px;margin-top:4px;font-size:13px">${E.shelterScores(S).map(([k, n, why]) => `<span style="text-align:left">${k}</span><span class="pips">${[0, 1, 2].map(i => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span><span class="muted" style="text-align:left">${esc(why)}</span>`).join('')}</div></div>` : ''}
@@ -6918,7 +6938,7 @@ function pageBody(sh, close) { sh.classList.add('nb');
     if (ld) sh.append($(`<div class="rows">
       <div class="row"><span>Burned last night</span><span><span class="num">${fmt(ld.tdee)}</span> kcal (work <span class="num">${fmt(ld.burn)}</span>, cold <span class="num">${fmt(ld.cold)}</span>)</span></div>
       <div class="row"><span>Ate</span><span><span class="num">${fmt(ld.ate)}</span> kcal</span></div></div>`));
-    if (S.lastHabits) { const r = S.lastResilience || 0; sh.append($(`<div class="sect">Will</div>`)); sh.append($(`<div class="rows"><div class="row"><span>Yesterday's drain on your will</span><span class="${r >= 0.6 ? 'tone-good' : r < 0.35 ? 'tone-bad' : 'tone-warn'}">${r >= 0.6 ? 'light' : r >= 0.35 ? 'moderate' : 'heavy'}</span></div><div class="muted" style="font-size:12.5px">${S.lastHabits.length ? 'What kept you going: ' + esc(S.lastHabits.join(', ')) + '.' : 'Nothing held you up: no routine, no project, cold or hungry.'} A varied day, a project on the go, a word to the camera, a warm dry camp, a real meal and an hour by the fire each take some of the weight.</div></div>`)); }
+    if (S.lastHabits) { const r = S.lastResilience || 0; sh.append($(`<div class="sect">Will</div>`)); sh.append($(`<div class="rows"><div class="row"><span>Yesterday's drain on your will</span><span class="${r >= 0.6 ? 'tone-good' : r < 0.35 ? 'tone-bad' : 'tone-warn'}">${r >= 0.6 ? 'light' : r >= 0.35 ? 'moderate' : 'heavy'} · your habits took off ${Math.round(r * 100)}% of it (85% at most)</span></div><div class="muted" style="font-size:12.5px">${S.lastHabits.length ? 'What kept you going: ' + esc(S.lastHabits.join(', ')) + '.' : 'Nothing held you up: no routine, no project, cold or hungry.'} A varied day, a project on the go, a word to the camera, a warm dry camp, a real meal and an hour by the fire each take some of the weight.</div></div>`)); }
     sh.append($(`<div class="sect">Nutrition</div>`));
     const bad = D.meters.filter(m => S.meters[m[0]].state !== 'ok' || (m[6] != null && S.meters[m[0]].exc >= (m[7] || 1e9) * 0.5));
     const rows = $(`<div class="rows"></div>`);
@@ -6969,8 +6989,9 @@ function pageJournal(sh, close) { sh.classList.add('nb');
     sh.append($(`<h2>Journal</h2>`));
     { const kn = (S.sys && S.sys.known) || {}; const mush = MUSH_LOOKS.map((m, i) => [m[0], i]).filter(([l]) => kn[l]); const plants = Object.keys(kn).filter(k => k.startsWith('plant:')).map(k => k.slice(6));
       if (mush.length || plants.length) { sh.append($(`<div class="grp">What you know</div>`)); const r = $(`<div class="rows"></div>`);
-        for (const [l, i] of mush) r.append($(`<div class="row"><span><b>${esc(MUSH_NAMES[i])}</b> · ${esc(l)}; inside, ${esc(MUSH_INSIDE[i])}</span><span class="${kn[l] === 'bad' ? 'tone-bad' : 'tone-good'}">${kn[l] === 'bad' ? 'made you sick' : 'fine to eat'}</span></div>`));
-        for (const n of plants) r.append($(`<div class="row"><span><b>${esc(n)}</b></span><span class="tone-good">picked and eaten</span></div>`));
+        const kd = (S.sys && S.sys.knownDay) || {}; const when = k => kd[k] != null ? ` · noted day ${kd[k]}` : '';
+        for (const [l, i] of mush) r.append($(`<div class="row"><span><b>${esc(MUSH_NAMES[i])}</b> · ${esc(l)}; inside, ${esc(MUSH_INSIDE[i])}${esc(when(l))}</span><span class="${kn[l] === 'bad' ? 'tone-bad' : 'tone-good'}">${kn[l] === 'bad' ? 'made you sick' : 'fine to eat'}</span></div>`));
+        for (const n of plants) r.append($(`<div class="row"><span><b>${esc(n)}</b>${esc(when('plant:' + n))}</span><span class="tone-good">picked and eaten</span></div>`));
         sh.append(r); sh.append($(`<div class="muted" style="font-size:12px">The game's own field lore, learned by trying. Not a guide to real plants or mushrooms.</div>`)); } }
     { const notes = ((S.sys && S.sys.notes) || []).slice().reverse(); if (notes.length) { sh.append($(`<div class="grp">Field notes</div>`)); const r = $(`<div class="rows"></div>`); for (const n of notes) r.append($(`<div class="row"><span class="num">Day ${n.day}</span><span>${esc(n.text)}</span></div>`)); sh.append(r); } }
     const days = S.log.slice().reverse();
@@ -6987,10 +7008,10 @@ function pageGame(sh, close) {
     sh.append(how, rec, $(`<div class="grp">This run</div>`));
     const tap = $(`<button class="act danger"><b>Tap out</b><small>End this run now. You can't undo it.</small></button>`);
     let armed = false;
-    tap.onclick = () => { if (!armed) { armed = true; tap.querySelector('b').textContent = 'Tap out: press again to confirm'; return; } if (mini) mini.cancel(); E.tapOut(S); view = null; save(); close(); if (W) W.over = true; renderEnd(); };
+    tap.onclick = () => { if (!armed) { armed = true; tap.querySelector('b').textContent = 'Tap out: press again to confirm'; return; } if (mini) mini.cancel(); E.tapOut(S); save(); close(); if (W) W.over = true; renderEnd(); };
     const quit = $(`<button class="act"><b>Abandon and pick a new season</b><small>Deletes this run</small></button>`);
     let armed2 = false;
-    quit.onclick = () => { if (!armed2) { armed2 = true; quit.querySelector('b').textContent = 'Delete this run: press again'; return; } if (mini && W) endMini(); mini = null; if (W) W.over = true; setup.season = S.seasonKey; setup.gear = S.gear.slice(); store.del(SAVE); S = null; view = null; close(); renderSetup(); };
+    quit.onclick = () => { if (!armed2) { armed2 = true; quit.querySelector('b').textContent = 'Delete this run: press again'; return; } if (mini && W) endMini(); mini = null; if (W) W.over = true; setup.season = S.seasonKey; setup.gear = S.gear.slice(); store.del(SAVE); S = null; close(); renderSetup(); };
     sh.append(tap, quit, $(`<div class="grp">Settings</div>`), settingsBlock());
 }
 /* the menu is a notebook (UI spec 4.5): tabs across the top, each a page; the game and settings behind the gear */
@@ -7078,7 +7099,7 @@ function renderEnd() {
   cast.push({ name: 'You', days: S.day, reason: S.endReason, me: true });
   // ties go to you, except against the winner: going home on their last day is not a win
   cast.sort((a, b) => b.days - a.days || (a.me ? (b.place === 1 ? 1 : -1) : b.me ? (a.place === 1 ? -1 : 1) : 0));
-  const place = won ? 1 : cast.findIndex(c => c.me) + 1;
+  const place = won ? 1 : (E.placing ? E.placing(S).place : cast.findIndex(c => c.me) + 1); /* one rule for the place, the engine's */
   const firstEnd = !S.recorded; const rec = recordRun(S, place); save();
   if (!renderEnd.played && firstEnd) { renderEnd.played = S.seed; sfx.stopAll(); sfx.play(won ? 'win' : 'lose'); buzz(won ? [60, 40, 60, 40, 120] : 50); }
   const loss = Math.round((1 - S.weight / S.weight0) * 100);
@@ -7121,6 +7142,18 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'j' || e.key === 'J') openJournal(); if (e.key === 'c' || e.key === 'C') openCamp(); if (e.key === 'b' || e.key === 'B') openBody(); if (e.key === 'p' || e.key === 'P') openPack(); if (e.key === 'm' || e.key === 'M') openMap();
 });
 document.addEventListener('keyup', (e) => { input.keys[e.key] = false; if (keyHeld && (e.key === ' ' || e.key === 'Enter' || /^[1-6]$/.test(e.key))) { const a = keyHeld; keyHeld = null; if (a.up) a.up(); } });
+/* keyboard on the pad: arrows move a cursor over the drawing, E presses, hold E and move to drag. Every hand job can be done without a pointer */
+const KPAD = { x: 150, y: 50, down: false };
+function padForKeys() { if (!mini || mini.free) return null; const svg = hudEl && hudEl.querySelector('#mini svg'); return svg && (svg.onpointerdown || svg.onpointermove) ? svg : null; }
+function padEvent(svg, kind) { const vb = svg.viewBox.baseVal, r = svg.getBoundingClientRect(); const fake = { clientX: r.left + KPAD.x / vb.width * r.width, clientY: r.top + KPAD.y / vb.height * r.height, pointerId: 77, preventDefault() {}, stopPropagation() {} };
+  const cap = svg.setPointerCapture; svg.setPointerCapture = () => {}; try { const h = svg['onpointer' + kind]; if (h) h.call(svg, fake); } finally { svg.setPointerCapture = cap; } }
+function padCursor(svg) { let c = svg.querySelector('#kcur'); if (!c) { svg.insertAdjacentHTML('beforeend', '<g id="kcur" pointer-events="none"><circle r="7" fill="none" stroke="#fff" stroke-width="1.6"/><circle r="1.6" fill="#fff"/></g>'); c = svg.querySelector('#kcur'); const t = hudEl.querySelector('#padtext'); if (t && !svg.dataset.khint) { svg.dataset.khint = 1; t.insertAdjacentHTML('afterend', '<div class="mtext muted" style="font-size:12px">Keyboard: arrows move, E presses (hold E and move to drag).</div>'); } }
+  const vb = svg.viewBox.baseVal; KPAD.x = Math.max(2, Math.min(vb.width - 2, KPAD.x)); KPAD.y = Math.max(2, Math.min(vb.height - 2, KPAD.y)); c.setAttribute('transform', `translate(${KPAD.x.toFixed(1)} ${KPAD.y.toFixed(1)})`); }
+document.addEventListener('keydown', (e) => { const svg = padForKeys(); if (!svg || document.querySelector('.scrim')) return; const step = e.shiftKey ? 2 : 7;
+  const mv = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step], a: [-step, 0], d: [step, 0], w: [0, -step], s: [0, step] }[e.key];
+  if (mv) { KPAD.x += mv[0]; KPAD.y += mv[1]; padCursor(svg); if (KPAD.down) padEvent(svg, 'move'); e.preventDefault(); e.stopImmediatePropagation(); return; }
+  if ((e.key === 'e' || e.key === 'E') && !e.repeat) { padCursor(svg); KPAD.down = true; padEvent(svg, 'down'); e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+document.addEventListener('keyup', (e) => { if ((e.key === 'e' || e.key === 'E') && KPAD.down) { KPAD.down = false; const svg = padForKeys() || (hudEl && hudEl.querySelector('#mini svg')); if (svg) padEvent(svg, 'up'); } }, true);
 /* hold buttons (cast, hold the rod, wade out, blow) are held with the key too: press to start, release to let go */
 let keyHeld = null;
 function pressKey(a, e) { if (!a) return; if (a.down) { if (e.repeat || keyHeld) return; keyHeld = a; a.down(); } else if (typeof a.fn === 'function') a.fn(); }
@@ -7153,7 +7186,7 @@ function repairSave(g) {
   for (const k of ['mats', 'crafts', 'stats', 'today', 'partial', 'regrow']) drop(k, obj);
   for (const k of ['stores', 'raw', 'rivals', 'conditions', 'log', 'recent', 'found', 'pins', 'piles']) drop(k, Array.isArray);
   if (g.mats) for (const k in g.mats) if (typeof g.mats[k] !== 'number' || !isFinite(g.mats[k])) { g.mats[k] = +g.mats[k] || 0; fixed++; }
-  for (const k of ['stores', 'raw']) if (g[k]) { const n = g[k].length; g[k] = g[k].filter(x => obj(x) && D.foods[x.id] && typeof x.por === 'number' && isFinite(x.por)); fixed += n - g[k].length; }
+  for (const k of ['stores', 'raw']) if (g[k]) { for (const x of g[k]) if (obj(x) && typeof x.por === 'string' && x.por.trim() !== '' && isFinite(+x.por)) { x.por = +x.por; fixed++; } const n = g[k].length; g[k] = g[k].filter(x => obj(x) && D.foods[x.id] && typeof x.por === 'number' && isFinite(x.por)); fixed += n - g[k].length; }
   if (g.rivals) g.rivals = g.rivals.filter(r => obj(r) && typeof r.name === 'string');
   if (g.conditions) g.conditions = g.conditions.filter(c => obj(c) && typeof c.name === 'string').map(c => Object.assign(c, { days: +c.days || 1, dmg: +c.dmg || 0 }));
   if (g.shelterType != null && !E.SHELTERS[g.shelterType]) { g.shelterType = null; g.shelterLvl = 0; fixed++; }
@@ -7191,7 +7224,7 @@ function conformSave(dst, src, nested) {
 const SELFCHECK = (() => { try { return /selfcheck/.test(location.hash) || localStorage.getItem('loo-selfcheck') === '1'; } catch (e) { return false; } })();
 const selfcheck = { first: null, seen: 0 };
 function selfProblems(s) {
-  const out = []; if (!s) return out; const BAD = /undefined|NaN|\[object|Infinity|null\b/;
+  const out = []; if (!s) return out; if (MUSH_LOOKS.length !== MUSH_NAMES.length || MUSH_LOOKS.length !== MUSH_INSIDE.length) out.push(`mushroom tables out of step: ${MUSH_LOOKS.length} looks, ${MUSH_NAMES.length} names, ${MUSH_INSIDE.length} insides`); const BAD = /undefined|NaN|\[object|Infinity|null\b/;
   const scan = (o, p, d) => { if (d > 6) return; if (typeof o === 'number') { if (Number.isNaN(o) || o === -Infinity) out.push('broken number at ' + p); } else if (o && typeof o === 'object') for (const k in o) scan(o[k], p + '.' + k, d + 1); };
   scan(s, 's', 0);
   for (const k in s.mats || {}) if (s.mats[k] < -1e-9) out.push(`negative ${k}: ${s.mats[k]}`);
@@ -7215,7 +7248,7 @@ if (SELFCHECK) setInterval(() => { if (!S || S.status !== 'playing') return; con
 function start(hot) {
   const raw = (hot && hot.game) || store.get(SAVE);
   let broken = false;
-  if (raw) { try { const g = typeof raw === 'string' ? JSON.parse(raw) : raw; if (g && g.v >= 2 && D.seasons.some(x => x.key === g.seasonKey)) S = migrate(g); else broken = true; } catch (e) { S = null; broken = true; } }
+  if (raw) { try { const g = typeof raw === 'string' ? JSON.parse(raw) : raw; if (g && g.v >= 2 && (D.seasons.some(x => x.key === g.seasonKey) || g.seasonKey === E.PRACTICE_KEY)) S = migrate(g); else broken = true; } catch (e) { S = null; broken = true; } }
   /* a save that cannot be read is kept to one side, not overwritten by the next run */
   if (broken && typeof raw === 'string') { try { localStorage.setItem(SAVE + '-unreadable', raw); } catch (e) {} }
   if (!S) { setup.gear = POPULAR.slice(); renderSetup(); if (broken) { const n = document.createElement('div'); n.className = 'muted'; n.style.cssText = 'margin:12px 16px;padding:10px 12px;border-radius:10px;background:rgba(200,80,60,.12);font-size:13px'; n.textContent = 'Your last run could not be loaded. It has been kept aside, and a new run will not overwrite it.'; app.prepend(n); } }
