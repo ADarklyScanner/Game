@@ -151,6 +151,13 @@ const nights = (mk, n, f) => { let hit = 0; for (let i = 0; i < n; i++) { const 
   if (E.temperature(camp('AU-S2', 97)) > 12) check('insects off still water cost will without smoke', bug(false) < bug(true), [bug(false), bug(true)]);
   const sun = camp('US-S6', 98); E.sysOf(sun).campSpot = { sun: true }; sun.wet = 0.6; sun.sys.bedDamp = 0.5; sun.day = 5; let dried = false; for (let i = 0; i < 6 && !dried; i++) { E.endDay(sun); sun.wet = 0.6; sun.sys.bedDamp = 0.5; E.beginDay(sun); sun.event = null; dried = !sun.rain && !sun.storm && !sun.fog && !sun.snowfall && sun.wet < 0.6 && sun.sys.bedDamp < 0.5; } check('the morning sun dries things out on fair days', dried);
 }
+{ // hydration: it drains away from water, faster in heat; drinking fills it; running dry hurts
+  const h = camp('US-S6', 120, ['Bow and arrows', 'Pot']); E.sysOf(h).campSpot = { waterM: 300 }; h.hyd = 100; h.heat = false; h.hours = 1; E.act(h, 'hunt'); check('a hunt away from water drains it', E.hydOf(h) < 100, E.hydOf(h));
+  const hot = camp('US-S6', 121, ['Bow and arrows']); E.sysOf(hot).campSpot = { waterM: 300 }; hot.hyd = 100; hot.heat = true; hot.hours = 1; E.act(hot, 'hunt'); check('faster in the heat', E.hydOf(hot) < E.hydOf(h), [E.hydOf(hot), E.hydOf(h)]);
+  const f = camp('US-S6', 122, ['Fishing gear']); f.hyd = 20; f.hours = 1; E.act(f, 'fish'); check('fishing at the water, you drink', E.hydOf(f) === 100, E.hydOf(f));
+  const d = camp('US-S6', 123, ['Bow and arrows']); E.sysOf(d).campSpot = { waterM: 300 }; d.hyd = 3; d.hours = 1; const hp0 = d.health; E.act(d, 'hunt'); check('running dry costs health', d.health < hp0 && E.hydOf(d) === 0, [d.health, hp0]);
+  const p = camp('US-S6', 124, ['Pot']); E.sysOf(p).campSpot = { waterM: 300 }; p.potWater = 1; p.hyd = 40; check('a drink from the pot is offered', E.available(p, 'drink').ok, E.available(p, 'drink').why); E.act(p, 'drink'); check('and it fills you up', E.hydOf(p) === 100);
+}
 { // doing nothing is not a strategy: resting and sleeping every day ends the run early
   for (const k of ['US-S6', 'AU-S2']) { const t = E.newGame(k, ['Knife', 'Sleeping bag', 'Pot', 'Ferro rod', 'Axe', 'Fishing gear', 'Tarp', 'Rations', 'Paracord', 'Saw'], { seed: 7, weight: 180 }); E.beginDay(t); t.event = null; t.campChosen = true;
     for (let d = 0; d < 30 && t.status === 'playing'; d++) { E.act(t, 'rest'); E.act(t, 'rest'); E.endDay(t); if (t.event) try { E.choose(t, 0); } catch (e) {} E.beginDay(t); if (t.event) try { E.choose(t, 0); } catch (e) {} }

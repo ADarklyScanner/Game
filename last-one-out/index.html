@@ -136,7 +136,7 @@ summary { cursor: pointer; color: var(--muted); font-size: 13px; }
 .pips i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.25); margin: 0 1px; }
 .pips i.on { background: var(--ember); }
 .iconbtn { background: rgba(0,0,0,.42); border: 0; border-radius: 999px; width: 30px; height: 30px; cursor: pointer; display: grid; place-items: center; color: #fff; flex: none; font-size: 18px; line-height: 1; }
-.hud .vitals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; max-width: 420px; }
+.hud .vitals { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; max-width: 460px; }
 .hud .vital { position: relative; background: rgba(10,16,14,.55); backdrop-filter: blur(6px); border-radius: 9px; padding: 5px 8px 6px; display: flex; flex-direction: column; gap: 2px; min-width: 0; color: #fff; }
 .hud .vital .label { color: rgba(255,255,255,.65); font-size: 10px; }
 .hud .vital .v { font-family: var(--mono); font-size: 15px; white-space: nowrap; }
@@ -197,10 +197,11 @@ summary { cursor: pointer; color: var(--muted); font-size: 13px; }
 .hud .iconbtn { background: rgba(20,18,14,.5); width: 34px; height: 34px; border-radius: 8px; backdrop-filter: none; }
 .hud .iconbtn svg { width: 22px; height: 22px; display: block; }
 .hud .statrow { display: flex; gap: 16px; flex-wrap: wrap; row-gap: 4px; font: 500 14px var(--mono); color: #e6dec8; text-shadow: 0 1px 6px rgba(0,0,0,.6); margin-top: 2px; }
+@media (max-width: 400px) { .hud .statrow { gap: 10px; font-size: 13px; } .hud .statrow .vt em { display: none; } } /* five meters on one line on a phone: icons and numbers, no words */
 .hud .vt { display: flex; flex-direction: column; gap: 4px; min-width: 0; white-space: nowrap; }
 .hud .vt i { display: block; height: 2px; background: rgba(230,222,200,.22); border-radius: 1px; overflow: hidden; }
 .hud .vt i b { display: block; height: 100%; background: rgba(230,222,200,.55); }
-.hud .vt.h i b { background: var(--bar-health); } .hud .vt.m i b { background: var(--bar-will); }
+.hud .vt.h i b { background: var(--bar-health); } .hud .vt.m i b { background: var(--bar-will); } .hud .vt.d i b { background: #5f97c2; }
 .hud .vt.w i b { background: rgba(230,222,200,.45); }
 .hud .vt.low i b { background: #d9874a; } .hud .vt.bad { color: #f0b49a; } .hud .vt.bad i b { background: #c8553a; }
 .hud .vt small { font-size: 12px; opacity: .75; }
@@ -396,6 +397,18 @@ const GEAR = Object.fromEntries(DATA.gear.map(g => [g.id, g]));
 function applyTune(se, t) { const odds = t > 1 ? Math.sqrt(t) : t; se.size = t > 1 ? Math.sqrt(t) : 1; for (const k in se.base) se.mult[k] = round1x(se.base[k] * (k === 'forage' ? t : odds)); }
 for (const se of DATA.seasons) { if (!se.base) se.base = { ...se.mult }; const tv = DATA.tune && DATA.tune[se.key]; const t = (typeof tv === 'object' ? tv.t : tv) || 1; se.harsh = (typeof tv === 'object' && tv.harsh) || 1; applyTune(se, t); }
 function round1x(x) { return Math.round(x * 100) / 100; }
+/* Camping: a small, rich valley to learn every job in. Every fish, animal and plant from the drop sites, good odds, quick regrowth,
+   sea, lake, river, pond, bog and rock, snow and ice later on, no rivals, nothing to lose. Built from the drop sites, kept out of their list */
+const PRACTICE_KEY = 'CAMPING'; let PRACTICE = null;
+function practicePlace() { if (PRACTICE) return PRACTICE; const all = DATA.seasons.filter(x => x.climate.water !== 'scarce');
+  const union = k => { const m = {}; for (const se of all) for (const [id, w] of (se.pools[k] || [])) if (DATA.foods[id]) m[id] = (m[id] || 0) + w; const tot = Object.values(m).reduce((a, b) => a + b, 0) || 1; return Object.entries(m).map(([id, w]) => [id, Math.round(w / tot * 1000) / 1000]).filter(x => x[1] > 0); };
+  const M = { fish: 3.4, hunt: 3.4, trap: 3.4, forage: 5 };
+  PRACTICE = { key: PRACTICE_KEY, name: 'Camping', location: 'the practice valley', region: 'Practice', blurb: 'A small valley by the sea with everything close: learn every job with good odds, quick regrowth and no rivals.', site: 'Practice',
+    climate: { t0: 12, t1: -14, snow: 9, freeze: 13, storm: 0.04, coast: true, water: 'lake' }, pools: { fish: union('fish'), hunt: union('hunt'), trap: union('trap'), forage: union('forage') },
+    big: [...new Set(all.flatMap(x => x.big || []))], mult: M, base: { fish: 1.3, hunt: 1.3, trap: 1.3, forage: 1.3 }, found: { rate: 0.6, classes: [['Container', 0.4], ['Metal hardware', 0.3], ['Other debris', 0.3]], examples: { Container: ['Old metal drum', 'Plastic jug'], 'Metal hardware': ['Rusted tin cans'], 'Other debris': ['Old fishing lure'] } },
+    predators: [['bear', 1], ['wolverine', 1]], examples: {}, rivals: [], events: 0, regional: [], bigRegional: [], record: { fish: 10, hunt: 10, trap: 10, forage: 10 }, realMedian: 60, adjMedian: 60, biome: 'shield', calib: { median: 60, adj: 60, win: 9999 }, harsh: 0.3, size: 2.2, winDay: 9999, practice: true }; /* fat fish, big hares: more food per catch than anywhere real */
+  return PRACTICE; }
+function placeOf(key) { return key === PRACTICE_KEY ? practicePlace() : DATA.seasons.find(x => x.key === key); }
 function setTune(key, t, harsh) { const se = DATA.seasons.find(x => x.key === key); applyTune(se, t); if (harsh != null) se.harsh = harsh; }
 const has = (s, id) => s.gear.includes(id);
 const foundCount = (s, cls) => s.found.filter(f => f.cls === cls).length;
@@ -458,7 +471,7 @@ function canWorkInside(s) { return !!(s.shelterType && SHELTERS[s.shelterType].i
 
 // ------------------------------------------------------------------ setup
 function newGame(seasonKey, gear, opts = {}) {
-  const season = DATA.seasons.find(x => x.key === seasonKey);
+  const season = placeOf(seasonKey);
   const seed = (opts.seed ?? Math.floor(Math.random() * 2 ** 31)) >>> 0;
   const s = {
     v: 2, mapV: 2, seed, rng: seed, seasonKey, day: 0, status: 'playing', endReason: '',
@@ -488,10 +501,11 @@ function newGame(seasonKey, gear, opts = {}) {
   s.replaced = drop ? drop.name : ''; s.rivalsV = 1;
   s.rivals = roster.filter(r => r !== drop).map(r => ({ name: r.name, days: r.days, reason: r.reason, place: r.place, out: false }));
   s.winDay = season.winDay ?? Math.max(...s.rivals.map(r => r.days)) + 1;
+  if (season.practice) { s.practice = true; s.everDone = {}; logDay(s, 0, [['Camping in the practice valley. Everything is close and comes back quickly. Take your time and learn each job.', 'info']]); return s; }
   logDay(s, 0, [[`Dropped at ${season.location}. ${s.rivals.length} others are out here somewhere.`, 'info']]);
   return s;
 }
-function season(s) { return DATA.seasons.find(x => x.key === s.seasonKey); }
+function season(s) { return placeOf(s.seasonKey); }
 // the season's calendar: a few things that happen in a window of days, seeded per run
 function makeWindows(s, se) {
   const c = se.climate; const W = []; const r = n => Math.floor(rnd(s) * n);
@@ -647,6 +661,18 @@ const clayPots = s => (s.sys && s.sys.clayPots) || 0;
 /* where today's water came from, if anywhere. At the water's edge (a job there, or in the browser game simply walking down to it); a walk down
    from a camp within 150 m of the water, on any day you are up and about; water kept at camp (hauled, boiled or melted); tea or broth; rain
    caught in a pot or a tarp. A frozen lake needs a hole: cut with an axe or saw, or broken by hand today. raw: you drank it unboiled. */
+/* hydration, 0 to 100: it drains with the hours, faster in heat and hard work; drinking fills it. Run dry and the body pays */
+const hydOf = s => s.hyd ?? 100;
+function waterNow(s, id) { if (id == null) return false; /* walking, not drinking */ const c = season(s).climate; const w = id && ACTIONS[id] && ACTIONS[id].where; if (c.water === 'scarce') return (s.water || 0) > 0 && (!w || w === 'camp');
+  const ice = !frozen(s) || cutsIce(s); if ((w === 'water' || w === 'shore') && ice) return true;
+  if (['boil', 'needle_tea', 'bone_broth', 'melt_snow', 'melt_ice', 'catch_rain', 'dew', 'drink'].includes(id)) return true;
+  if (w && w !== 'camp') return false; const spot = (s.sys && s.sys.campSpot) || {}; return (ice && !(spot.waterM > 150)) || (s.potWater || 0) > 0 || s.boiled > 0; }
+function thirst(s, h, effort, id, lines) { if (s.status !== 'playing') return; const T = temperature(s);
+  const rate = 4.5 * (s.heat || T >= 25 ? 1.6 : 1) * (effort === 'heavy' ? 1.3 : effort === 'moderate' ? 1.1 : 1) * (season(s).climate.water === 'scarce' ? 1.2 : 1) * (T < -10 ? 0.8 : 1);
+  const before = hydOf(s); let v = before - h * rate; if (waterNow(s, id)) v = 100; s.hyd = Math.round(clamp(v, 0, 100) * 10) / 10;
+  if (before >= 30 && s.hyd < 30) lines.push(['Thirsty: a headache coming on and the mouth gone dry. Get to water.', 'warn']);
+  if (s.hyd <= 0) { const over = Math.max(0.1, h - before / rate); s.health = Math.max(1, s.health - over * 2.5); s.morale -= over; if (before > 0) lines.push(['No water and still working: dizzy, cramping, heart racing. Drink.', 'bad']); } }
+function drinkUp(s) { if (s.status === 'playing') s.hyd = 100; }
 function waterToday(s) {
   const t = s.today || { done: [] }; const done = t.done || []; const c = season(s).climate;
   if (c.water === 'scarce') return { ok: (s.water || 0) > 0, raw: false, how: 'carried' };
@@ -891,6 +917,7 @@ const ACTIONS = {
   shadow_stick: { label: 'Find north with a shadow stick', hours: 0.5, effort: 'rest', group: 'Camp', where: 'any' },
   moss_check: { label: 'Check which side the moss grows', hours: 0.1, effort: 'rest', group: 'Camp', where: 'any' },
   splint: { label: 'Splint the injury', hours: 1, effort: 'light', group: 'Camp', where: 'camp' },
+  drink: { label: 'Drink from the pot', hours: 0.1, effort: 'rest', group: 'Camp', where: 'camp' },
   air_bed: { label: 'Air the bedding', hours: 0.5, effort: 'light', group: 'Camp', where: 'camp' },
   lay_out_camp: { label: 'Lay out the camp', hours: 0.5, effort: 'light', group: 'Camp', where: 'camp' },
   dig_latrine: { label: 'Dig a latrine', hours: 1, effort: 'moderate', group: 'Camp', where: 'camp' },
@@ -1064,6 +1091,7 @@ function available(s, id) {
     case 'shadow_stick': return !sunny(s) ? r(false, 'Needs sun to throw a shadow') : (s.sys && s.sys.headingDay === s.day) ? r(false, 'You know which way is which today') : r(true, '', 'a heading for the rest of the day');
     case 'moss_check': return (s.sys && s.sys.mossDay === s.day) ? r(false, 'Checked') : r(true, '', 'which side is north?');
     case 'splint': { const c = s.conditions.find(x => /sprain|broken|fracture/i.test(x.name) && !x.splinted); if (!c) return r(false, 'Nothing to splint'); if (!(s.mats.poles >= 1 || s.mats.bark >= 2)) return r(false, 'Needs a pole or 2 bark for the splint'); if (s.mats.cordage < 1) return r(false, 'Needs cordage to bind it'); return r(true, '', `${low(c.name)} · heals faster held still`); }
+    case 'drink': return hydOf(s) >= 90 ? r(false, 'Not thirsty') : !((s.potWater || 0) > 0 || s.boiled > 0 || (season(s).climate.water === 'scarce' && (s.water || 0) > 0)) ? r(false, 'No water at camp') : r(true, '', s.boiled > 0 ? 'boiled, safe' : 'raw from the pot');
     case 'air_bed': return !(bedDampOf(s) > 0.15) ? r(false, 'The bedding is dry') : (s.rain || s.storm || s.snowfall || s.fog) ? r(false, 'Not in this weather') : r(true, '', sunny(s) || s.wind ? 'sun and wind: dry by evening' : s.fire ? 'by the fire' : 'slow in this air');
     case 'lay_out_camp': return !s.campChosen ? r(false, 'No camp yet') : !(s.shelterType || s.shelterGoal) ? r(false, 'Pick a shelter first') : r(true, '', s.sys && s.sys.layout ? 'move the kitchen or latrine' : 'where to gut and cook, where to dig');
     case 'dig_latrine': return latrineOk(s) ? r(false, 'The latrine is fine for now') : s.day < 2 ? r(false, 'Not yet needed') : r(true, '', digger(s) ? 'downhill, well away from the water' : 'a shallow trench by hand, away from the water');
@@ -1159,7 +1187,7 @@ const BIOMES = {
   nzbeech: { mix: { deciduous: 0.78, conifer: 0.06, snag: 0.12 }, sp: { deciduous: 'beech', conifer: 'podocarp' }, needles: false, spiders: true },
   sapmi: { mix: { birch: 0.6, conifer: 0.3, snag: 0.08 }, sp: { birch: 'mountain birch', conifer: 'pine' }, needles: true },
 };
-function biomeOf(key) { const se = DATA.seasons.find(x => x.key === key); const id = (se && se.biome) || (se && se.climate.water === 'scarce' ? 'karoo' : 'shield'); return Object.assign({ id }, BIOMES[id]); }
+function biomeOf(key) { const se = placeOf(key); const id = (se && se.biome) || (se && se.climate.water === 'scarce' ? 'karoo' : 'shield'); return Object.assign({ id }, BIOMES[id]); }
 // pick a tree kind from the biome's mix with a 0..1 roll
 function treeKind(key, r) { const m = biomeOf(key).mix; const tot = Object.values(m).reduce((a, b) => a + b, 0); let x = r * tot; for (const [k, v] of Object.entries(m)) { x -= v; if (x <= 0) return k; } return 'snag'; }
 
@@ -1212,7 +1240,7 @@ function progressText(s, k, need) { return `${s.crafts[k] || 0} of ${need} sessi
 // what is left out there. Each fish, hare or handful you take comes off the stock; it creeps back slowly overnight.
 const STOCK = { lake: { take: 0.01, back: 0.008, floor: 0.55 }, river: { take: 0.02, back: 0.012, floor: 0.5 }, pond: { take: 0.07, back: 0.006, floor: 0.15 }, trap: { take: 0.02, back: 0.012, floor: 0.55 }, game: { take: 0.025, back: 0.01, floor: 0.55 } };
 function stockOf(s, k) { if (!s.stock) s.stock = {}; return s.stock[k] == null ? 1 : s.stock[k]; }
-function takeStock(s, k, n = 1) { const d = STOCK[k]; if (!d) return; s.stock[k] = Math.max(d.floor, stockOf(s, k) - d.take * n); }
+function takeStock(s, k, n = 1) { const d = STOCK[k]; if (!d || s.practice) return; /* the practice valley never runs out */ s.stock[k] = Math.max(d.floor, stockOf(s, k) - d.take * n); }
 function stockWord(v) { return v < 0.45 ? 'fished out' : v < 0.7 ? 'fished hard' : ''; }
 // plants without a map (bots): the patches near camp give less as they are picked over
 const PATCH = { berries: 0.06, rosehips: 0.06, seeds: 0.08, roots: 0.06, cattail: 0.05, pinenuts: 0.08, greens: 0.04, nettle: 0.04, mushrooms: 0.03, shellfish: 0.03, seaweed: 0.02, insects: 0.04 };
@@ -1309,6 +1337,7 @@ function act(s, id, opts = {}) {
   if (['fish', 'setlines'].includes(id) && frozen(s) && temperature(s) < -5 && !s.today.iceHole) { s.today.iceHole = true; s.hours = round1(s.hours + 0.5); s.today.burn += C.burnPerHour.heavy * 0.5; lines.push(['The hole had frozen over a hand thick. Half an hour chopping it open again.', 'muted']); }
   if (['fish', 'setnet', 'checknet', 'setlines'].includes(id) && thinIce(s) && chance(s, 0.015)) { s.wet = 1; s.health -= 10; s.morale -= 10; addCond(s, { name: 'Chilled through after the ice broke', days: 2, dmg: 2 }); lines.push(['The new ice cracked like a shot and you went through to the waist. You got out on your elbows and ran for the fire, soaked to the skin.', 'bad']); }
   s._at = s.hours - h; try { doAction(s, id, lines, Math.max(1, opts.mod || 1) * dim, opts); } finally { s._at = null; }
+  thirst(s, h, A.effort, id, lines); if (s.practice) (s.everDone || (s.everDone = {}))[id] = 1;
   if (chopping && s.status === 'playing') axeWear(s, lines);
   if (['roots', 'cattail', 'dig_latrine', 'bury'].includes(id) && s.crafts.diggingstick >= 1 && !has(s, 'Shovel') && poorly(s, 'diggingstick') && chance(s, 0.08)) { s.crafts.diggingstick = 0; delete s.sys.poor.diggingstick; lines.push(['The soft point of the digging stick split up the middle. Make another, and harden it properly.', 'bad']); }
   if (BLADE_JOBS.includes(id) && s.crafts.stoneblade >= 1 && !has(s, 'Knife') && !has(s, 'Multitool') && chance(s, 0.03)) { s.crafts.stoneblade = 0; lines.push(['The stone blade snapped across the middle on a joint. Knap another.', 'bad']); }
@@ -1335,7 +1364,7 @@ function travel(s, metres) {
   if (s.status !== 'playing' || s.phase < 0) return;
   s.stats.walked += metres;
   if (s.phase === 3) { s.darkAcc = (s.darkAcc || 0) + metres; if (s.darkAcc >= 300) { s.darkAcc = 0; s.morale = Math.max(0, s.morale - 1); s.health = Math.max(1, s.health - 0.5); s.today.burn += 40; } return; } s.walkAcc = (s.walkAcc || 0) + metres;
-  if (s.walkAcc >= 400) { const deep = snowy(s); const shoes = s.crafts.snowshoes >= 1 && !(s.sys && s.sys.shoesBroken); if (deep && shoes) { const sys = sysOf(s); sys.shoeWear = (sys.shoeWear || 0) + s.walkAcc / 4000 * (sys.looseShoes ? 0.07 : 0.045); if (sys.shoeWear >= 1) { sys.shoesBroken = true; if (s.today && s.today.lines) s.today.lines.push(['A lacing on one snowshoe has worn through and the webbing sags. Mend it before you go far in deep snow.', 'warn']); } } const h = round1(s.walkAcc / 4000 * (deep && !shoes ? 1.25 : 1)); s.walkAcc = 0; s.hours = round1(s.hours + h); s.today.burn += C.burnPerHour.light * h * (deep && !shoes ? 2 : deep && s.sys && s.sys.looseShoes ? 1.3 : 1); s.phase = phaseOf(s); } // floundering in deep snow vs walking on top of it
+  if (s.walkAcc >= 400) { thirst(s, 0.12, 'moderate', null, s.today.lines); const deep = snowy(s); const shoes = s.crafts.snowshoes >= 1 && !(s.sys && s.sys.shoesBroken); if (deep && shoes) { const sys = sysOf(s); sys.shoeWear = (sys.shoeWear || 0) + s.walkAcc / 4000 * (sys.looseShoes ? 0.07 : 0.045); if (sys.shoeWear >= 1) { sys.shoesBroken = true; if (s.today && s.today.lines) s.today.lines.push(['A lacing on one snowshoe has worn through and the webbing sags. Mend it before you go far in deep snow.', 'warn']); } } const h = round1(s.walkAcc / 4000 * (deep && !shoes ? 1.25 : 1)); s.walkAcc = 0; s.hours = round1(s.hours + h); s.today.burn += C.burnPerHour.light * h * (deep && !shoes ? 2 : deep && s.sys && s.sys.looseShoes ? 1.3 : 1); s.phase = phaseOf(s); } // floundering in deep snow vs walking on top of it
 }
 function runDay(s, policy) {
   if (s.status !== 'playing') return s;
@@ -1592,6 +1621,7 @@ function doAction(s, id, lines, mod, opts) {
     case 'shadow_stick': { sysOf(s).headingDay = s.day; lines.push(['Pushed a stick upright, marked the tip of its shadow with a stone, waited, and marked it again. The line between the stones runs east and west. You know where camp lies now.', 'good']); break; }
     case 'moss_check': { sysOf(s).mossDay = s.day; lines.push([pick1(s, ['Thick moss on the north side of this spruce. And on the south side of the next one, and all the way round the third.', 'Moss on the shady side, wherever the shade happens to fall here. It points every way at once.']), 'muted']); break; }
     case 'splint': { const c = s.conditions.find(x => /sprain|broken|fracture/i.test(x.name) && !x.splinted); if (s.mats.poles >= 1) s.mats.poles -= 1; else s.mats.bark -= 2; s.mats.cordage -= 1; c.splinted = true; c.dmg *= 0.5; if (X.good === false) { c.days += 3; lines.push(['Splinted and bound it, but it is set a little crooked. It will be stiff a while longer.', 'warn']); } else { c.days = Math.max(1, c.days - 3); lines.push(['Padded it with moss, laid split wood either side and bound it firm. The throbbing eases once it cannot move.', 'good']); } break; }
+    case 'drink': { lines.push(['A long drink from the pot.', 'muted']); break; }
     case 'air_bed': { const sys = sysOf(s); const k = sunny(s) || s.wind ? 1 : s.fire ? 0.6 : 0.35; sys.bedDamp = Math.max(0, Math.round((bedDampOf(s) - k) * 100) / 100); lines.push([sys.bedDamp === 0 ? 'Shook the boughs out and spread them in the air. Dry and springy again.' : 'Spread the bedding out. Still a little damp at the bottom.', 'info']); break; }
     case 'lay_out_camp': { const sys = sysOf(s); const L = { water: typeof (X.layout || {}).water === 'number' ? X.layout.water : (sys.layout && sys.layout.water) ?? null }; const taken = new Set(Object.values(CAMP_FIXED).map(c => c.join(',')).concat(['0,0']));
       for (const k of ['kitchen', 'latrine']) { const c = (X.layout || {})[k]; if (Array.isArray(c) && c.length === 2 && c.every(v => Number.isInteger(v) && Math.abs(v) <= 2) && !taken.has(c.join(','))) { L[k] = [c[0], c[1]]; taken.add(c.join(',')); } }
@@ -2164,6 +2194,7 @@ function nightAndBody(s, burn, done, lines) {
   if (c.water === 'scarce') { const need = s.heat ? 2 : 1; if ((s.water || 0) >= need) s.water -= need; else if ((s.water || 0) > 0) { s.water = 0; lines.push(['Not enough water for a day this hot. Thirsty and slow.', 'warn']); dmg += 2; } else waterOk = false; }
   /* where water is all around: you have to get to it, or have some at camp (waterToday); a day lying still with none to hand is a day without */
   let drankRaw = false; if (c.water !== 'scarce') { const wt = waterToday(s); waterOk = wt.ok; drankRaw = wt.raw; if (wt.how === 'kept') s.potWater = Math.max(0, s.potWater - 1); if (wt.how === 'ice') lines.push(['The lake is frozen hard and you have nothing to cut a hole with. Melt snow by the fire, or go without.', 'warn']); }
+  s.hyd = waterOk ? Math.max(hydOf(s) - 10, 75) : Math.max(0, hydOf(s) - 30); /* a drink before sleep and at first light, or none */
 
   // eating
   const target = { full: tdee, moderate: tdee * 0.7, lean: tdee * 0.4 }[s.ration];
@@ -2292,6 +2323,7 @@ function nightAndBody(s, burn, done, lines) {
   if (chance(s, 0.06 + Math.min(0.05, s.day / 1200))) { const hit = 5 + Math.floor(rnd(s) * 9); dm -= hit; lines.push([LONELY[Math.floor(rnd(s) * LONELY.length)], 'warn']); }
   if (dm < 0) dm *= willRamp(s, se); // loneliness drains slowly at first and only reaches full strength well after most rivals have gone home
   dm += now * (s.day <= 3 ? 0.6 : 1); /* the first days are adrenaline */
+  if (s.practice && dm < 0) dm *= 0.4; /* practice is gentle on the will */
   s.morale = clamp(s.morale + dm, 0, 100);
 
   const gone = s.rivals.filter(r => !r.out && r.days < s.day);
@@ -2304,6 +2336,7 @@ function nightAndBody(s, burn, done, lines) {
   s.restedToday = false;
 
   if (!Number.isFinite(s.health)) s.health = 50; if (!Number.isFinite(s.morale)) s.morale = 50; if (!Number.isFinite(s.weight)) s.weight = (s.weight0 || 180) * 0.9; /* never save a broken number */
+  if (s.practice) { s.health = Math.max(30, s.health); s.morale = Math.max(35, s.morale); s.weight = Math.max(s.weight, s.weight0 * 0.9); s.lastMed = s.day; } /* practice: it can get hard, never fatal */
   if (s.health <= 0) end(s, 'medical', 'Collapsed. The medical team pulled you out.');
   else if (s.morale <= 0) end(s, 'tapped', 'Your will to keep going ran out. You tapped out.');
   else if (s.day - s.lastMed >= C.medicalEvery) {
@@ -2419,7 +2452,7 @@ const GEAR_COST = { 'Gillnet': 12, 'Fishing gear': 4, 'Axe': 4, 'Sleeping bag': 
   'Rations': 1, 'Multitool': 1, 'Soap': 1, 'Scotch eyed auger': 1, 'Trapping wire': 1, 'Shovel': 1, 'Salt': 1, 'Tarp': 1, 'Frying pan': 1, 'Wire': 1, 'Canteen': 1, 'Rope': 1, 'Slingshot': 1 };
 const BUDGET = 20;
 const gearCost = id => GEAR_COST[id] ?? 2; const kitCost = gear => gear.reduce((a, g) => a + gearCost(g), 0);
-const API = { fishDepth, campSummary, shelterScores, bedDampOf, prevailOf, CAMP_FIXED, zoneOf, layoutNotes, kitchenMult, GEAR_COST, BUDGET, gearCost, kitCost, waterToday, note, sunny, sprayLeft, fallChance, climbAnchor, stalkNoise, fouling, latrineOk, raftOf, raftOk, flintOf, hasBow, bowPower, driftChance, bearings, wade, clothesOf, tomorrow, skyAcc, thinIce, potLike, clayPots, greenPots, bedWarmth, snowLoadOf, bedOf, lampOk, nightOk, haftOf, tinderDamp, fireOdds, sealOf, hasHearth, isDry, onStation, RACK_CAP, DRY_AT, dryDaysLeft, sysOf, cacheSign, low, matName, BIOMES, biomeOf, treeKind, realMedianOf: se => { const d = se.rivals.filter(r => r.days != null).map(r => r.days).sort((a, b) => a - b); return d[d.length >> 1]; }, WEIGHT, loadOf, carryCap, moveCampCost, moveCamp, collectSize, berryRipe, bushRipeDay, stockOf, stockWord, billFor, nightOk, NIGHT_OK, treeYield, treeNames, fishPool, sizeOf, SHELTERS, shelterOptions, chooseShelter, dropPlan, makeCamp, foundWreck, shelterName, canWorkInside, travel, activeWindows, windowOn, timeMult, weatherName, dayFrac, midday, setTune, DATA, C, MATS, ACTIONS, EVENTS, newGame, runDay, beginDay, act, endDay, choose, carryLoad, available, tapOut, placing, status, season, storeKcal, temperature, shelterLevel, SHELTER_NAMES, shelterBill, shelterMissing, matList, fishOdds, huntOdds, bowDrillOdds, dayHours, hoursLeft, phaseOf, lowTide, igniter, blade, cutter, chopper, hasRod, digger };
+const API = { PRACTICE_KEY, placeOf, practicePlace, hydOf, waterNow, drinkUp, fishDepth, campSummary, shelterScores, bedDampOf, prevailOf, CAMP_FIXED, zoneOf, layoutNotes, kitchenMult, GEAR_COST, BUDGET, gearCost, kitCost, waterToday, note, sunny, sprayLeft, fallChance, climbAnchor, stalkNoise, fouling, latrineOk, raftOf, raftOk, flintOf, hasBow, bowPower, driftChance, bearings, wade, clothesOf, tomorrow, skyAcc, thinIce, potLike, clayPots, greenPots, bedWarmth, snowLoadOf, bedOf, lampOk, nightOk, haftOf, tinderDamp, fireOdds, sealOf, hasHearth, isDry, onStation, RACK_CAP, DRY_AT, dryDaysLeft, sysOf, cacheSign, low, matName, BIOMES, biomeOf, treeKind, realMedianOf: se => { const d = se.rivals.filter(r => r.days != null).map(r => r.days).sort((a, b) => a - b); return d[d.length >> 1]; }, WEIGHT, loadOf, carryCap, moveCampCost, moveCamp, collectSize, berryRipe, bushRipeDay, stockOf, stockWord, billFor, nightOk, NIGHT_OK, treeYield, treeNames, fishPool, sizeOf, SHELTERS, shelterOptions, chooseShelter, dropPlan, makeCamp, foundWreck, shelterName, canWorkInside, travel, activeWindows, windowOn, timeMult, weatherName, dayFrac, midday, setTune, DATA, C, MATS, ACTIONS, EVENTS, newGame, runDay, beginDay, act, endDay, choose, carryLoad, available, tapOut, placing, status, season, storeKcal, temperature, shelterLevel, SHELTER_NAMES, shelterBill, shelterMissing, matList, fishOdds, huntOdds, bowDrillOdds, dayHours, hoursLeft, phaseOf, lowTide, igniter, blade, cutter, chopper, hasRod, digger };
 if (typeof module !== 'undefined') module.exports = API; else root.Engine = API;
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
@@ -2619,7 +2652,7 @@ function recordRun(s, place) { // once per run; returns {newBest, newBadges}
 }
 function dailyKey() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function dailyPlan(key = dailyKey()) { let h = 2166136261; for (const ch of key) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return { key, seed: h, season: D.seasons[h % D.seasons.length] }; }
-function startGame(seasonKey, gear, opts) { S = E.newGame(seasonKey, gear, opts); S.big = true; view = { kind: 'morning', title: 'Drop day', lines: S.log[0].lines, first: true }; save(); renderGame(); window.scrollTo(0, 0); }
+function startGame(seasonKey, gear, opts) { S = E.newGame(seasonKey, gear, opts); S.big = !S.practice; view = { kind: 'morning', title: 'Drop day', lines: S.log[0].lines, first: true }; save(); renderGame(); window.scrollTo(0, 0); }
 function summaryText() {
   const se = E.season(S); const place = S.status === 'won' ? 1 : placeOf();
   return `Last One Out · ${se.name}, ${se.location}${S.daily ? ` · daily challenge ${S.daily}` : ''}\n${S.status === 'won' ? 'Won' : `Day ${S.day}`} · place ${place} of ${S.rivals.length + 1} · lost ${Math.round((1 - S.weight / S.weight0) * 100)}% body weight\n${S.endReason}`;
@@ -2649,6 +2682,10 @@ function renderSetup() {
     <span class="dplay">${dr ? 'Again' : 'Play'}</span></button>`);
   daily.onclick = () => startGame(dp.season.key, POPULAR.slice(), { weight: setup.weight, showRemaining: setup.showRemaining, seed: dp.seed, daily: dp.key });
   app.append(daily);
+  { const camping = $(`<button class="daily camping" style="margin-top:8px"><span class="dtext"><span class="eyebrow" style="color:#7fa86a">Practice · learn the ropes</span>
+    <b>Camping</b><small>A small valley by the sea with everything close by: every fish, animal and plant, good odds, regrowth overnight, sea, lake, river, bog and rock, snow and ice later, the wreck on the far side. Lessons for every job. Uses the ten items you pick below.</small></span>
+    <span class="dplay">Go</span></button>`);
+    camping.onclick = () => startGame(E.PRACTICE_KEY, setup.gear.length ? setup.gear.slice() : POPULAR.slice(), { weight: setup.weight }); app.append(camping); }
   const s1 = $(`<section class="step"><h2>1 · Drop site <span class="label">${seasons.length} places</span></h2><div class="seasons" role="list"></div></section>`);
   const list = s1.querySelector('.seasons');
   for (const se of seasons) {
@@ -2987,7 +3024,7 @@ function drawLook(t, snow, sway, look) {
 // view and mini are declared above
 const HOME = { w: 3200, h: 2200, top: 320, right: 2720 }; // the old design space: camp and its ring of places are laid out in this, then set down somewhere on the big map
 const MAP = { w: 15300, h: 15300, top: 320, right: 15140 }; // 1.6 km a side: a square mile, at 9.5 px per metre
-const AREA = (MAP.w * (MAP.h - MAP.top)) / (HOME.w * (HOME.h - HOME.top));
+const BIGMAP = { ...MAP }; let AREA = (MAP.w * (MAP.h - MAP.top)) / (HOME.w * (HOME.h - HOME.top));
 const TILE = 512;
 function makeGrid(cs) { const m = new Map(); const key = (x, y) => (Math.floor(x / cs) + 1) * 1000 + Math.floor(y / cs) + 1; return { add(o) { const k = key(o.x, o.y); const a = m.get(k); if (a) a.push(o); else m.set(k, [o]); }, near(x, y, r) { const cx0 = Math.floor(x / cs), cy0 = Math.floor(y / cs); for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) { const a = m.get((cx0 + i + 1) * 1000 + cy0 + j + 1); if (a) for (const o of a) if (Math.hypot(o.x - x, o.y - y) < r) return true; } return false; } }; } // 1 px is about a metre
 // THE SCALE TABLE. Every size and every clock reads from here, so the picture and the game clock always agree.
@@ -3073,9 +3110,9 @@ function buildWorld() {
   const desert = c.water === 'scarce';
   const w = { desert, au: false, bio, vis: V, mkey,
     trees: [], bushes: [], mossSpots: [], tracks: [], beds: [], animals: [], debris: [], blood: [], actor: null, toasts: [], fx: [], props: [], night: false, over: false, t: 0, carcassPos: null, carrying: false, run: false, floatOn: null, scale: 1, cam: { x: 0, y: 0, w: 400, h: 600 }, inside: false, walkAcc: 0 };
-  const BIGM = { ...MAP }; Object.assign(MAP, HOME);
+  Object.assign(MAP, BIGMAP); const BIGM = { ...MAP }; Object.assign(MAP, HOME);
   if (S.mapV === 2) makeLayout(w, rnd, bio); else legacyLayout(w);
-  Object.assign(MAP, BIGM); placeOnBig(w, seeded(mkey + 'place'));
+  if (!S.practice) Object.assign(MAP, BIGM); /* the practice valley is the small home ground and nothing more */ AREA = (MAP.w * (MAP.h - MAP.top)) / (HOME.w * (HOME.h - HOME.top)); placeOnBig(w, seeded(mkey + 'place'));
   const shoreX = w.shoreX; w.campHome = { x: w.camp.x, y: w.camp.y }; if (S.campPos) w.camp = { x: S.campPos.x, y: S.campPos.y };
   W = w; // the props and decor below read the world
   { /* the wreck: straight across the map from where the boat left you, nudged onto dry land */
@@ -3088,7 +3125,7 @@ function buildWorld() {
   const inAny = (list, p) => list.some(z => dist(z, p) < z.r);
   const LOOK_NAME = { cedar: 'cedar', fir: 'Douglas fir', cypress: 'cypress', podocarp: 'podocarp', pine: bio.id === 'shield' ? 'jack pine' : bio.id === 'chilko' ? 'lodgepole pine' : 'pine', spruce: bio.id === 'coastrain' ? 'Sitka spruce' : null };
   // trees: everywhere, thick in the big timber and the groves, thin in the meadow, the bog and the openings
-  const dens = S.mapV === 2 ? V.density : 1;
+  const dens = (S.mapV === 2 ? V.density : 1) * (S.practice ? 1.3 : 1);
   const tg = W.treeGrid = makeGrid(64), bgd = makeGrid(64); const addTree = (t) => { w.trees.push(t); tg.add(t); };
   const meadows = [w.meadow, ...w.lawns], bogs = [w.bog, ...w.wet];
   const mkTree = (x, y, i, second) => {
@@ -3113,7 +3150,8 @@ function buildWorld() {
   // plants grow where they like to: berries on the slopes, greens and seeds in the meadows, mushrooms in the timber, cattails in the wet
   const pickBush = (H) => { let tot = 0; const ws = pool.map(([t, wt]) => { const v = wt * Math.max(0.04, affMax(BAFF[t] || { s: 0.5 }, H)) / (w.cal.meanB[t] || 0.3); tot += v; return v; }); let r = rnd() * tot; for (let j = 0; j < pool.length; j++) { r -= ws[j]; if (r <= 0) return pool[j][0]; } return pool[0][0]; };
   const tryBush = (x, y, k, force) => { if (!clear(x, y, 50)) return false; const H = habitatAt(x, y); if (!H.q) return false; if (!force && rnd() > 0.3 + 0.7 * Math.max(H.m, H.w, H.t * 0.8, H.l, H.r * 0.5)) return false; if (tg.near(x, y, 40) || bgd.near(x, y, 56)) return false; const b = { x, y, k, kind: pickBush(H), used: false, look: MUSH_LOOKS[Math.floor(rnd() * MUSH_LOOKS.length)], q: rnd() }; w.bushes.push(b); bgd.add(b); return true; };
-  for (let i = 0; i < Math.round(120 * AREA); i++) { const home = i < 120; tryBush(home ? hx0 + rnd() * (hx1 - hx0) : 160 + rnd() * (MAP.w - 320), home ? hy0 + rnd() * (hy1 - hy0) : MAP.top + 60 + rnd() * (MAP.h - MAP.top - 260), i, false); }
+  for (let i = 0; i < Math.round(120 * AREA * (S.practice ? 2.2 : 1)); i++) { const home = i < 120; tryBush(home ? hx0 + rnd() * (hx1 - hx0) : 160 + rnd() * (MAP.w - 320), home ? hy0 + rnd() * (hy1 - hy0) : MAP.top + 60 + rnd() * (MAP.h - MAP.top - 260), i, false); }
+  if (S.practice) { let kk = 70000; for (const [kind] of pool) { let n = 0; for (let t = 0; t < 400 && n < 7; t++) { const x = 160 + rnd() * (MAP.w - 320), y = MAP.top + 60 + rnd() * (MAP.h - MAP.top - 260); if (tryBush(x, y, kk++, true)) { w.bushes[w.bushes.length - 1].kind = kind; n++; } } } } /* the practice valley has a few patches of everything */
   // places worth the walk: a berry slope up by the mountains, an old cabin ruin in the big timber, a beaver pond off the bog, and berry hillsides far out
   const slopes = [[w.slope, 900]]; w.farSlopes.forEach((z, j) => slopes.push([z, 5000 + j * 20]));
   if (pool.some(([t]) => t === 'berries')) for (const [z, k0] of slopes) for (let i = 0; i < (k0 === 900 ? 10 : 7); i++) { const a = rnd() * 6.28, rr = rnd() * z.r; const x = z.x + Math.cos(a) * rr, y = z.y + Math.sin(a) * rr * 0.7; if (y < MAP.top + 30 || x > MAP.right - 30) continue; if (bgd.near(x, y, 40) || tg.near(x, y, 30)) continue; const b = { x, y, k: k0 + i, kind: 'berries', used: false, look: MUSH_LOOKS[0], slope: true, q: 0.55 + rnd() * 0.45 }; w.bushes.push(b); bgd.add(b); }
@@ -3123,7 +3161,7 @@ function buildWorld() {
   w.trees = w.trees.filter(t => !(w.pond && dist(t, w.pond) < w.pond.r + 20) && dist(t, w.ruin) > 60);
   for (const t of w.trees) if ((S.cutTrees || []).includes(t.k)) { for (const u of ['poles', 'logs', 'firewood', 'boughs', 'bark', 'tinder', 'pinenuts']) t.used[u] = true; if (t.age === 'sapling' || t.kind === 'log') t.gone = true; else t.cut = true; }
   for (const t of w.trees) if (t.kind === 'conifer' && t.age === 'mature' && rnd() < 0.35) t.cones = true;
-  for (let i = 0; i < Math.round(26 * AREA); i++) {
+  for (let i = 0; i < Math.round(26 * AREA * (S.practice ? 1.8 : 1)); i++) {
     const home = i < 26; let x, y;
     if (home) { const inBog = rnd() < 0.6; x = inBog ? w.bog.x + (rnd() - 0.5) * 2 * w.bog.r : hx0 + rnd() * (hx1 - hx0); y = inBog ? w.bog.y + (rnd() - 0.5) * 2 * w.bog.r * 0.8 : hy0 + rnd() * (hy1 - hy0); }
     else { const rr = rnd(); const zl = rr < 0.45 ? [w.bog, ...w.wet] : rr < 0.85 ? [w.forest, ...w.groves] : null; if (zl) { const z = zl[Math.floor(rnd() * zl.length)]; const an = rnd() * 6.28, d = Math.sqrt(rnd()) * z.r; x = z.x + Math.cos(an) * d; y = z.y + Math.sin(an) * d * 0.8; } else { x = 160 + rnd() * (MAP.w - 320); y = MAP.top + 60 + rnd() * (MAP.h - MAP.top - 260); } }
@@ -3218,6 +3256,7 @@ function dayStart() {
   W.night = false; W.actor = null; W.carcassSpot = null; W.run = false; W.blood = [];
   const R = S.regrow || (S.regrow = {}); const ready = (key) => !(R[key] > S.day);
   for (const b of W.bushes) b.used = !ready('b' + b.k); W.mossSpots.forEach((m, i) => { m.used = !ready('m' + i); });
+  if (S.practice && W.camp) { const keep = new Set(W.trees.filter(t => dist(t, W.camp) < 60).map(t => t.k)); S.cutTrees = (S.cutTrees || []).filter(k => keep.has(k)); for (const t of W.trees) if ((t.gone || t.cut) && !keep.has(t.k) && t.kind !== 'log') { t.gone = false; t.cut = false; t.used = {}; } }
   for (const t of W.trees) { if (t.gone) continue; if (t.cut) { for (const u of ['poles', 'logs', 'firewood', 'boughs', 'bark', 'tinder', 'pinenuts']) t.used[u] = true; continue; } t.used = {}; for (const u of TREE_PARTS) if (!ready('t' + t.k + ':' + u)) t.used[u] = true; t.flipped = !ready('g' + t.k); }
   for (const b of W.beds) b.used = !ready('s' + b.k); for (const t of W.tracks) t.set = false; { const at = (S.sys && S.sys.setAt) || []; const keep = (S.snares || 0) + (S.deadfalls || 0) > 0 ? at : []; for (const [i, df] of keep) if (W.tracks[i]) { W.tracks[i].set = true; W.tracks[i].deadfall = !!df; } if (S.sys && at.length && !keep.length) S.sys.setAt = []; }
   W.animals = []; W.debris = [];
@@ -3265,7 +3304,8 @@ function updateHud() {
   { const arrow = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'][Math.round(((S.windDir || 0) / 6.283) * 8) % 8]; const sky = S.storm ? `storm ${arrow}` : S.snowfall ? 'snowing' : S.rain ? 'rain' : S.fog ? 'fog' : st.weather === 'wind' ? `wind ${arrow}` : st.weather === 'heat' ? 'hot' : `breeze ${arrow}`;
     hudEl.querySelector('#h-temp').textContent = `${st.temp}°${st.windChill < st.temp - 2 ? ` (feels ${st.windChill}°)` : ''}, ${sky}${st.frozen ? ', ice' : st.snowy && !S.snowfall ? ', snow on the ground' : ''}`; }
   const condEl = hudEl.querySelector('#h-cond'); const bits = st.windows.map(w => w.label); const arrow = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'][Math.round(((S.windDir || 0) / 6.283) * 8) % 8]; /* the weather is in the line under the light now */ void arrow; if (st.shelterCond < 0.5 && S.shelterLvl) bits.push('Roof leaking'); { const kg = E.loadOf(S.pack || {}); if (kg > 0.5) bits.push(`Pack ${Math.round(kg)}/${E.carryCap(S)} kg`); } { const b = bodyState(); const felt = []; { const dry = S.sys && S.sys.dry; const wt = E.waterToday(S); if (dry) felt.push('Dehydrated'); else if (!wt.ok && S.phase >= 0 && st.hoursLeft < 5) felt.push('Thirsty'); } if (b.wet > 0.5) felt.push('Soaked'); if (b.cold > 0.5) felt.push('Freezing'); if (b.hot) felt.push('Overheating'); if (b.starving > 0.4) felt.push('Starving'); else if (b.hungry > 0.5) felt.push('Hungry'); if (b.hurt > 0.4) felt.push('Hurt'); if (b.sick) felt.push('Sick'); if (b.low > 0.5) felt.push('Low'); bits.push(...felt.slice(0, 2)); } condEl.textContent = bits.join(' · '); condEl.hidden = !bits.length;
-  const goalEl = hudEl.querySelector('#h-goal'); const gt = S.status === 'playing' && S.phase >= 0 ? goalText() : ''; goalEl.textContent = gt; goalEl.hidden = !gt;
+  const goalEl = hudEl.querySelector('#h-goal'); lessonTick(); const nl = S.practice && S.status === 'playing' ? nextLesson() : null; const gt = S.status === 'playing' && S.phase >= 0 ? (nl ? `Lesson: ${nl[2]} ›` : goalText()) : ''; goalEl.textContent = gt; goalEl.hidden = !gt;
+  goalEl.onclick = S.practice ? openLessons : null; goalEl.style.cursor = S.practice ? 'pointer' : ''; goalEl.setAttribute('role', S.practice ? 'button' : ''); goalEl.style.pointerEvents = S.practice ? 'auto' : '';
   const hl = st.hoursLeft; hudEl.querySelector('#h-time').textContent = S.phase < 0 || S.phase === 3 ? 'Night' : `${halves(hl)} h light`;
   const lf = st.lossFrac; const wbar = lf >= 0.25 ? 'b' : lf >= 0.18 ? 'w' : '';
   const hb = S.health < 30 ? 'b' : S.health < 60 ? 'w' : ''; const mb = S.morale < 25 ? 'b' : S.morale < 50 ? 'w' : '';
@@ -3275,11 +3315,12 @@ function updateHud() {
   hudEl.querySelector('#h-vitals').innerHTML = `
     <div class="vt w${cls(wbar)}" title="${(lf * 100).toFixed(0)}% of your starting weight lost" aria-label="Weight ${S.weight.toFixed(0)} pounds"><span>${HI.w}${S.weight.toFixed(0)} lb</span><i><b style="width:${Math.max(4, 100 - lf / 0.3 * 100)}%"></b></i></div>
     <div class="vt h${cls(hb)}" aria-label="Health ${Math.round(S.health)}"><span>${HI.h}${Math.round(S.health)}<em>health</em></span><i><b style="width:${S.health}%"></b></i></div>
+    <div class="vt d${cls(E.hydOf(S) < 20 ? 'b' : E.hydOf(S) < 40 ? 'w' : '')}" aria-label="Water ${Math.round(E.hydOf(S))}"><span>${HI.d}${Math.round(E.hydOf(S))}<em>water</em></span><i><b style="width:${E.hydOf(S)}%"></b></i></div>
     <div class="vt m${cls(mb)}" aria-label="Will ${Math.round(S.morale)}"><span>${HI.m}${Math.round(S.morale)}<em>will</em></span><i><b style="width:${S.morale}%"></b></i></div>
     <div class="vt f" title="${fmt(st.storeKcal)} kcal stored"><span>${HI.f}${food}${st.rawKcal ? `<small> + catch</small>` : ''}</span><i><b style="width:${Math.min(100, fd / 7 * 100)}%"></b></i></div>`;
 }
 /* HUD icons: weight, health, will, food (never colour alone: an icon and a number) */
-const HI = { w: '<svg class="hi" viewBox="0 0 24 24"><path d="M5 20h14l-2-11H7zM12 9a2.5 2.5 0 1 0 .01 0"/></svg>', h: '<svg class="hi" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-9.6A4 4 0 0 1 12 8a4 4 0 0 1 7 2.4C19 15.6 12 20 12 20z"/></svg>', m: '<svg class="hi" viewBox="0 0 24 24"><path d="M12 21c-4 0-6-2.6-6-5.6 0-3.2 2.6-4.6 3.4-8 1.6 1.4 2 3 1.8 4.6 1.6-1 2.4-3 2.2-5.6C16.6 8.4 18 11.6 18 15.2 18 18.6 15.6 21 12 21z"/></svg>', f: '<svg class="hi" viewBox="0 0 24 24"><path d="M4 9h16M5 9l1 9a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-9"/></svg>' };
+const HI = { d: '<svg class="hi" viewBox="0 0 24 24"><path d="M12 3s-6 7.2-6 11a6 6 0 0 0 12 0c0-3.8-6-11-6-11z"/></svg>', w: '<svg class="hi" viewBox="0 0 24 24"><path d="M5 20h14l-2-11H7zM12 9a2.5 2.5 0 1 0 .01 0"/></svg>', h: '<svg class="hi" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-9.6A4 4 0 0 1 12 8a4 4 0 0 1 7 2.4C19 15.6 12 20 12 20z"/></svg>', m: '<svg class="hi" viewBox="0 0 24 24"><path d="M12 21c-4 0-6-2.6-6-5.6 0-3.2 2.6-4.6 3.4-8 1.6 1.4 2 3 1.8 4.6 1.6-1 2.4-3 2.2-5.6C16.6 8.4 18 11.6 18 15.2 18 18.6 15.6 21 12 21z"/></svg>', f: '<svg class="hi" viewBox="0 0 24 24"><path d="M4 9h16M5 9l1 9a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-9"/></svg>' };
 function banner(lines, keep) {
   if (!bannerEl) return;
   for (const [t, k] of lines) { const el = $(`<div class="msg tone-${k}">${esc(t)}</div>`); bannerEl.append(el); setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 500); }, keep || (2600 + Math.min(3800, t.length * 38))); }
@@ -3369,7 +3410,8 @@ function reveal(x, y, r) {
 }
 function update(dt) {
   if (W.paused) return;
-  W.t += dt; W.cellT = (W.cellT || 0) + dt; if (W.cellT > 0.5) { W.cellT = 0; ensureCells(); if (S && S.today && !S.today.drank && !W.desert && atShore() && !W.inside) { S.today.drank = true; if (!(E.waterToday(S).how === 'ice')) banner([['A long drink at the water\'s edge.', 'muted']], 1800); } /* a drink at the water's edge */ }
+  W.t += dt; W.cellT = (W.cellT || 0) + dt; if (W.cellT > 0.5) { W.cellT = 0; ensureCells(); if (S && S.practice) { const before = (S.lessonsDone || []).length; lessonTick(); if ((S.lessonsDone || []).length !== before) updateHud(); } if (S && S.today && !S.today.drank && !W.desert && atShore() && !W.inside) { S.today.drank = true; if (S.practice) (S.everDone || (S.everDone = {})).drink_edge = 1; if (!(E.waterToday(S).how === 'ice')) { E.drinkUp(S); updateHud(); banner([['A long drink at the water\'s edge.', 'muted']], 1800); } }
+    if (S && S.today && S.today.drank && !W.desert && atShore() && !W.inside && E.hydOf(S) < 60 && E.waterToday(S).how !== 'ice') { E.drinkUp(S); updateHud(); banner([['Knelt and drank your fill.', 'muted']], 1500); } /* a drink at the water's edge */ }
   W.revealT = (W.revealT || 0) + dt; if (W.revealT > 0.4) { W.revealT = 0; reveal(W.player.x, W.player.y, S.fog ? 150 : W.night ? 90 : 230); }
   const p = W.player; const busy = !!(mini && !mini.free) || W.night || (S.event && S.event.id === 'wound');
   let v = keyVec() || (input.joy ? input.vec : null);
@@ -3432,10 +3474,10 @@ const nearestOf = (list, r, ok) => { let best = null, bd = r; for (const t of li
 const REGROW = { berries: 999, rosehips: 999, seeds: 999, roots: 999, cattail: 999, pinenuts: 999, moss: 999, greens: 10, nettle: 10, mushrooms: 4, insects: 20, shellfish: 25, seaweed: 6 };
 // a tree gives each part once a season: the limbs, the boughs, the bark, the cones are not coming back before the boat does
 const TREE_PARTS = ['poles', 'logs', 'firewood', 'boughs', 'bark', 'tinder', 'pinenuts', 'insects'];
-function persistTree(t) { if (!S.regrow) S.regrow = {}; for (const u of TREE_PARTS) if (t.used[u]) { const key = 't' + t.k + ':' + u; if (!(S.regrow[key] > S.day)) S.regrow[key] = S.day + (u === 'insects' ? REGROW.insects : 999); } }
+function persistTree(t) { if (!S.regrow) S.regrow = {}; for (const u of TREE_PARTS) if (t.used[u]) { const key = 't' + t.k + ':' + u; if (!(S.regrow[key] > S.day)) S.regrow[key] = S.day + (S.practice ? 1 : u === 'insects' ? REGROW.insects : 999); } }
 // one piece of a tree can only be taken once: birch bark is either sheets or tinder curls; the limbs you cut for poles carry the boughs
 function sharedParts(t, id) { const u = t.used; if (id === 'cut_poles' && t.age === 'mature') u.boughs = true; if ((t.kind === 'birch' || t.kind === 'eucalypt') && id === 'bark') u.tinder = true; if ((t.kind === 'birch' || t.kind === 'eucalypt') && id === 'tinder') u.bark = true; if ((t.kind === 'snag' || t.kind === 'log') && id === 'tinder') { t.flipped = true; markRegrow('g' + t.k, 'insects'); } }
-function markRegrow(key, kind) { if (!S.regrow) S.regrow = {}; S.regrow[key] = S.day + (REGROW[kind] || 7); }
+function markRegrow(key, kind) { if (!S.regrow) S.regrow = {}; S.regrow[key] = S.day + (S.practice ? 1 : REGROW[kind] || 7); } /* in the practice valley everything is back by morning */
 function nearestTree(use) { return nearestOf(W.trees, 46, t => !t.used[use]); }
 // one bush on the ripening calendar: green until its day, ripe for about two weeks, then over
 function bushStage(b) { if (b.kind !== 'berries' || !S.berrySeason) return 'ripe'; const d = E.bushRipeDay(S, b.q || 0); const frost = E.season(S).climate.snow ? E.season(S).climate.snow - 2 : 999; return S.day < d ? 'green' : S.day > d + S.berrySeason.hold || S.day > frost ? 'over' : 'ripe'; }
@@ -3555,7 +3597,7 @@ function interactionsHere() {
     if (!S.shelterGoal) { if (E.shelterOptions(S).length) out.push({ label: S.shelterType ? 'Upgrade shelter' : 'Build shelter', sub: S.shelterType ? 'pick what to build next' : 'pick a design', fn: openShelterChoice }); }
     else if (push('shelter', null, startBuild)) out[out.length - 1].sub = E.available(S, 'shelter').odds + ` · next: ${STAGE_NAME[buildStage()] || 'build'}`;
     else { const miss = E.shelterMissing(S); if (miss && miss.length) out.push({ label: `${E.SHELTERS[S.shelterGoal].name}`, sub: 'Needs ' + miss.join(', '), fn: openNeeds, dim: true }); }
-    push('change_dry'); push('cook', null, startCook); push('melt_snow', null, startMelt); push('melt_ice'); push('catch_rain'); push('star_fire'); push('photo'); push('cut_belt'); if (S.cachePlace === 'camp') push('repair_cache'); push('fire_in'); push('fire_out'); push('mend', null, () => startCraft('mend')); push('work_hide', null, () => startCraft('work_hide')); push('smoke_clothes'); push('read_sky'); push('shape_pot', null, () => startCraft('shape_pot')); push('fire_pots', null, () => startCraft('fire_pots')); push('clear_roof'); push('splint', null, () => startCraft('splint')); push('dig_latrine'); push('bed', null, () => startCraft('bed')); push('bury'); push('scrub'); push('check_roof'); push('caulk', null, () => startCraft('caulk')); push('fix_axe'); push('repair', S.sys && S.sys.damage ? { frame: 'Re-lash the frame', walls: 'Re-chink the walls', roof: 'Fix the roof' }[S.sys.damage] : null, startRepair); push('air_bed'); push('boil', null, muddy() ? startFilter : null); push('lay_out_camp', null, openLayout); push('needle_tea'); push('bone_broth'); push('dry'); if (push('smoke', 'Hot smoke', () => startSmoke('hot'))) { const ref = out[out.length - 1]; push('smoke', 'Cold smoke', () => startSmoke('cold')); if (out[out.length - 1] !== ref) out[out.length - 1].sub = 'a smoulder, no flame · slower, less wood, does not cook it'; } push('dry_food', null, () => E.blade(S) ? startSlice() : doAct('dry_food')); push('render_fat', null, startRender); push('talk_camera'); push('cordage', null, startCordage); push('sharpen', null, startSharpen); push('rest');
+    push('change_dry'); push('cook', null, startCook); push('melt_snow', null, startMelt); push('melt_ice'); push('catch_rain'); push('star_fire'); push('photo'); push('cut_belt'); if (S.cachePlace === 'camp') push('repair_cache'); push('fire_in'); push('fire_out'); push('mend', null, () => startCraft('mend')); push('work_hide', null, () => startCraft('work_hide')); push('smoke_clothes'); push('read_sky'); push('shape_pot', null, () => startCraft('shape_pot')); push('fire_pots', null, () => startCraft('fire_pots')); push('clear_roof'); push('splint', null, () => startCraft('splint')); push('dig_latrine'); push('bed', null, () => startCraft('bed')); push('bury'); push('scrub'); push('check_roof'); push('caulk', null, () => startCraft('caulk')); push('fix_axe'); push('drink'); push('repair', S.sys && S.sys.damage ? { frame: 'Re-lash the frame', walls: 'Re-chink the walls', roof: 'Fix the roof' }[S.sys.damage] : null, startRepair); push('air_bed'); push('boil', null, muddy() ? startFilter : null); push('lay_out_camp', null, openLayout); push('needle_tea'); push('bone_broth'); push('dry'); if (push('smoke', 'Hot smoke', () => startSmoke('hot'))) { const ref = out[out.length - 1]; push('smoke', 'Cold smoke', () => startSmoke('cold')); if (out[out.length - 1] !== ref) out[out.length - 1].sub = 'a smoulder, no flame · slower, less wood, does not cook it'; } push('dry_food', null, () => E.blade(S) ? startSlice() : doAct('dry_food')); push('render_fat', null, startRender); push('talk_camera'); push('cordage', null, startCordage); push('sharpen', null, startSharpen); push('rest');
     { const ready = Object.keys(E.ACTIONS).some(k => k.startsWith('craft_') && av(k).ok); out.push({ label: 'Craft…', sub: ready ? '' : 'see what each thing needs', fn: () => openBuild(false) }); }
     return overflow(out);
   }
@@ -3807,6 +3849,7 @@ function goalText() {
   const st = E.status(S); const c = E.season(S).climate; if (!hasCamp()) return 'Pick a spot for camp';
   if (S.wounded && W.blood.length) return 'Follow the blood trail →';
   if (S.carcass) return S.carcass.dressed ? (W.carrying ? 'Carry the load to camp →' : 'Shoulder a load at the kill →') : 'Gut the kill where it fell →';
+  if (E.hydOf(S) < 35) return atCamp() && E.available(S, 'drink').ok ? 'Thirsty: drink from the pot' : 'Thirsty: get to water';
   if (S.raw.length) return atCamp() ? 'Clean the catch' : 'Clean the catch at camp →';
   if (S.net && S.net.catch.length && !S.storm) return 'Floats are bobbing: check the net';
   if (S.trapsCatch.length) return 'Walk the trapline: something is in it';
@@ -4889,6 +4932,82 @@ function openSitePop(pt) { if (!S || S.campChosen !== false || mini || W.night) 
 /* arriving where a pop-up sent you: do the job */
 function arrivePending() { const pd = W.pending; if (!pd || mini) return; if (dist(W.player, pd) > (pd.then.camp ? 16 : 40)) { if (!input.target && !input.joy) W.pending = null; return; } W.pending = null; input.target = null;
   if (pd.then.camp) { if (W.ring) W.ring.keep = false; W.ring = null; openMakeCamp(); return; } const a = (pd.then.ob ? actsAt(pd.then.ob) : interactionsHere() || []).find(x => x.id === pd.then.id); if (a && !a.dim) a.fn(); lastActs = ''; refreshActs(); }
+
+/* ---- Camping lessons: every job, in order, with how to do it and the way there ---- */
+const LESSONS = [
+  ['Camp and water', 'camp', 'Make camp', 'Tap open ground for a site report: water, dry wood, shelter from the wind, dry ground. Camp somewhere with all four.', s => s.campChosen, null],
+  ['Camp and water', 'drink_edge', 'Drink at the water', 'The water meter at the top drops as you work, faster in heat. Walk to the water’s edge and you drink your fill.', s => ev(s, 'drink_edge'), 'shore'],
+  ['Camp and water', 'water', 'Fetch water to camp', 'At the water, carry some back in the pot or a container so there is a drink at camp.', s => ev(s, 'water'), 'shore'],
+  ['Camp and water', 'boil', 'Boil water', 'Raw water can make you sick. Boil a pot on the fire. After rain the water runs brown: build a filter first.', s => ev(s, 'boil'), 'camp'],
+  ['Camp and water', 'dew', 'Collect dew', 'At first light drag a shirt through the wet grass and wring it out. Slow, but it works anywhere.', s => ev(s, 'dew'), 'meadow'],
+  ['Camp and water', 'lay_out_camp', 'Lay out the camp', 'Kitchen out and downwind of your bed, latrine well away from the water.', s => ev(s, 'lay_out_camp'), 'camp'],
+  ['Camp and water', 'dig_latrine', 'Dig a latrine', 'Without one the ground and the water foul, and that makes you sick.', s => ev(s, 'dig_latrine'), 'camp'],
+  ['Fire', 'tinder', 'Gather tinder', 'Dry bark, punk wood from a dead tree, curls of birch bark. Wet tinder will not take a spark.', s => ev(s, 'tinder'), 'snag'],
+  ['Fire', 'firewood', 'Cut firewood', 'Dead standing wood burns best. Swing when the marker is in the window.', s => ev(s, 'firewood'), 'snag'],
+  ['Fire', 'light_fire', 'Light a fire', 'Choose a lay, strike the ferro rod or work the bow drill, then feed it gently: too much smothers it.', s => s.firstFire, 'camp'],
+  ['Fire', 'craft_bowdrill', 'Carve a bow drill', 'No ferro rod? A spindle, a board with a notch and a bow will do it with practice.', s => ev(s, 'craft_bowdrill'), 'camp'],
+  ['Fire', 'tend_fire', 'Tend the fire at night', 'After dark: softwood flares, hardwood makes coals, green wood smokes. Keep it in the band.', s => ev(s, 'tend_fire'), 'camp'],
+  ['Shelter', 'cut_poles', 'Cut poles', 'Saplings or limbs make poles. Tap a young tree and choose Poles.', s => ev(s, 'cut_poles'), 'tree'],
+  ['Shelter', 'boughs', 'Gather boughs', 'Conifer boughs roof a shelter and make a bed.', s => ev(s, 'boughs'), 'conifer'],
+  ['Shelter', 'cordage', 'Twist cordage', 'Peel bark, then twist it into cord by the fire: twist one strand, fold the other over.', s => ev(s, 'cordage') || ev(s, 'bark'), 'tree'],
+  ['Shelter', 'shelter', 'Build a shelter', 'Choose a design. If something is missing the plan shows what, and Walk there takes you to it.', s => !!s.shelterType, 'camp'],
+  ['Shelter', 'bed', 'Make a bough bed', 'A thick bed keeps the cold of the ground off you. Air it on dry days if it gets damp.', s => ev(s, 'bed'), 'camp'],
+  ['Shelter', 'better', 'A better shelter', 'A debris hut, a stone wall under the rock face, or once the snow is deep, a snow cave.', s => s.shelterLvl >= 2, 'cliff'],
+  ['Food from the water', 'fish', 'Fish from the shore', 'Cast, wait for the bite, set the hook, and keep the line in the band while it runs.', s => ev(s, 'fish'), 'shore'],
+  ['Food from the water', 'clean', 'Clean the catch', 'Draw the knife along the line at a steady pace. Too slow and it sinks into the gut.', s => ev(s, 'clean'), 'camp'],
+  ['Food from the water', 'cook', 'Cook a meal', 'Into the coals or at the edge; turn it before the underside chars, take it off when the middle is done.', s => ev(s, 'cook'), 'camp'],
+  ['Food from the water', 'setlines', 'Set lines', 'Read the water and choose a depth for each line. Check them in the morning.', s => ev(s, 'setlines'), 'shore'],
+  ['Food from the water', 'shellfish', 'Gather shellfish', 'At low tide, along the rocks on the shore.', s => ev(s, 'shellfish'), 'shore'],
+  ['Food from the water', 'seaweed', 'Gather seaweed', 'Along the tide line on the sea shore.', s => ev(s, 'seaweed'), 'shore'],
+  ['Food from the water', 'search', 'Walk the shore', 'Things wash up: drums, jugs, tins, an old lure. Each one has a use.', s => ev(s, 'search'), 'shore'],
+  ['Food from the water', 'ice_hole', 'Fish through the ice', 'Once the lake freezes, about day 13: cut a hole and jig. Keep your hands warm.', s => ev(s, 'ice_hole') || (ev(s, 'fish') && s.day >= 13), 'shore'],
+  ['Food from the land', 'berries', 'Pick berries', 'Ripe ones only. Bears like berry patches too.', s => ev(s, 'berries'), 'berries'],
+  ['Food from the land', 'greens', 'Gather greens', 'Young tops, not the old stalks.', s => ev(s, 'greens') || ev(s, 'nettle'), 'greens'],
+  ['Food from the land', 'mushrooms', 'Mushrooms, carefully', 'Cut one open and check it against your field notes. The ones that made you sick are marked.', s => ev(s, 'mushrooms'), 'mushrooms'],
+  ['Food from the land', 'cattail', 'Pull cattails', 'In the bog: the roots and shoots are food.', s => ev(s, 'cattail') || ev(s, 'roots'), 'bog'],
+  ['Food from the land', 'insects', 'Find grubs', 'Roll a rotten log or peel dead bark. Not pretty, all protein.', s => ev(s, 'insects'), 'log'],
+  ['Food from the land', 'snares', 'Set snares', 'On the game trail where it narrows. Size the loop, then cover it.', s => ev(s, 'snares'), 'track'],
+  ['Food from the land', 'deadfalls', 'Set a deadfall', 'Build the figure-4 in order, then balance the stone.', s => ev(s, 'deadfalls'), 'track'],
+  ['Food from the land', 'checktraps', 'Walk the trapline', 'Check every set: take what is caught, reset what is knocked flat.', s => ev(s, 'checktraps'), 'track'],
+  ['Food from the land', 'hunt', 'Hunt', 'Wind in your face. Draw, hold your breath to steady, release when the sight settles.', s => ev(s, 'hunt'), 'track'],
+  ['Food from the land', 'dress', 'Dress a kill', 'Open it, ease the guts out, skin it, quarter it at the joints.', s => ev(s, 'dress'), 'camp'],
+  ['Keeping food', 'craft_rack', 'Build a drying rack', 'Strips on a rack dry in sun and wind; a roof over it keeps rain off.', s => ev(s, 'craft_rack'), 'camp'],
+  ['Keeping food', 'dry_food', 'Dry meat or fish', 'Slice thin, even strips. Fat ones stay wet inside and rot.', s => ev(s, 'dry_food'), 'camp'],
+  ['Keeping food', 'smoke', 'Smoke it', 'Build a smoker, then keep a thin blue smoke: no flame.', s => ev(s, 'smoke'), 'camp'],
+  ['Keeping food', 'render_fat', 'Render fat', 'A slow simmer, skimming the scum. Too hot and it scorches.', s => ev(s, 'render_fat'), 'camp'],
+  ['Tools', 'craft_stoneblade', 'Knap a stone blade', 'Strike at a glancing slant, not square on. Flint turns up along the shore.', s => ev(s, 'craft_stoneblade'), 'camp'],
+  ['Tools', 'craft_bow', 'Make a bow', 'Split a stave, then tiller it until both limbs bend alike.', s => ev(s, 'craft_bow') || ev(s, 'tiller_bow'), 'camp'],
+  ['Tools', 'craft_arrows', 'Straighten arrows', 'Warm each bend over the coals, then bend it true while it is warm.', s => ev(s, 'craft_arrows'), 'camp'],
+  ['Tools', 'craft_hooks', 'Carve hooks or a handline', 'Bone gorges and twisted line, if you have no fishing kit.', s => ev(s, 'craft_hooks') || ev(s, 'craft_handline'), 'camp'],
+  ['Tools', 'work_hide', 'Scrape a hide', 'Slow strokes lift the fat; move off a clean spot before it thins.', s => ev(s, 'work_hide'), 'camp'],
+  ['Tools', 'shape_pot', 'Make a clay pot', 'Dig clay by the water, coil the walls even, smooth each coil in, then fire it.', s => ev(s, 'shape_pot'), 'camp'],
+  ['Further afield', 'cut_logs', 'Fell a tree', 'Read the lean, choose where it falls, and step clear when it cracks.', s => ev(s, 'cut_logs'), 'conifer'],
+  ['Further afield', 'ford', 'Cross the river', 'Wade at the ford, where it is shallow and broken. Anywhere else it takes you.', s => (s.stats.ford || 0) > 0, 'ford'],
+  ['Further afield', 'climb', 'Climb the rock face', 'From the top you see the whole valley laid out.', s => ev(s, 'climb'), 'cliff'],
+  ['Further afield', 'craft_raft', 'Build a raft', 'Dry logs ride higher. Cross-lash the deck, then pole it out to the drop-off.', s => ev(s, 'craft_raft'), 'shore'],
+  ['Further afield', 'wreck', 'Find the wreck', 'Something came down on the far side of the valley.', s => !!(s.stats && s.stats.wreck), 'wreck'],
+];
+const ev = (s, id) => !!(s.everDone && s.everDone[id]);
+const lessonsDone = () => LESSONS.filter(l => { try { return l[4](S); } catch (e) { return false; } });
+function nextLesson() { return LESSONS.find(l => { try { return !l[4](S); } catch (e) { return true; } }); }
+function lessonTarget(where) { if (!W || !W.player) return null; const p = W.player; const near = list => (list || []).filter(Boolean).sort((a, b) => dist(a, p) - dist(b, p))[0];
+  switch (where) {
+    case 'camp': return W.camp; case 'shore': return W.desert ? W.pool : { x: W.shoreX(p.y) + 30, y: p.y }; case 'cliff': return W.cliff && { x: W.cliff.x, y: W.cliff.y + 60 }; case 'bog': return W.bog; case 'wreck': return W.ufo;
+    case 'ford': return W.river && { x: W.river.ford, y: W.river.y0 - 30 }; case 'meadow': return W.meadow; case 'track': return near(W.tracks);
+    case 'snag': return near(W.trees.filter(t => !t.gone && (t.kind === 'snag' || t.kind === 'log'))); case 'log': return near(W.trees.filter(t => !t.gone && t.kind === 'log'));
+    case 'conifer': return near(W.trees.filter(t => !t.gone && !t.cut && t.kind === 'conifer')); case 'tree': return near(W.trees.filter(t => !t.gone && !t.cut && t.kind !== 'log' && t.kind !== 'snag'));
+    default: return near(W.bushes.filter(b => b.kind === where)) || null; } }
+function showLesson(l) { if (!W || !W.player || !S || S.status !== 'playing') return; const t = l[5] && lessonTarget(l[5]); if (!t) { banner([[l[3], 'info']], 6000); return; } W.ring = { x: t.x, y: t.y, keep: true }; input.target = { x: t.x, y: t.y + 24 }; banner([[l[2] + ': ' + l[3], 'info']], 6500); setTimeout(() => { if (W.ring && W.ring.keep) W.ring = null; }, 15000); }
+function openLessons() {
+  sheet((sh, close) => { const done = new Set(lessonsDone().map(l => l[1]));
+    sh.append($(`<h2>Camping lessons</h2>`)); sh.append($(`<div class="muted" style="font-size:13px">${done.size} of ${LESSONS.length} done. Everything here is close by and comes back overnight. Show me walks you to the place for it.</div>`));
+    let g = ''; for (const l of LESSONS) { if (l[0] !== g) { g = l[0]; sh.append($(`<div class="sect">${esc(g)}</div>`)); }
+      const ok = done.has(l[1]); const row = $(`<div class="row" style="align-items:flex-start;gap:10px"><span style="flex:1;text-align:left"><b>${ok ? '✓ ' : ''}${esc(l[2])}</b><br><span class="muted" style="font-size:13px">${esc(l[3])}</span></span></div>`);
+      if (!ok && l[5]) { const b = $(`<button class="act" style="flex:0 0 auto;padding:6px 10px"><b>Show me</b></button>`); b.onclick = () => { close(); showLesson(l); }; row.append(b); } if (ok) row.style.opacity = '.6'; sh.append(row); }
+  });
+}
+function lessonTick() { if (!S || !S.practice || S.status !== 'playing') return; const have = new Set(S.lessonsDone || []); const now = lessonsDone().map(l => l[1]); const fresh = now.filter(k => !have.has(k));
+  if (fresh.length) { S.lessonsDone = now; const l = LESSONS.find(x => x[1] === fresh[0]); const n = nextLesson(); banner([[`Lesson done: ${l[2]}. ${now.length} of ${LESSONS.length}.`, 'good'], ...(n ? [[`Next: ${n[2]}.`, 'info']] : [])], 5000); sfx.play('good'); } }
 function openCachePlace() {
   sheet((sh, close) => {
     sh.append($(`<h2>Where to hang the cache</h2>`));
@@ -6952,6 +7071,8 @@ function openRecords() {
 // ------------------------------------------------------------ end screen
 function renderEnd() {
   const se = E.season(S); app.className = 'wrap'; app.replaceChildren();
+  if (S.practice) { const done = lessonsDone().length; app.append($(`<section class="step"><h1 style="margin:8px 0">Camping, day ${S.day}</h1><p>${done} of ${LESSONS.length} lessons done. ${done >= LESSONS.length ? 'You have done everything the valley can teach. Go and try a real drop.' : 'Come back any time; the valley keeps.'}</p><p class="muted">Practice runs are not counted in your records.</p></section>`));
+    const b = $(`<button class="act primary"><b>Back to the start</b></button>`); b.onclick = () => { renderEnd.played = null; store.del(SAVE); S = null; renderSetup(); window.scrollTo(0, 0); }; app.append(b); return; }
   const won = S.status === 'won';
   const cast = S.rivals.filter(r => r.days != null).map(r => ({ name: r.name, days: r.days, reason: r.reason, place: r.place }));
   cast.push({ name: 'You', days: S.day, reason: S.endReason, me: true });
