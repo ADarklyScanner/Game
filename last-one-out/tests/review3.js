@@ -4,7 +4,7 @@ const { loadGame } = require('./load-game'); const E = loadGame(process.env.GAME
 const SRC = process.env.GAME_FILE || path.join(__dirname, '..', 'index.html'); const TMP = '/tmp/last-one-out-review3.html';
 const html = fs.readFileSync(SRC, 'utf8'); const hook = 'window.claude?.hot?.snapshot?.(() => ({ game: S }));';
 if (!html.includes(hook)) throw new Error('hook point not found');
-fs.writeFileSync(TMP, html.replace(hook, 'window.__r = { S: () => S, W: () => W, mini: () => mini, input: () => input, rec: () => records, setRec: r => { records = r; }, buildStage, bill: f => { const o = E.shelterBill; E.shelterBill = f; return o; }, tileChips, floatNum, worldToast, startStalk, startCollect, openRecords, interactions, stitch: () => startStitch };\n' + hook));
+fs.writeFileSync(TMP, html.replace(hook, 'window.__r = { S: () => S, W: () => W, mini: () => mini, input: () => input, rec: () => records, setRec: r => { records = r; }, tidySubs, buildStage, bill: f => { const o = E.shelterBill; E.shelterBill = f; return o; }, tileChips, floatNum, worldToast, startStalk, startCollect, openRecords, interactions, stitch: () => startStitch };\n' + hook));
 const KEY = 'last-one-out-v1'; const save = s => JSON.stringify(s, (k, v) => v === Infinity ? 1e9 : v);
 let fails = 0, passes = 0; const check = (name, ok, detail) => { if (ok) passes++; else { fails++; console.log('FAIL', name, detail ?? ''); } };
 const KIT = ['Knife', 'Ferro rod', 'Axe', 'Fishing gear', 'Bow and arrows', 'Pot', 'Paracord'];
@@ -40,6 +40,8 @@ function base() { const s = E.newGame('US-S6', KIT, { seed: 41, weight: 200 }); 
   // 11 half-hour times are chips
   check('½ h shows as a time chip', /class="ch t">½ h/.test(await p.evaluate(() => window.__r.tileChips('½ h · on the shore'))));
   check('1½ h shows as a time chip', /class="ch t">1½ h/.test(await p.evaluate(() => window.__r.tileChips('1½ h · 40%'))));
+  { const subs = await p.evaluate(() => { const l = [{ id: 'search', label: 'x', sub: '½ h · on the shore' }, { id: 'search', label: 'y', sub: '1½ h' }]; window.__r.tidySubs(l); return l.map(a => a.sub); });
+    check('a half-hour time is not doubled up', subs.every(x => (x.match(/h\b/g) || []).length === 1), subs); }
   // collect: a keyboard path
   await p.evaluate(() => { const W = window.__r.W(); window.__r.startCollect('stones', 'stone', { x: W.player.x + 10, y: W.player.y }); });
   const acts = await p.evaluate(() => window.__r.mini().acts.map(a => a.label)); check('collecting offers Pick up the nearest', acts[0] === 'Pick up the nearest', acts);

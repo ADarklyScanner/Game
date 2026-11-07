@@ -233,6 +233,7 @@ Checked and left as they are: a wrong-sized snare is still set (it catches less,
 | 171 | "½ h" was not shown as a time chip | It is |
 | 172 | Stitching with no pad on screen could throw; painted rooms piled up in memory | Guarded; only the latest few rooms are kept |
 | 173 | The wreck gave nothing; Records did not show it or a finished Camping; mid-build the job still said "Build shelter"; picking things up had no keyboard path | Wire, cable and a pot from the wreck; both in Records; the job names the build; Pick up the nearest, or walk over them |
+| 174 | A job whose time read "½ h" got the time added a second time | Half hours are read as times |
 
 ### Test-side problems (not game bugs)
 

@@ -3333,7 +3333,7 @@ function banner(lines, keep) {
   while (bannerEl.children.length > 3) bannerEl.firstChild.remove();
 }
 function worldToast(lines, x, y) {
-  if (W.inside) { if (lines && lines.length) banner(lines, 4500); return; } /* the room is drawn, not the world: a toast there would never show */
+  if (W.inside || !W.cam) { if (lines && lines.length) banner(lines, 4500); return; } /* the room is drawn, not the world: a toast there would never show */
   /* long lines wrap to fit the screen, read top to bottom, and stay inside its edges */
   const maxW = W.cam ? Math.max(120, W.cam.w - 20) : 300; const rows = [];
   if (cx) { cx.save(); cx.font = '700 13px ' + W.font; }
@@ -3686,7 +3686,7 @@ function tidySubs(list) {
     let sub = a.sub || '';
     if (sub && !/^[A-Z]{2}/.test(sub)) sub = sub.charAt(0).toLowerCase() + sub.slice(1);
     const h = a.hours != null ? a.hours : (a.id && !a.dim && E.ACTIONS[a.id] ? E.ACTIONS[a.id].hours : 0);
-    if (h > 0 && !/\d(\.\d+)?\s?h\b|\bmin\b/.test(sub)) sub = sub ? `${sub} · ${fmtH(h)}` : fmtH(h);
+    if (h > 0 && !/[\d½]\s?h\b|\bmin\b/.test(sub)) sub = sub ? `${sub} · ${fmtH(h)}` : fmtH(h);
     a.sub = sub;
   }
   return list;
