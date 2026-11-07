@@ -39,16 +39,22 @@ const OUT = process.argv[2] || path.join(__dirname, '..', 'design', 'sheet.png')
     for (const k of ['pine', 'boulder', 'knoll', 'stone', 'blaze']) add('Landmarks', k, () => A.landmarkArt(k, false)); add('Landmarks', 'boulder (small)', () => A.boulderArt(false, 0));
     for (let v = 0; v < 4; v++) add('Beach debris', 'debris ' + (v + 1), () => A.debrisArt(v));
     for (const [id, name] of A.BADGES || []) add('Badges', name, () => A.badgeArt(id, true));
+    window.__items = items;
     // the sheet: dark like a keyboard tray, square keys, a number on each
     document.body.innerHTML = ''; document.body.style.cssText = 'margin:0;background:#1d1f1c;font-family:system-ui,sans-serif;color:#e8e4d8';
     const st = document.createElement('style'); st.textContent = `.sh{padding:10px 8px 24px}.gt{font:600 12px system-ui;letter-spacing:.08em;text-transform:uppercase;color:#a9b39a;margin:14px 4px 6px}.gr{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.k{position:relative;color:#ece6d2;background:#2c2f2a;border-radius:10px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;overflow:hidden}.k{align-items:flex-start;padding-top:14%}.k svg{width:70%;height:62%}.k svg.line,.k svg.hi{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.n{position:absolute;top:3px;left:5px;font:700 11px ui-monospace,monospace;color:#f2d58a}.t{position:absolute;bottom:2px;left:3px;right:3px;font:9px system-ui;color:#c9c4b4;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}h1{font:600 18px system-ui;margin:6px 4px 2px}.sub{font:12px system-ui;color:#a8a596;margin:0 4px}`; document.head.append(st);
-    const sh = document.createElement('div'); sh.className = 'sh'; sh.innerHTML = `<h1>Last One Out · every picture</h1><div class="sub">${items.length} pictures. Say the number to change one.</div>`; document.body.append(sh);
-    let g = null, grid = null; items.forEach((it, i) => { if (it.group !== g) { g = it.group; const t = document.createElement('div'); t.className = 'gt'; t.textContent = g; grid = document.createElement('div'); grid.className = 'gr'; sh.append(t, grid); }
+    window.__page = (from, to, page, pages) => { document.querySelectorAll('.sh').forEach(x => x.remove());
+    const sh = document.createElement('div'); sh.className = 'sh'; sh.innerHTML = `<h1>Last One Out · every picture <span style="font-size:13px;color:#a8a596">page ${page} of ${pages}</span></h1><div class="sub">${items.length} pictures, ${from + 1}–${to} here. Say the number to change one.</div>`; document.body.append(sh);
+    let g = null, grid = null; items.slice(from, to).forEach((it, j) => { const i = from + j; if (it.group !== g) { g = it.group; const t = document.createElement('div'); t.className = 'gt'; t.textContent = g; grid = document.createElement('div'); grid.className = 'gr'; sh.append(t, grid); }
       const k = document.createElement('div'); k.className = 'k'; k.innerHTML = `${it.svg}<span class="n">${i + 1}</span><span class="t">${it.name.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</span>`; grid.append(k); });
-    for (const svg of document.querySelectorAll('.k > svg')) { try { const bb = svg.getBBox(); if (bb.width > 0 && bb.height > 0) { const pad = Math.max(bb.width, bb.height) * 0.06; svg.setAttribute('viewBox', `${bb.x - pad} ${bb.y - pad} ${bb.width + pad * 2} ${bb.height + pad * 2}`); } } catch (e) {} } /* each picture fills its key */
+    for (const svg of document.querySelectorAll('.k > svg')) { try { const bb = svg.getBBox(); if (bb.width > 0 && bb.height > 0) { const pad = Math.max(bb.width, bb.height) * 0.06; svg.setAttribute('viewBox', `${bb.x - pad} ${bb.y - pad} ${bb.width + pad * 2} ${bb.height + pad * 2}`); } } catch (e) {} } /* each picture fills its key */ };
     return items.map((it, i) => ({ n: i + 1, group: it.group, name: it.name }));
   });
-  await p.waitForTimeout(800); fs.mkdirSync(path.dirname(OUT), { recursive: true }); await p.screenshot({ path: OUT, fullPage: true });
+  /* pages a phone screen tall: whole groups where they fit, about seven rows of six */
+  const per = 42, pages = Math.ceil(index.length / per); const dir = path.dirname(OUT); fs.mkdirSync(dir, { recursive: true });
+  for (const f of fs.readdirSync(dir)) if (/^sheet(-\d+)?\.png$/.test(f)) fs.unlinkSync(path.join(dir, f));
+  for (let i = 0; i < pages; i++) { await p.evaluate(([a, b, n, N]) => window.__page(a, b, n, N), [i * per, Math.min(index.length, (i + 1) * per), i + 1, pages]); await p.waitForTimeout(400);
+    await p.screenshot({ path: path.join(dir, `sheet-${i + 1}.png`), fullPage: true }); }
   fs.writeFileSync(path.join(__dirname, '..', 'design', 'sheet-index.json'), JSON.stringify(index, null, 1));
-  console.log(`${index.length} pictures -> ${OUT}`); await b.close();
+  console.log(`${index.length} pictures on ${pages} pages in ${dir}`); await b.close();
 })();
