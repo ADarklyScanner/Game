@@ -3286,7 +3286,7 @@ function dayStart() {
   for (const b of W.beds) b.used = !ready('s' + b.k); for (const t of W.tracks) t.set = false; { const at = (S.sys && S.sys.setAt) || []; const keep = (S.snares || 0) + (S.deadfalls || 0) > 0 ? at : []; for (const [i, df] of keep) if (W.tracks[i]) { W.tracks[i].set = true; W.tracks[i].deadfall = !!df; } if (S.sys && at.length && !keep.length) S.sys.setAt = []; }
   W.animals = []; W.debris = [];
   const huntable = se.pools.hunt.length; W.dayF = dayFactor(); W.cellsDay = -1; W.cellsDone = null; ensureCells(true);
-  W.nextAnimal = W.t + 60 + rnd() * 90;
+  W.nextAnimal = (W.gt || 0) + 60 + rnd() * 90;
   if (S.carcass && !W.carcassPos) W.carcassPos = { x: W.trail.x - 40, y: W.trail.y + 60 };
   W.dusked = false; W.inside = W.inside && E.canWorkInside(S); leftoverRefresh();
   if (S.event && S.event.id === 'fishrun') W.run = true;
@@ -3466,18 +3466,19 @@ function update(dt) {
     if (W.carrying && atCamp()) { const msg = E.carryLoad(S); W.carrying = false; if (msg) { worldToast([[msg, 'good']], p.x, p.y); sfx.play('good'); } updateHud(); save(); lastActs = ''; }
   } else { p.moving = false; input.target = null; }
   // animals: wander, notice you, bolt
+  const gdt = dt * SCALE.timeX / 11; W.gt = (W.gt || 0) + gdt; /* the wild runs on game time: the same metres walked meet the same animals, whatever the world's speed (11x is the tuned speed) */
   for (const a of W.animals) {
     if (a.dead) continue;
     const d = dist(a, p);
-    if (!a.fled) { const sc = scentOf(a); const noise = (p.moving ? (nearAnimal ? 0.55 : 1) : 0.08) * (sc === 'down' ? 2.2 : sc === 'up' ? 0.6 : 1) * (a.size && a.size < 0.9 ? 0.7 : a.size && a.size > 1.25 ? 1.2 : 1); a.alert = Math.max(0, a.alert + (d < (sc === 'down' ? 230 : 170) ? noise * (1.3 - d / 230) * dt * 1.6 : -dt * 0.3)); if (a.alert >= 1 || (d < 45 && p.moving)) { a.fled = true; a.fleeT = 2.5; a.tx = a.x + (a.x - p.x) * 4; a.ty = a.y + (a.y - p.y) * 4; if (mini && mini.type === 'hunt' && mini.animal === a) mini.spook(); } }
-    if (a.fled) { a.fleeT -= dt; if (a.fleeT <= 0) a.gone = true; }
-    a.wait -= dt;
+    if (!a.fled) { const sc = scentOf(a); const noise = (p.moving ? (nearAnimal ? 0.55 : 1) : 0.08) * (sc === 'down' ? 2.2 : sc === 'up' ? 0.6 : 1) * (a.size && a.size < 0.9 ? 0.7 : a.size && a.size > 1.25 ? 1.2 : 1); a.alert = Math.max(0, a.alert + (d < (sc === 'down' ? 230 : 170) ? noise * (1.3 - d / 230) * gdt * 1.6 : -gdt * 0.3)); if (a.alert >= 1 || (d < 45 && p.moving)) { a.fled = true; a.fleeT = 2.5; a.tx = a.x + (a.x - p.x) * 4; a.ty = a.y + (a.y - p.y) * 4; if (mini && mini.type === 'hunt' && mini.animal === a) mini.spook(); } }
+    if (a.fled) { a.fleeT -= gdt; if (a.fleeT <= 0) a.gone = true; }
+    a.wait -= gdt;
     if (a.wait <= 0 && !a.fled) { const zone = a.home || (dist(a, W.meadow) < dist(a, W.trail) ? W.meadow : W.trail); const an = Math.random() * 6.28, r = 30 + Math.random() * (a.home ? 60 : 130); a.tx = zone.x + Math.cos(an) * r; a.ty = zone.y + Math.sin(an) * r; a.wait = 2 + Math.random() * 4; }
-    const dd = Math.hypot(a.tx - a.x, a.ty - a.y); if (dd > 2) { const s = a.fled ? 220 : 28; a.x += (a.tx - a.x) / dd * Math.min(s * dt, dd); a.y += (a.ty - a.y) / dd * Math.min(s * dt, dd); a.dir = (a.tx - a.x) > 0 ? 1 : -1; }
+    const dd = Math.hypot(a.tx - a.x, a.ty - a.y); if (dd > 2) { const s = a.fled ? 220 : 28; a.x += (a.tx - a.x) / dd * Math.min(s * gdt, dd); a.y += (a.ty - a.y) / dd * Math.min(s * gdt, dd); a.dir = (a.tx - a.x) > 0 ? 1 : -1; }
   }
   W.animals = W.animals.filter(a => !a.gone);
-  if (!W.night && W.nextAnimal && W.t > W.nextAnimal && S.phase >= 0 && S.phase < 3) { W.nextAnimal = W.t + 70 + Math.random() * 120 / Math.max(0.3, E.season(S).mult.hunt); if (W.animals.filter(a => !a.dead && !a.fled).length < 3 && !S.storm && Math.random() < 0.6 * Math.min(1.5, E.season(S).mult.hunt) * E.timeMult(S, 'game') * (E.windowOn(S, 'rut') || E.windowOn(S, 'migration') ? 1.5 : 1)) spawnAnimal(); }
-  if (W.actor && W.actor.kind === 'bear' && !W.actor.done) { const b = W.actor; const d = dist(b, W.camp); if (d > 70) { b.x += (W.camp.x - b.x) / d * 60 * dt; b.y += (W.camp.y - b.y) / d * 60 * dt; } b.t += dt; }
+  if (!W.night && W.nextAnimal && W.gt > W.nextAnimal && S.phase >= 0 && S.phase < 3) { W.nextAnimal = W.gt + 70 + Math.random() * 120 / Math.max(0.3, E.season(S).mult.hunt); if (W.animals.filter(a => !a.dead && !a.fled).length < 3 && !S.storm && Math.random() < 0.6 * Math.min(1.5, E.season(S).mult.hunt) * E.timeMult(S, 'game') * (E.windowOn(S, 'rut') || E.windowOn(S, 'migration') ? 1.5 : 1)) spawnAnimal(); }
+  if (W.actor && W.actor.kind === 'bear' && !W.actor.done) { const b = W.actor; const d = dist(b, W.camp); if (d > 70) { b.x += (W.camp.x - b.x) / d * 60 * gdt; b.y += (W.camp.y - b.y) / d * 60 * gdt; } b.t += gdt; }
   if (W.actor && W.actor.leaving) { const b = W.actor; b.x += b.vx * dt; b.y += b.vy * dt; b.t += dt; if (b.t > 4) W.actor = null; }
   for (const t of W.trees) if (t.shake > 0) t.shake -= dt;
   if (W.prints) { for (const f of W.prints) f.age += dt; W.prints = W.prints.filter(f => f.age < 25); }
