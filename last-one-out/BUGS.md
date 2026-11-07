@@ -235,6 +235,7 @@ Checked and left as they are: a wrong-sized snare is still set (it catches less,
 | 173 | The wreck gave nothing; Records did not show it or a finished Camping; mid-build the job still said "Build shelter"; picking things up had no keyboard path | Wire, cable and a pot from the wreck; both in Records; the job names the build; Pick up the nearest, or walk over them |
 | 174 | A job whose time read "½ h" got the time added a second time | Half hours are read as times |
 | 175 | Feeding a smoker that was already going took a flat hour and a half, the same as cutting and hanging a full load | Half an hour to feed it; hanging takes about six minutes a portion |
+| 176 | The animals on the map ran on real seconds while the game clock runs on distance walked, so the world's speed changed hunting: at 4x half of all approaches spooked the animal, at 44x none did and shots per game hour more than doubled | Wariness, wandering, fleeing, drift-ins and the bear all run on game time; at the tuned 11x nothing changes, and 11x and 44x now match (tests/timespeed.js) |
 
 ### Test-side problems (not game bugs)
 
