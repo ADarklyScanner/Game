@@ -501,7 +501,7 @@ function newGame(seasonKey, gear, opts = {}) {
   s.replaced = drop ? drop.name : ''; s.rivalsV = 1;
   s.rivals = roster.filter(r => r !== drop).map(r => ({ name: r.name, days: r.days, reason: r.reason, place: r.place, out: false }));
   s.winDay = season.winDay ?? Math.max(...s.rivals.map(r => r.days)) + 1;
-  if (season.practice) { s.practice = true; s.everDone = {}; s.containers = Math.max(1, s.containers || 0); /* an old billy can left at the site */ logDay(s, 0, [['Camping in the practice valley. Everything is close and comes back quickly. Take your time and learn each job.', 'info']]); return s; }
+  if (season.practice) { s.practice = true; s.everDone = {}; s.stage = 0; s.winter = false; s.stageGift = {}; s.berrySeason = null; /* ripe all the time */ s.containers = Math.max(1, s.containers || 0); /* an old billy can left at the site */ logDay(s, 0, [['Camping in the practice valley. Everything is close and comes back quickly. Take your time and learn each job.', 'info']]); return s; }
   logDay(s, 0, [[`Dropped at ${season.location}. ${s.rivals.length} others are out here somewhere.`, 'info']]);
   return s;
 }
@@ -516,7 +516,7 @@ function makeWindows(s, se) {
   if (se.pools.hunt.some(([t]) => t === 'duck')) { const from = 10 + r(12); if (from + 4 < freezeDay) W.push({ id: 'migration', from, to: from + 4, label: 'Ducks moving', text: 'Ducks are rafting up on the water, moving through on migration.' }); }
   if (se.pools.hunt.length) { const from = 20 + r(14); W.push({ id: 'rut', from, to: from + 6, label: se.big.length ? 'The rut' : 'Game moving', text: se.big.length ? 'The rut is on. Bulls are moving in daylight and not thinking straight.' : 'Game is on the move. More sign on every trail.' }); }
   if (c.coast && (se.siteEvents || []).includes('redtide')) { const from = 10 + r(30); W.push({ id: 'redtide', from, to: from + 6, label: 'Red tide', text: 'The water has a rust-coloured bloom on it. Shellfish are poison until it clears.' }); }
-  if (c.freeze) W.push({ id: 'freezeup', from: c.freeze - 2, to: c.freeze + 1, label: 'Freeze-up', text: 'Freeze-up: the ice is too thin to walk and too thick to cast. A few days with no fishing.' });
+  if (c.freeze && !se.practice) W.push({ id: 'freezeup', from: c.freeze - 2, to: c.freeze + 1, label: 'Freeze-up', text: 'Freeze-up: the ice is too thin to walk and too thick to cast. A few days with no fishing.' });
   return W;
 }
 function activeWindows(s) { return (s.windows || []).filter(w => s.day >= w.from && s.day <= w.to); }
@@ -527,9 +527,9 @@ function midday(s) { const f = dayFrac(s); return f > 0.3 && f < 0.7; }
 function weatherName(s) { return s.storm ? 'storm' : s.rain ? 'rain' : s.snowfall ? 'snowfall' : s.fog ? 'fog' : s.wind ? 'wind' : s.heat ? 'heat' : 'clear'; }
 
 // ------------------------------------------------------------------ environment
-function temperature(s, day = s.day) { const c = season(s).climate; const t = c.t0 + (c.t1 - c.t0) * clamp(day / 100, 0, 1); return t + (s.coldSnap > 0 ? -10 : 0); }
-function frozen(s, day = s.day) { const f = season(s).climate.freeze; return f != null && day >= f; }
-function snowy(s, day = s.day) { const f = season(s).climate.snow; return f != null && day >= f; }
+function temperature(s, day = s.day) { if (s.practice) return s.winter ? -10 : 14; /* the practice valley: mild, or winter when you are learning winter */ const c = season(s).climate; const t = c.t0 + (c.t1 - c.t0) * clamp(day / 100, 0, 1); return t + (s.coldSnap > 0 ? -10 : 0); }
+function frozen(s, day = s.day) { if (s.practice) return !!s.winter; const f = season(s).climate.freeze; return f != null && day >= f; }
+function snowy(s, day = s.day) { if (s.practice) return !!s.winter; const f = season(s).climate.snow; return f != null && day >= f; }
 function dayHours(s) { return clamp(13 - (snowy(s) ? 3 : 0) - (frozen(s) ? 1 : 0) - (s.day > 60 ? 1 : 0), 8, 13); }
 function hoursLeft(s) { return Math.max(0, dayHours(s) - s.hours); }
 function phaseOf(s) { if (s.phase === -1) return -1; const f = s.hours / dayHours(s); return hoursLeft(s) < 0.5 ? 3 : f < 0.34 ? 0 : f < 0.67 ? 1 : 2; }
@@ -781,7 +781,7 @@ function hang(s, where, maxPor, thick) {
   for (const x of fresh) {
     if (free < 0.1) break;
     let y = x; if (x.por > free) { y = Object.assign({}, x, { por: round1(free) }); x.por = round1(x.por - free); s.stores.push(y); }
-    y.where = where; y.moist = y.moist ?? FRESH_MOIST[DATA.foods[y.id].kind]; y.smoke = y.smoke || 0; y.thick = thick != null ? !!thick : !blade(s);
+    delete y.lesson; y.where = where; y.moist = y.moist ?? FRESH_MOIST[DATA.foods[y.id].kind]; y.smoke = y.smoke || 0; y.thick = thick != null ? !!thick : !blade(s);
     free = round1(free - y.por); n += y.por;
   }
   return round1(n);
@@ -977,6 +977,7 @@ const ACTIONS = {
 const FORAGE_IDS = ['berries', 'greens', 'mushrooms', 'roots', 'shellfish', 'seaweed', 'insects', 'nettle', 'cattail', 'pinenuts', 'rosehips', 'seeds'];
 function poolHas(s, id) { return season(s).pools.forage.some(([t]) => t === id); }
 function inSeason(s, id) {
+  if (s.practice) return !s.winter; /* the valley keeps no seasons: everything is in, until you are learning winter */
   const d = s.day;
   const frostDay = season(s).climate.snow ? season(s).climate.snow - (s.practice ? 2 : 8) : 999; /* the practice valley's snow comes early: leave a week for greens */
   if (['greens', 'nettle'].includes(id)) return !snowy(s) && d < frostDay;
@@ -1306,6 +1307,7 @@ function beginDay(s) {
   s.today = { burn: 0, done: [], lines: [], event: false, early: null }; s.moraleDawn = s.morale; s.teaToday = false; s.talkedToday = false; s.nightHours = 0; s.tended = false;
   s.storm = dchance(s, 'storm', se.climate.storm); s.rain = !s.storm && dchance(s, 'rain', se.climate.storm * 1.5) && !snowy(s);
   s.snowfall = snowy(s) && !s.storm && dchance(s, 'snow', 0.22); s.fog = !s.storm && !s.rain && !s.snowfall && dchance(s, 'fog', se.climate.coast ? 0.12 : 0.07);
+  if (s.practice) { s.storm = false; s.fog = false; s.rain = !s.winter && dchance(s, 'rain', 0.08); s.snowfall = !!s.winter && dchance(s, 'snow', 0.3); } /* the valley's weather is kind and the same every time */
   s.wind = !s.storm && !s.fog && dchance(s, 'wind', 0.12); s.windDir = (s.storm || s.wind) && drand(s, 'wpre') < 0.75 ? prevailOf(s) + (drand(s, 'wdir') - 0.5) * 1.2 : drand(s, 'wdir') * 6.283; s.windStr = s.storm ? 1 : s.wind ? 0.7 : 0.3; s.heat = !s.storm && !s.rain && !snowy(s) && (se.climate.t0 >= 20) && dchance(s, 'heat', 0.3);
   if (s.storm) s.lastStorm = s.day; s.wetStreak = (s.storm || s.rain) ? (s.wetStreak || 0) + 1 : 0; morningSun(s);
   s.hail = s.storm && !snowy(s) && dchance(s, 'hail', 0.2); s.thunder = (s.storm || s.rain) && !snowy(s) && temperature(s) > 5 && dchance(s, 'thunder', s.storm ? 0.35 : 0.1);
@@ -1355,7 +1357,7 @@ function act(s, id, opts = {}) {
   if (['fish', 'setlines'].includes(id) && frozen(s) && temperature(s) < -5 && !s.today.iceHole) { s.today.iceHole = true; s.hours = round1(s.hours + 0.5); s.today.burn += C.burnPerHour.heavy * 0.5; lines.push(['The hole had frozen over a hand thick. Half an hour chopping it open again.', 'muted']); }
   if (['fish', 'setnet', 'checknet', 'setlines'].includes(id) && thinIce(s) && chance(s, 0.015)) { s.wet = 1; s.health -= 10; s.morale -= 10; addCond(s, { name: 'Chilled through after the ice broke', days: 2, dmg: 2 }); lines.push(['The new ice cracked like a shot and you went through to the waist. You got out on your elbows and ran for the fire, soaked to the skin.', 'bad']); }
   s._at = s.hours - h; try { doAction(s, id, lines, Math.max(1, opts.mod || 1) * dim, opts); } finally { s._at = null; }
-  thirst(s, h, A.effort, id, lines); if (s.practice) (s.everDone || (s.everDone = {}))[id] = 1;
+  thirst(s, h, A.effort, id, lines); if (s.practice) { (s.everDone || (s.everDone = {}))[id] = 1; if (id === 'fish' && frozen(s)) s.everDone.fish_ice = 1; }
   if (chopping && s.status === 'playing') axeWear(s, lines);
   if (['roots', 'cattail', 'dig_latrine', 'bury'].includes(id) && s.crafts.diggingstick >= 1 && !has(s, 'Shovel') && poorly(s, 'diggingstick') && chance(s, 0.08)) { s.crafts.diggingstick = 0; delete s.sys.poor.diggingstick; lines.push(['The soft point of the digging stick split up the middle. Make another, and harden it properly.', 'bad']); }
   if (BLADE_JOBS.includes(id) && s.crafts.stoneblade >= 1 && !has(s, 'Knife') && !has(s, 'Multitool') && chance(s, 0.03)) { s.crafts.stoneblade = 0; lines.push(['The stone blade snapped across the middle on a joint. Knap another.', 'bad']); }
@@ -1714,7 +1716,7 @@ function doAction(s, id, lines, mod, opts) {
     }
     case 'render_fat': {
       const pot = potLike(s) || has(s, 'Frying pan'); let got = 0;
-      const rk = X.scorch ? 0.8 : X.good ? 1.05 : 1; for (const x of s.stores) if (x.id === 'fat' && !x.rendered) { x.por = round1(x.por * (pot ? 0.85 : 0.65) * rk); x.rendered = true; x.left = Math.max(x.left, X.scorch ? 60 : 90); got += x.por; }
+      const rk = X.scorch ? 0.8 : X.good ? 1.05 : 1; for (const x of s.stores) if (x.id === 'fat' && !x.rendered) { delete x.lesson; x.por = round1(x.por * (pot ? 0.85 : 0.65) * rk); x.rendered = true; x.left = Math.max(x.left, X.scorch ? 60 : 90); got += x.por; }
       if (X.scorch) lines.push(['Let it get too hot and it smoked. The tallow is dark and smells scorched, and there is less of it.', 'warn']); else if (X.good) lines.push(['Kept it at a slow simmer and skimmed the scum off. Clear, white tallow.', 'muted']);
       s.firewood = Math.max(0, s.firewood - 0.25);
       lines.push([pot ? `Rendered the fat down slowly in the pot and strained it: ${Math.round(got)} portion${Math.round(got) === 1 ? '' : 's'} of clean tallow that will keep for months.` : `Rendered the fat on a flat stone by the fire. Much of it ran into the ashes. ${Math.round(got)} portion${Math.round(got) === 1 ? '' : 's'} of tallow that will keep for months.`, 'good']);
@@ -2425,7 +2427,7 @@ function waterCap(s) { return (has(s, 'Pot') ? 2 : clayPots(s) ? 1 : 0) + (has(s
 function eatCooked(s, target, L) { const stew = s.cook === 'boil' && potLike(s) && s.fire; if (stew && !(s.potWater >= 1)) { s.cook = 'roast'; const a = eat(s, target); s.cook = 'boil'; if (a.kcal > 0 && L) L.push(['No water at camp for a stew. Roasted it instead.', 'muted']); return a; } const a = eat(s, target); if (stew && a.kcal > 0) s.potWater -= 1; return a; }
 function eat(s, target) {
   const units = {}; const types = new Set(); let kcal = 0, lean = 0, fat = 0, protein = 0, rawMeat = false, oldMeat = false, tox = false, hard = false, rawFish = false, worms = null, wormsRaw = false, toxWhat = null, toxLook = null, okLook = null;
-  const order = s.stores.slice().sort((a, b) => ((a.where ? 1 : 0) - (b.where ? 1 : 0)) || (a.left - b.left) || (DATA.foods[b.id].kcal - DATA.foods[a.id].kcal));
+  const order = s.stores.filter(x => !x.lesson).sort((a, b) => ((a.where ? 1 : 0) - (b.where ? 1 : 0)) || (a.left - b.left) || (DATA.foods[b.id].kcal - DATA.foods[a.id].kcal));
   const eatOne = (x, por) => {
     const f = DATA.foods[x.id]; x.por = round1(x.por - por); kcal += por * f.kcal; types.add(x.id === 'ration' ? 'ration' : x.id);
     if (x.tox) { tox = true; toxWhat = x.id; if (x.look) toxLook = x.look; } else if (x.id === 'mushrooms' && x.look) okLook = x.look;
@@ -2443,7 +2445,7 @@ function eat(s, target) {
     for (const ing of f.ing) { const I = DATA.ing[ing]; if (!I) continue; for (const m of I.meters) units[m] = (units[m] || 0) + I.units * por; for (const [m, u] of Object.entries(I.extra || {})) units[m] = (units[m] || 0) + u * por; }
   };
   for (const x of order) { if (kcal >= target) break; const f = DATA.foods[x.id]; const want = Math.min(x.por, (target - kcal) / f.kcal); if (want <= 0.05) continue; eatOne(x, round1(Math.max(0.1, want))); }
-  if (lean > 3 && fat < 1.5) { const fx = s.stores.find(x => x.id === 'fat' && x.por > 0); if (fx) eatOne(fx, Math.min(fx.por, 1.5)); }
+  if (lean > 3 && fat < 1.5) { const fx = s.stores.find(x => x.id === 'fat' && x.por > 0 && !x.lesson); if (fx) eatOne(fx, Math.min(fx.por, 1.5)); }
   s.stores = s.stores.filter(x => x.por > 0.05);
   protein = units['Protein'] || 0;
   const res = { kcal, units, types: [...types], lean, fat, protein, rawMeat, oldMeat, tox, hard };
@@ -2484,7 +2486,7 @@ const $ = (h) => { const t = document.createElement('template'); t.innerHTML = h
 const esc = (x) => String(x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const fmt = (n) => Math.round(n).toLocaleString('en-US');
 const app = document.getElementById('app');
-const SAVE = 'last-one-out-v1';
+const SAVE = 'last-one-out-v1', CAMP_SAVE = 'last-one-out-camp-v1', ACTIVE = 'last-one-out-active'; /* Camping keeps its own save, so it never touches your run */
 const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }, del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
 const PHASES = ['Morning', 'Afternoon', 'Evening', 'Night'];
 const POPULAR = D.gear.slice(0, 10).map(g => g.id);
@@ -2642,7 +2644,15 @@ function diffLabel(key) {
   }
   return diffGroups[key] || ['', ''];
 }
-function save() { if (S && W && W.player && S.status === 'playing' && S.phase >= 0) S.at = { x: Math.round(W.player.x), y: Math.round(W.player.y), day: S.day }; if (S) store.set(SAVE, JSON.stringify(S, (k, v) => v === Infinity ? 1e9 : v)); }
+function save() { if (S && W && W.player && S.status === 'playing' && S.phase >= 0) S.at = { x: Math.round(W.player.x), y: Math.round(W.player.y), day: S.day }; if (S) { store.set(S.practice ? CAMP_SAVE : SAVE, JSON.stringify(S, (k, v) => v === Infinity ? 1e9 : v)); store.set(ACTIVE, S.practice ? 'camp' : 'run'); } }
+function loadSlot(key) { const raw = store.get(key); if (!raw) return null; try { const g = JSON.parse(raw); return g && g.v >= 2 && (D.seasons.some(x => x.key === g.seasonKey) || g.seasonKey === E.PRACTICE_KEY) ? migrate(g) : null; } catch (e) { return null; } }
+/* into the valley and back: your run is saved and waits; the valley picks up where you left it */
+function goCamping(gear) { if (mini) { try { endMini(); } catch (e) {} } mini = null; if (S && !S.practice && S.status === 'playing') save();
+  let c = loadSlot(CAMP_SAVE); const fresh = !c || !c.practice || c.status !== 'playing';
+  if (fresh) { c = E.newGame(E.PRACTICE_KEY, (gear && gear.length ? gear : POPULAR).slice(), { seed: 1, weight: setup.weight }); c.big = false; }
+  S = c; W = null; save(); renderGame(); window.scrollTo(0, 0); if (fresh) setTimeout(() => { if (S && S.practice) openLessons(); }, 600); }
+function leaveCamping() { if (S && S.practice) save(); if (mini) { try { endMini(); } catch (e) {} } mini = null; W = null; const r = loadSlot(SAVE); S = r && !r.practice ? r : null; store.set(ACTIVE, 'run'); if (S) renderGame(); else { renderSetup(); } window.scrollTo(0, 0); }
+function restartCamping() { const gear = S && S.practice ? S.gear.slice() : setup.gear.slice(); store.del(CAMP_SAVE); S = null; W = null; goCamping(gear); }
 
 // ------------------------------------------------------------ records, badges, daily drop
 const BADGES = [
@@ -2706,9 +2716,10 @@ function renderSetup() {
   daily.onclick = () => startGame(dp.season.key, POPULAR.slice(), { weight: setup.weight, showRemaining: setup.showRemaining, seed: dp.seed, daily: dp.key });
   app.append(daily);
   { const camping = $(`<button class="daily camping" style="margin-top:8px"><span class="dtext"><span class="eyebrow" style="color:#7fa86a">Practice · learn the ropes</span>
-    <b>Camping</b><small>A small valley by the sea with everything close by: every fish, animal and plant, good odds, regrowth overnight, sea, lake, river, bog and rock, snow and ice later, the wreck on the far side. Lessons for every job. Uses the ten items you pick below.</small></span>
+    <b>Camping</b><small>A small valley by the sea with everything close by: every fish, animal and plant, good odds, regrowth overnight, sea, lake, river, bog and rock, snow and ice later, the wreck on the far side. Lessons for every job, in ten short stages you can come back to. It keeps its own save and never touches a real run. Uses the ten items you pick below.</small></span>
     <span class="dplay">Go</span></button>`);
-    camping.onclick = () => startGame(E.PRACTICE_KEY, setup.gear.length ? setup.gear.slice() : POPULAR.slice(), { weight: setup.weight }); app.append(camping); }
+    const cs = loadSlot(CAMP_SAVE); if (cs && cs.practice && cs.status === 'playing') { camping.querySelector('.dplay').textContent = 'Continue'; camping.querySelector('small').textContent = `Stage ${(cs.stage || 0) + 1} of ${STAGES.length}: ${STAGES[cs.stage || 0][0]}. Pick up where you left off; it never touches a real run.`; }
+    camping.onclick = () => goCamping(setup.gear.length ? setup.gear.slice() : POPULAR.slice()); app.append(camping); }
   const s1 = $(`<section class="step"><h2>1 · Drop site <span class="label">${seasons.length} places</span></h2><div class="seasons" role="list"></div></section>`);
   const list = s1.querySelector('.seasons');
   for (const se of seasons) {
@@ -3329,7 +3340,7 @@ function updateHud() {
   { const arrow = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'][Math.round(((S.windDir || 0) / 6.283) * 8) % 8]; const sky = S.storm ? `storm ${arrow}` : S.snowfall ? 'snowing' : S.rain ? 'rain' : S.fog ? 'fog' : st.weather === 'wind' ? `wind ${arrow}` : st.weather === 'heat' ? 'hot' : `breeze ${arrow}`;
     hudEl.querySelector('#h-temp').textContent = `${st.temp}°${st.windChill < st.temp - 2 ? ` (feels ${st.windChill}°)` : ''}, ${sky}${st.frozen ? ', ice' : st.snowy && !S.snowfall ? ', snow on the ground' : ''}`; }
   const condEl = hudEl.querySelector('#h-cond'); const bits = st.windows.map(w => w.label); const arrow = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'][Math.round(((S.windDir || 0) / 6.283) * 8) % 8]; /* the weather is in the line under the light now */ void arrow; if (st.shelterCond < 0.5 && S.shelterLvl) bits.push('Roof leaking'); { const kg = E.loadOf(S.pack || {}); if (kg > 0.5) bits.push(`Pack ${Math.round(kg)}/${E.carryCap(S)} kg`); } { const b = bodyState(); const felt = []; { const dry = S.sys && S.sys.dry; const wt = E.waterToday(S); if (dry) felt.push('Dehydrated'); else if (!wt.ok && S.phase >= 0 && st.hoursLeft < 5) felt.push('Thirsty'); } if (b.wet > 0.5) felt.push('Soaked'); if (b.cold > 0.5) felt.push('Freezing'); if (b.hot) felt.push('Overheating'); if (b.starving > 0.4) felt.push('Starving'); else if (b.hungry > 0.5) felt.push('Hungry'); if (b.hurt > 0.4) felt.push('Hurt'); if (b.sick) felt.push('Sick'); if (b.low > 0.5) felt.push('Low'); bits.push(...felt.slice(0, 2)); } condEl.textContent = bits.join(' · '); condEl.hidden = !bits.length;
-  const goalEl = hudEl.querySelector('#h-goal'); lessonTick(); const nl = S.practice && S.status === 'playing' ? nextLesson() : null; const nst = nl ? lessonState(S, nl) : null; const gt = S.status === 'playing' && S.phase >= 0 ? (nl ? `Lesson: ${nl[2]}${nst && nst.st === 'step' ? ` · first ${E.low(E.ACTIONS[nst.step].label)}` : nst && nst.st === 'later' ? ' · later' : ''} ›` : goalText()) : ''; goalEl.textContent = gt; goalEl.hidden = !gt;
+  const goalEl = hudEl.querySelector('#h-goal'); lessonTick(); const nl = S.practice && S.status === 'playing' ? nextLesson() : null; const nst = nl ? lessonState(S, nl) : null; const gt = S.status === 'playing' && S.phase >= 0 ? (nl ? `${STAGES[S.stage || 0][0]} · ${nl[2]}${nst && nst.st === 'step' ? ` · first ${E.low(E.ACTIONS[nst.step].label)}` : nst && nst.st === 'later' ? ' · later' : ''} ›` : goalText()) : ''; goalEl.textContent = gt; goalEl.hidden = !gt;
   goalEl.onclick = S.practice ? openLessons : null; goalEl.style.cursor = S.practice ? 'pointer' : ''; goalEl.setAttribute('role', S.practice ? 'button' : ''); goalEl.style.pointerEvents = S.practice ? 'auto' : '';
   const hl = st.hoursLeft; hudEl.querySelector('#h-time').textContent = S.phase < 0 || S.phase === 3 ? 'Night' : `${halves(hl)} h light`;
   const lf = st.lossFrac; const wbar = lf >= 0.25 ? 'b' : lf >= 0.18 ? 'w' : '';
@@ -5020,7 +5031,9 @@ const LESSONS = [
   ['Food from the water', 'shellfish', 'Gather shellfish', 'At low tide, along the rocks on the shore.', s => ev(s, 'shellfish'), 'shore'],
   ['Food from the water', 'seaweed', 'Gather seaweed', 'Along the tide line on the sea shore.', s => ev(s, 'seaweed'), 'shore'],
   ['Food from the water', 'search', 'Walk the shore', 'Things wash up: drums, jugs, tins, an old lure. Each one has a use.', s => ev(s, 'search'), 'shore'],
-  ['Food from the water', 'ice_hole', 'Fish through the ice', 'Once the lake freezes, about day 13: cut a hole and jig. Keep your hands warm.', s => ev(s, 'ice_hole') || (ev(s, 'fish') && s.day >= 13), 'shore'],
+  ['Winter', 'ice_hole', 'Fish through the ice', 'The lake is frozen: cut a hole and jig. Keep your hands warm.', s => ev(s, 'ice_hole') || ev(s, 'fish_ice'), 'shore'],
+  ['Winter', 'melt_snow', 'Melt snow for water', 'Pack the pot with snow and set it by the fire. A pot of snow is a little water.', s => ev(s, 'melt_snow'), 'camp'],
+  ['Winter', 'craft_snowshoes', 'Bend snowshoes', 'Two bent poles and a lacing of cord: walk on the snow instead of wading in it.', s => ev(s, 'craft_snowshoes'), 'camp'],
   ['Food from the land', 'berries', 'Pick berries', 'Ripe ones only. Bears like berry patches too.', s => ev(s, 'berries'), 'berries'],
   ['Food from the land', 'greens', 'Gather greens', 'Young tops, not the old stalks.', s => ev(s, 'greens') || ev(s, 'nettle'), 'greens'],
   ['Food from the land', 'mushrooms', 'Mushrooms, carefully', 'Cut one open and check it against your field notes. The ones that made you sick are marked.', s => ev(s, 'mushrooms'), 'mushrooms'],
@@ -5053,8 +5066,8 @@ const ev = (s, id) => !!(s.everDone && s.everDone[id]);
    later (after dark, or the season); a step away (the reason it is blocked names the step first); or ready.
    The chip points at the first lesson you can do now, or its first step; after dark the fire lesson, and a drink when water is low. */
 const LESSON_STEP = [[/shovel or digging stick/, 'craft_diggingstick'], [/\d+ clay/, 'dig_clay'], [/Build a smoker first/, 'craft_smoker'], [/Build a drying rack first/, 'craft_rack'], [/Needs a bow( or slingshot)?$|No bow of your own/, 'craft_bow'],
-  [/No carcass|No raw fat|No hide|Nothing to (clean|scrape)/, 'hunt'], [/Needs a (knife|blade)/, 'craft_stoneblade'], [/No fire(?!wood)|Needs a (burning )?fire/, 'light_fire'], [/No firewood/, 'firewood'], [/Nothing fresh to (smoke|hang)|Nothing to clean/, 'fish'], [/pole/, 'cut_poles'], [/cordage/, 'cordage'], [/bough/, 'boughs'], [/\blogs?\b/, 'cut_logs'], [/stone/, 'stones'], [/bark/, 'bark'], [/tinder/, 'tinder'], [/moss/, 'moss'], [/No water at camp/, 'water']];
-const LESSON_KIT = /^You have|^Enough hooks|^Quiver is full/, LESSON_REACH = /Needs an axe or saw/, LESSON_LATER = /after dark|Under the snow|Out of season|No snow yet|The water is open|first light|low tide|tide is in|Nothing moves in this|Fog|Wait for|storm|Too dark/i;
+  [/No carcass|No raw fat|No hide|Nothing to scrape/, 'hunt'], [/fishing gear or a handline/, 'craft_handline'], [/Needs a (knife|blade)/, 'craft_stoneblade'], [/No fire(?!wood)|Needs (a|the) (burning )?fire/, 'light_fire'], [/No firewood/, 'firewood'], [/No arrows/, 'craft_arrows'], [/Already full/, 'boil'], [/Nothing fresh to (smoke|hang)/, 'clean'], [/Nothing to clean/, 'fish'], [/pole/, 'cut_poles'], [/cordage/, 'cordage'], [/bough/, 'boughs'], [/\blogs?\b/, 'cut_logs'], [/stone/, 'stones'], [/bark/, 'bark'], [/tinder/, 'tinder'], [/moss/, 'moss'], [/No water at camp/, 'water']];
+const LESSON_KIT = /^You have|^Enough hooks|^Quiver is full|^Your blade opens/, LESSON_REACH = /Needs an axe or saw/, LESSON_LATER = /after dark|Under the snow|Out of season|No snow yet|The water is open|first light|low tide|tide is in|Nothing moves in this|Fog|Wait for|storm|Too dark|Too much wind/i;
 const LESSON_MAP = { drink_edge: 1, ford: 1, wreck: 1, camp: 1, eat: 1 };
 function lessonState(s, l) {
   if ((() => { try { return l[4](s); } catch (e) { return false; } })()) return { st: 'done' };
@@ -5064,19 +5077,46 @@ function lessonState(s, l) {
   const why0 = (aid) => { const r = E.available(s, aid); return r.ok ? '' : (r.why || 'Not offered here'); };
   let why = why0(id); if (!why) return { st: 'ready' };
   if (LESSON_KIT.test(why)) return { st: 'kit', why }; if (LESSON_REACH.test(why)) return { st: 'reach', why }; if (LESSON_LATER.test(why)) return { st: 'later', why };
-  let cur = id; for (let d = 0; d < 3; d++) { const m = LESSON_STEP.find(([re]) => re.test(why)); if (!m || m[1] === cur) break; const w2 = why0(m[1]); if (!w2) return { st: 'step', step: m[1], why };
+  let cur = id; for (let d = 0; d < 4; d++) { const m = LESSON_STEP.find(([re]) => re.test(why)); if (!m || m[1] === cur) break; const w2 = why0(m[1]); if (!w2) return { st: 'step', step: m[1], why };
     if (LESSON_REACH.test(w2) || LESSON_KIT.test(w2)) return { st: 'reach', why: w2 }; cur = m[1]; why = w2; }
   return { st: 'later', why };
 }
 function chipLesson(s) {
-  const open = []; for (const l of LESSONS) { const x = lessonState(s, l); if (x.st !== 'done' && x.st !== 'kit' && x.st !== 'reach') open.push([l, x]); } if (!open.length) return null;
+  const pool = s.stage != null ? stageLessons(s.stage) : LESSONS; const open = []; for (const l of pool) { const x = lessonState(s, l); if (x.st !== 'done' && x.st !== 'kit' && x.st !== 'reach') open.push([l, x]); } if (!open.length) return null;
   const can = ([, x]) => x.st === 'ready' || x.st === 'step';
   if (E.hydOf(s) < 30 && s.phase < 3) return [LESSONS.find(l => l[1] === 'drink_edge'), { st: 'ready', need: true }]; /* parched: a drink comes before anything, learnt or not */
   if (s.phase === 3) { const t = open.find(o => o[0][1] === 'tend_fire' && can(o)); if (t) return t; }
   if (E.hydOf(s) < 40) { const w = open.find(o => (o[0][1] === 'drink_edge' || o[0][1] === 'water') && can(o)); if (w) return w; }
-  if (s.weight < s.weight0 * 0.93 && E.status(s).storeKcal < 1500) { const f = open.find(o => /^Food/.test(o[0][0]) && can(o)); return f || [LESSON_EAT, { st: 'ready' }]; } /* getting thin: food before the next lesson */
   return open.find(can) || open[0];
 }
+/* the stages: a handful of lessons each, in the same order every time; any stage can be picked up again later.
+   Starting a stage sets up what its lessons need, once: a catch and some fat to keep, a small kill to dress, a hide to scrape, and winter for Winter. */
+const STAGES = [
+  ['Camp and water', ['camp', 'drink_edge', 'water', 'dig_latrine', 'lay_out_camp']],
+  ['Fire', ['tinder', 'firewood', 'light_fire', 'boil', 'tend_fire', 'craft_bowdrill']],
+  ['Shelter', ['cut_poles', 'boughs', 'cordage', 'shelter', 'bed', 'better']],
+  ['Fishing and the shore', ['fish', 'clean', 'cook', 'setlines', 'shellfish', 'seaweed', 'search']],
+  ['Foraging', ['dew', 'berries', 'greens', 'mushrooms', 'cattail', 'insects']],
+  ['Traps and hunting', ['snares', 'deadfalls', 'checktraps', 'hunt', 'dress']],
+  ['Keeping food', ['smoke', 'render_fat', 'craft_rack', 'dry_food']],
+  ['Tools', ['craft_stoneblade', 'craft_bow', 'craft_arrows', 'craft_hooks', 'work_hide', 'shape_pot']],
+  ['Further afield', ['cut_logs', 'ford', 'climb', 'craft_raft', 'wreck']],
+  ['Winter', ['ice_hole', 'melt_snow', 'craft_snowshoes']],
+];
+const stageLessons = k => STAGES[k][1].map(id => LESSONS.find(l => l[1] === id)).filter(Boolean);
+function stageCount(s, k) { let done = 0, total = 0; for (const l of stageLessons(k)) { const x = lessonState(s, l).st; if (x === 'kit' || x === 'reach') continue; total++; if (x === 'done') done++; } return { done, total }; }
+const stageDone = (s, k) => { const c = stageCount(s, k); return c.done >= c.total; };
+function stageEnter(s, k) { const L = []; s.stage = k; const name = STAGES[k][0]; s.winter = name === 'Winter'; const g = s.stageGift || (s.stageGift = {}); const se = E.season(s); const D = E.DATA;
+  if (!g[k]) { g[k] = 1;
+    if (name === 'Keeping food') { const fish = (se.pools.fish[0] || [])[0]; if (fish) s.stores.push({ id: fish, por: 12, left: 6, lesson: true }); /* enough for the smoker and the rack */ if (!s.stores.some(x => x.id === 'fat' && !x.rendered)) s.stores.push({ id: 'fat', por: 2, left: 30, lesson: true }); L.push(['A good haul on the lines overnight, and a slab of fat, set aside for this stage: something to keep.', 'good']); }
+    if (name === 'Traps and hunting' && !s.carcass && !ev(s, 'dress')) { const sp = se.pools.hunt.map(x => x[0]).find(id => D.foods[id] && !D.foods[id].big); if (sp) { const f = D.foods[sp]; s.carcass = { hour: s.hours, id: sp, por: f.por, big: false, dressed: false, day: s.day, fat: f.fat, organ: f.organ, size: 1 }; L.push([`A ${E.low(f.name)} in the snare line overnight: one to learn to dress.`, 'good']); } }
+    if (name === 'Traps and hunting' && !(s.mats.feathers >= 2)) { s.mats.feathers = (s.mats.feathers || 0) + 4; L.push(['Grouse feathers scattered on the trail: enough to fletch a few arrows.', 'muted']); }
+    if (name === 'Tools' && !(s.mats.feathers >= 2)) s.mats.feathers = (s.mats.feathers || 0) + 4;
+    if (name === 'Tools' && !(s.mats.hide > 0)) { s.mats.hide = 1; L.push(['A hide hanging in the old camp shelter: one to learn to scrape.', 'good']); }
+  }
+  if (s.winter) L.push(['Winter comes to the valley: snow on the ground and ice on the lake, for as long as you are learning it.', 'big']);
+  return L; }
+function nextStage(s) { for (let i = 1; i <= STAGES.length; i++) { const k = (s.stage + i) % STAGES.length; if (!stageDone(s, k)) return k; } return null; }
 const LESSON_EAT = ['Food', 'eat', 'Eat well first', 'You are getting thin. Fish, check the traps or forage before the next lesson.', () => false, 'shore'];
 function lessonCounts(s) { let done = 0, kit = 0, reach = 0; for (const l of LESSONS) { const x = lessonState(s, l).st; if (x === 'done') done++; else if (x === 'kit') kit++; else if (x === 'reach') reach++; } return { done, kit, reach, total: LESSONS.length - kit - reach }; }
 /* end of lesson rules */
@@ -5095,17 +5135,26 @@ function showLesson(l) { if (!W || !W.player || !S || S.status !== 'playing') re
   const say = step ? `${l[2]}: first ${E.low(E.ACTIONS[step].label)} (${x.why.replace(/\.$/, '').toLowerCase()}).` : x.st === 'later' ? `${l[2]}: later. ${x.why}.` : l[2] + ': ' + l[3];
   if (!t) { banner([[say, 'info']], 6000); return; } W.ring = { x: t.x, y: t.y, keep: true }; input.target = { x: t.x, y: t.y + 24 }; banner([[say, 'info']], 6500); setTimeout(() => { if (W.ring && W.ring.keep) W.ring = null; }, 15000); }
 function openLessons() {
-  sheet((sh, close) => { const done = new Set(lessonsDone().map(l => l[1])); const C = lessonCounts(S);
-    sh.append($(`<h2>Camping lessons</h2>`)); if (C.done >= C.total) { const go = $(`<button class="act primary"><b>Try a real drop</b><small>leave the valley and pick a drop site</small></button>`); go.onclick = () => { close(); E.tapOut(S); save(); renderEnd.played = null; store.del(SAVE); S = null; W = null; renderSetup(); window.scrollTo(0, 0); }; sh.append(go); } sh.append($(`<div class="muted" style="font-size:13px">${C.done} of ${C.total} done${C.kit ? `, ${C.kit} covered by the kit you brought` : ''}${C.reach ? `, ${C.reach} need an axe or saw you did not bring` : ''}. Everything here is close by and comes back overnight. Show me walks you to the place for it, or to the step that comes first.</div>`));
-    let g = ''; for (const l of LESSONS) { if (l[0] !== g) { g = l[0]; sh.append($(`<div class="sect">${esc(g)}</div>`)); }
-      const x = lessonState(S, l); const ok = x.st === 'done'; const off = x.st === 'kit' || x.st === 'reach';
-      const note = x.st === 'step' ? `First: ${E.low(E.ACTIONS[x.step].label)} (${x.why.replace(/\.$/, '').toLowerCase()})` : x.st === 'later' ? `Later: ${x.why}` : x.st === 'kit' ? `Covered: ${x.why.replace(/\.$/, '').toLowerCase()} already` : x.st === 'reach' ? `Not with this kit: ${x.why.replace(/\.$/, '').toLowerCase()}` : '';
-      const row = $(`<div class="row" style="align-items:flex-start;gap:10px"><span style="flex:1;text-align:left"><b>${ok ? '✓ ' : ''}${esc(l[2])}</b><br><span class="muted" style="font-size:13px">${esc(l[3])}</span>${note ? `<br><span class="${x.st === 'step' || x.st === 'later' ? 'tone-warn' : 'muted'}" style="font-size:12px">${esc(note)}</span>` : ''}</span></div>`);
-      if (!ok && !off && l[5]) { const b = $(`<button class="act" style="flex:0 0 auto;padding:6px 10px"><b>Show me</b></button>`); b.onclick = () => { close(); showLesson(l); }; row.append(b); } if (ok || off) row.style.opacity = '.6'; sh.append(row); }
+  sheet((sh, close) => { const C = lessonCounts(S); const cur = S.stage || 0;
+    sh.append($(`<h2>Camping lessons</h2>`));
+    if (C.done >= C.total) { const go = $(`<button class="act primary"><b>Back to your run</b><small>or pick a drop site, if there is no run going</small></button>`); go.onclick = () => { close(); leaveCamping(); }; sh.append(go); }
+    sh.append($(`<div class="muted" style="font-size:13px">${C.done} of ${C.total} done${C.kit ? `, ${C.kit} covered by the kit you brought` : ''}${C.reach ? `, ${C.reach} need an axe or saw you did not bring` : ''}. Ten short stages, the same every time. Stop whenever you like: Leave Camping is in the ⚙ menu, and the valley waits for you.</div>`));
+    STAGES.forEach(([name], k) => { const c = stageCount(S, k), here = k === cur, fin = c.done >= c.total;
+      const head = $(`<div class="row" style="align-items:center;gap:10px;margin-top:6px"><span style="flex:1;text-align:left"><b>${fin ? '✓ ' : ''}${k + 1}. ${esc(name)}</b> <span class="muted num" style="font-size:12px">${c.done}/${c.total}</span>${name === 'Winter' ? '<br><span class="muted" style="font-size:12px">Snow and ice come to the valley while you do this one: come back when winter reaches your run.</span>' : ''}</span></div>`);
+      if (!here) { const b = $(`<button class="act" style="flex:0 0 auto;padding:6px 10px"><b>${fin ? 'Again' : c.done ? 'Continue' : 'Start'}</b></button>`); b.onclick = () => { const L = stageEnter(S, k); save(); close(); updateHud(); lastActs = ''; refreshActs(); banner([[`Stage ${k + 1}: ${name}.`, 'big'], ...L], 5000); }; head.append(b); } else head.style.background = 'rgba(127,168,106,.14)';
+      sh.append(head); if (!here) return;
+      for (const l of stageLessons(k)) { const x = lessonState(S, l); const ok = x.st === 'done'; const off = x.st === 'kit' || x.st === 'reach';
+        const note = x.st === 'step' ? `First: ${E.low(E.ACTIONS[x.step].label)} (${x.why.replace(/\.$/, '').toLowerCase()})` : x.st === 'later' ? `Later: ${x.why}` : x.st === 'kit' ? `Covered: ${x.why.replace(/\.$/, '').toLowerCase()} already` : x.st === 'reach' ? `Not with this kit: ${x.why.replace(/\.$/, '').toLowerCase()}` : '';
+        const row = $(`<div class="row" style="align-items:flex-start;gap:10px;padding-left:12px"><span style="flex:1;text-align:left"><b>${ok ? '✓ ' : ''}${esc(l[2])}</b><br><span class="muted" style="font-size:13px">${esc(l[3])}</span>${note ? `<br><span class="${x.st === 'step' || x.st === 'later' ? 'tone-warn' : 'muted'}" style="font-size:12px">${esc(note)}</span>` : ''}</span></div>`);
+        if (!ok && !off && l[5]) { const b = $(`<button class="act" style="flex:0 0 auto;padding:6px 10px"><b>Show me</b></button>`); b.onclick = () => { close(); showLesson(l); }; row.append(b); } if (ok || off) row.style.opacity = '.6'; sh.append(row); } });
   });
 }
 function lessonTick() { if (!S || !S.practice || S.status !== 'playing') return; const have = new Set(S.lessonsDone || []); const now = lessonsDone().map(l => l[1]); const fresh = now.filter(k => !have.has(k));
-  if (fresh.length) { S.lessonsDone = now; const l = LESSONS.find(x => x[1] === fresh[0]); const n = nextLesson(); const C = lessonCounts(S); banner([[`Lesson done: ${l[2]}. ${C.done} of ${C.total}.`, 'good'], ...(n ? [[`Next: ${n[2]}.`, 'info']] : [['Every lesson done. You know every job the valley can teach. A real drop is waiting: open the lessons for the way out.', 'big']])], n ? 5000 : 9000); sfx.play('good'); if (!n) { records.camper = new Date().toISOString().slice(0, 10); saveRecords(); } } }
+  if (fresh.length) { S.lessonsDone = now; const l = LESSONS.find(x => x[1] === fresh[0]); const k = S.stage || 0; const sc = stageCount(S, k); const msg = [[`Lesson done: ${l[2]}. ${sc.done} of ${sc.total} in ${STAGES[k][0]}.`, 'good']];
+    if (sc.done >= sc.total) { const nk = nextStage(S); if (nk == null) { msg.push(['Every stage done. You know every job the valley can teach. Leave Camping from the ⚙ menu and take it to a real drop.', 'big']); records.camper = new Date().toISOString().slice(0, 10); saveRecords(); }
+      else { msg.push([`Stage done: ${STAGES[k][0]}. A good place to stop, or carry on: stage ${nk + 1}, ${STAGES[nk][0]}.`, 'big'], ...stageEnter(S, nk)); save(); } }
+    else { const n = nextLesson(); if (n) msg.push([`Next: ${n[2]}.`, 'info']); }
+    banner(msg, 6000); sfx.play('good'); } }
 function openCachePlace() {
   if (!W || !W.player) return;
   sheet((sh, close) => {
@@ -7087,7 +7136,12 @@ function pageGame(sh, close) {
     sh.append($(`<h2>Game</h2>`));
     const how = $(`<button class="act"><b>How to play</b><small>Rules, odds and what the numbers mean</small></button>`); how.onclick = () => { close(); openHow(); };
     const rec = $(`<button class="act"><b>Records and badges</b><small>Your best runs on every season</small></button>`); rec.onclick = () => { close(); openRecords(); };
-    sh.append(how, rec, $(`<div class="grp">This run</div>`));
+    sh.append(how, rec);
+    if (S && S.practice) { const lv = $(`<button class="act primary"><b>Leave Camping</b><small>Your lessons are kept. Come back any time.</small></button>`); lv.onclick = () => { close(); leaveCamping(); };
+      const rs = $(`<button class="act"><b>Start Camping over</b><small>Every stage from the beginning, with the same kit</small></button>`); let a3 = false; rs.onclick = () => { if (!a3) { a3 = true; rs.querySelector('b').textContent = 'Start over: press again'; return; } close(); restartCamping(); };
+      sh.append($(`<div class="grp">Camping</div>`), lv, rs, $(`<div class="grp">Settings</div>`), settingsBlock()); return; }
+    { const cp = $(`<button class="act"><b>Camping (practice)</b><small>Learn a job in the valley. This run is saved and waits for you.</small></button>`); cp.onclick = () => { close(); goCamping(S ? S.gear.slice() : setup.gear.slice()); }; sh.append(cp); }
+    sh.append($(`<div class="grp">This run</div>`));
     const tap = $(`<button class="act danger"><b>Tap out</b><small>End this run now. You can't undo it.</small></button>`);
     let armed = false;
     tap.onclick = () => { if (!armed) { armed = true; tap.querySelector('b').textContent = 'Tap out: press again to confirm'; return; } if (mini) mini.cancel(); E.tapOut(S); save(); close(); if (W) W.over = true; renderEnd(); };
@@ -7178,7 +7232,7 @@ function openRecords() {
 function renderEnd() {
   const se = E.season(S); app.className = 'wrap'; app.replaceChildren();
   if (S.practice) { const C = lessonCounts(S), done = C.done; app.append($(`<section class="step"><h1 style="margin:8px 0">Camping, day ${S.day}</h1><p>${done} of ${C.total} lessons done. ${done >= C.total ? 'You have done everything the valley can teach. Go and try a real drop.' : 'Come back any time; the valley keeps.'}</p><p class="muted">Practice runs are not counted in your records.</p></section>`));
-    const b = $(`<button class="act primary"><b>Back to the start</b></button>`); b.onclick = () => { renderEnd.played = null; store.del(SAVE); S = null; renderSetup(); window.scrollTo(0, 0); }; app.append(b); return; }
+    const b = $(`<button class="act primary"><b>Back to the start</b></button>`); b.onclick = () => { renderEnd.played = null; store.del(CAMP_SAVE); S = null; leaveCamping(); }; app.append(b); return; }
   const won = S.status === 'won';
   const cast = S.rivals.filter(r => r.days != null).map(r => ({ name: r.name, days: r.days, reason: r.reason, place: r.place }));
   cast.push({ name: 'You', days: S.day, reason: S.endReason, me: true });
@@ -7254,6 +7308,7 @@ function scrubRivals(g) { // old saves carry the earlier roster's names: map by 
 }
 function migrate(g) { // fill anything a newer build added, so a save survives updates
   repairSave(g); if (g.campChosen === undefined) g.campChosen = true; /* runs from before camps were chosen keep the camp they had */
+  if (g.practice && g.stage == null) { g.stage = 0; g.winter = false; g.stageGift = {}; } /* Camping from before the stages starts at the first one; what is done stays done */
   const needRivals = g.rivalsV !== 1;
   if (g.sys !== undefined && (!g.sys || typeof g.sys !== 'object' || Array.isArray(g.sys) || g.sys.schema !== 1)) { console.warn('Save had an unreadable sys block; reset it.'); g.sys = undefined; }
   if (g.mapV === undefined) g.mapV = 1; // saves from before drop sites varied keep the map they started on
@@ -7331,7 +7386,8 @@ function copyText(t) { const fall = () => { const ta = document.createElement('t
   try { navigator.clipboard.writeText(t).then(() => banner([['Self-check report copied. Paste it into your message.', 'info']], 3000), () => { fall(); banner([['Report selected; copy it from the page.', 'info']], 3000); }); } catch (e) { fall(); } }
 if (SELFCHECK) setInterval(() => { if (!S || S.status !== 'playing') return; const p = selfProblems(S); if (p.length) { selfcheck.seen++; if (!selfcheck.first) selfcheck.first = { day: S.day, hours: S.hours, problems: p }; if (selfcheck.seen === 1 || selfcheck.seen % 10 === 0) { console.error('[selfcheck]', p); banner([[`Self-check: ${p[0]}${p.length > 1 ? ` (+${p.length - 1} more)` : ''}`, 'bad']], 4000); } } }, 3000);
 function start(hot) {
-  const raw = (hot && hot.game) || store.get(SAVE);
+  { const old = store.get(SAVE); try { const g = old && JSON.parse(old); if (g && g.practice) { store.set(CAMP_SAVE, old); store.del(SAVE); store.set(ACTIVE, 'camp'); } } catch (e) {} } /* older builds kept Camping in the run's slot */
+  const raw = (hot && hot.game) || (store.get(ACTIVE) === 'camp' && store.get(CAMP_SAVE)) || store.get(SAVE);
   let broken = false;
   if (raw) { try { const g = typeof raw === 'string' ? JSON.parse(raw) : raw; if (g && g.v >= 2 && (D.seasons.some(x => x.key === g.seasonKey) || g.seasonKey === E.PRACTICE_KEY)) S = migrate(g); else broken = true; } catch (e) { S = null; broken = true; } }
   /* a save that cannot be read is kept to one side, not overwritten by the next run */

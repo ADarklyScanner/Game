@@ -7,7 +7,7 @@ const { loadGame } = require('./load-game'); const { makeBot } = require('./bot'
 const GAME = process.env.GAME_FILE || path.join(__dirname, '..', 'index.html');
 const E = loadGame(process.env.GAME_FILE || undefined); const D = E.DATA;
 const html = fs.readFileSync(GAME, 'utf8'); const a0 = html.indexOf('const LESSONS = ['); const b0 = html.indexOf('/* end of lesson rules */', a0); if (a0 < 0 || b0 < 0) throw new Error('lesson rules not found');
-const RULES = new Function('E', html.slice(a0, b0) + '; return { LESSONS, lessonState, chipLesson, lessonCounts };')(E); const { LESSONS } = RULES; const ev = (s, id) => !!(s.everDone && s.everDone[id]); /* the game's own lessons and chip rules */
+const RULES = new Function('E', html.slice(a0, b0) + '; return { LESSONS, lessonState, chipLesson, lessonCounts, STAGES, stageEnter, nextStage, stageCount, stageDone };')(E); const { LESSONS } = RULES; const ev = (s, id) => !!(s.everDone && s.everDone[id]); /* the game's own lessons and chip rules */
 let N = Number(process.env.SEEDS || 40), DAYS = Number(process.env.DAYS || 30); const SEEDS = Array.from({ length: N }, (_, i) => 101 + i * 7919);
 const POP = [...D.gear].sort((a, b) => b.rate - a.rate).slice(0, 10).map(g => g.id);
 const KITS = { full: ['Knife', 'Pot', 'Ferro rod', 'Axe', 'Fishing gear', 'Sleeping bag', 'Tarp', 'Paracord', 'Bow and arrows', 'Saw'], popular: POP, light: ['Knife', 'Ferro rod', 'Pot'], bare: [] };
@@ -46,12 +46,13 @@ function lessonAct(s, l) { const id = l[1];
   return E.available(s, id).ok ? id : null; }
 function play(kit, who, seed) {
   const s = E.newGame(E.PRACTICE_KEY, KITS[kit], { seed, weight: 200 }); if (who !== 'learner') s.campChosen = true;
-  const bot = makeBot(E, s); const rec = { lessonDay: {}, chipStuck: 0, chipDays: 0, stuckWhy: {}, ended: {}, low: { health: 0, will: 0, water: 0, food: 0 }, curve: [] };
+  const bot = makeBot(E, s); const rec = { stageDay: {}, lessonDay: {}, chipStuck: 0, chipDays: 0, stuckWhy: {}, ended: {}, low: { health: 0, will: 0, water: 0, food: 0 }, curve: [] };
   let chipChecked = -1;
   const learner = st => {
-    if (st.day !== chipChecked) { chipChecked = st.day; const c = chipLesson(st); if (c) { rec.chipDays++; const why = chipBlock(st, c); if (why) { rec.chipStuck++; const k = c.l[1] + ': ' + kind(why); rec.stuckWhy[k] = (rec.stuckWhy[k] || 0) + 1; } } }
+    if (CHIP !== 'old' && !RULES.chipLesson(st)) { const k = st.stage; if (rec.stageDay[k] == null) rec.stageDay[k] = st.day; const nk = RULES.nextStage(st); if (nk != null) RULES.stageEnter(st, nk); }
+    if (st.day !== chipChecked) { chipChecked = st.day; const c = chipLesson(st); if (c) { rec.chipDays++; const why = chipBlock(st, c); if (why) { rec.chipStuck++; const k = c.l[1] + ': ' + kind(why) + ' (' + String(why).slice(0, 40) + ')'; rec.stuckWhy[k] = (rec.stuckWhy[k] || 0) + 1; } } }
     for (let guard = 0; guard < 4; guard++) { const c = chipLesson(st); if (!c || chipBlock(st, c)) break; if (c.step) return c.step; if (c.l[1] === 'eat') return bot(st); const id = lessonAct(st, c.l); if (id) return id; if (done(st, c.l)) continue; break; }
-    for (const l of LESSONS) { if (done(st, l) || blockOf(st, l)) continue; const id = lessonAct(st, l); if (id) return id; }
+    if (CHIP === 'old') for (const l of LESSONS) { if (done(st, l) || blockOf(st, l)) continue; const id = lessonAct(st, l); if (id) return id; } /* with stages, a learner sticks to the stage */
     return bot(st); };
   learner.event = bot.event; learner.night = st => (!ev(st, 'tend_fire') && E.available(st, 'tend_fire').ok ? 'tend_fire' : bot.night ? bot.night(st) : null);
   const careless = st => CARELESS.find(i => E.available(st, i).ok && st.today.done.filter(x => x === i).length < 2) || null;
@@ -60,9 +61,11 @@ function play(kit, who, seed) {
     E.runDay(s, policy);
     for (const l of LESSONS) if (rec.lessonDay[l[1]] == null && done(s, l)) rec.lessonDay[l[1]] = s.day;
     const st = E.status(s); if (s.health <= 45) rec.low.health++; if (s.morale <= 45) rec.low.will++; if (E.hydOf(s) < 30) rec.low.water++; if (s.weight < s.weight0 * 0.93) rec.low.food++;
+    if (who === 'learner' && CHIP !== 'old') for (let k = 0; k < RULES.STAGES.length; k++) if (rec.stageDay[k] == null && RULES.stageDone(s, k)) rec.stageDay[k] = s.day;
     rec.curve.push([s.day, Math.round(s.health), Math.round(s.morale), Math.round(E.hydOf(s)), Math.round(100 * s.weight / s.weight0), Object.keys(rec.lessonDay).length]);
   }
   for (const l of s.log) for (const [t] of l.lines) { const m = /would have ended it \(([^)]*)\)/.exec(t); if (m) { const k = m[1].replace(/\d+/g, 'N').slice(0, 60); rec.ended[k] = (rec.ended[k] || 0) + 1; } }
+  for (let k = 0; k < RULES.STAGES.length; k++) if (rec.stageDay[k] == null && RULES.stageDone(s, k)) rec.stageDay[k] = s.day;
   rec.finalWhy = {}; for (const l of LESSONS) if (!done(s, l)) { const x = RULES.lessonState(s, l); rec.finalWhy[l[1]] = x.st + (x.why ? ': ' + x.why : ''); } rec.counts = RULES.lessonCounts(s);
   rec.days = s.day; return rec;
 }

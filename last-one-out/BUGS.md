@@ -240,6 +240,8 @@ Checked and left as they are: a wrong-sized snare is still set (it catches less,
 | 178 | "Make a bow" counted as done once the stave was cut, so bare-kit players never got a bow, arrows or a hunt | It counts when the bow is made |
 | 179 | The lesson chip pointed at the first lesson not done, which on 93% of days was one you could not do: the bow drill when you brought a ferro rod, tending the fire in daylight | Lessons have a state (done, covered by your kit, out of reach, later, a step away, ready); the chip points at what you can do now or its first step |
 | 180 | In Camping, weight lost while learning never came back: meals were capped at the day's burn | In the valley a full ration can be up to 1.3x the burn when you are underweight and have the food |
+| 181 | Starting Camping overwrote the run in progress: both used the same save | Camping has its own save; going into the valley from a run saves the run, and leaving puts you back in it |
+| 182 | In Camping, the gift food for a lesson could be eaten before it was used; "nothing to clean" sent the player hunting instead of fishing | Lesson food is set aside until used; the first-step chain is clean, fish, make a handline, twist cord |
 
 ### Test-side problems (not game bugs)
 
