@@ -24,6 +24,13 @@ function base() { const s = E.newGame('US-S6', KIT, { seed: 41, weight: 200 }); 
     const h0 = k.hours; E.act(k, 'smoke'); check('and the clock agrees', Math.abs(k.hours - h0 - 0.8) < 0.05, k.hours - h0);
     const q = base(); q.stores = [{ id: 'trout', por: 2, left: 3 }]; check('two days of fish is no surplus', E.surplusPor(q) === 0, E.surplusPor(q));
     const mo = Object.keys(E.DATA.foods).find(f => E.DATA.foods[f].big); q.stores = [{ id: mo, por: 200, left: 3 }]; check('a big kill is a surplus', E.surplusPor(q) > 100, E.surplusPor(q)); }
+  { // things the code knew about that you could never get: sunglasses, snow goggles, the elk
+    check('sunglasses can be brought', E.DATA.gear.some(g => g.id === 'Sunglasses'));
+    const blind = kit => { let n = 0; for (let sd = 1; sd <= 30; sd++) { const g = E.newGame('US-S7', kit, { seed: sd, weight: 200 }); g.campChosen = true; if (kit.goggles) g.crafts.goggles = 1; for (let d = 0; d < 40; d++) { E.beginDay(g); g.event = null; g.day = Math.max(g.day, 60); E.endDay(g); if (g.conditions.some(c => /Snow blind/.test(c.name))) { n++; break; } } } return n; };
+    const bare = blind(['Knife']), shades = blind(['Knife', 'Sunglasses']), carved = blind(Object.assign(['Knife'], { goggles: 1 }));
+    check('without eye cover, snow blindness happens', bare > 0, bare); check('sunglasses stop it', shades === 0, shades); check('so do carved goggles', carved === 0, carved);
+    const gg = E.newGame('US-S7', ['Knife'], { seed: 2, weight: 200 }); gg.campChosen = true; E.beginDay(gg); gg.event = null; gg.mats.poles = 1; gg.mats.cordage = 1; check('goggles can be carved with a knife, a pole and cord', E.available(gg, 'craft_goggles').ok, E.available(gg, 'craft_goggles'));
+    check('elk live somewhere now', E.DATA.seasons.some(se => (se.big || []).includes('elk'))); }
   const c = E.newGame(E.PRACTICE_KEY, ['Knife', 'Ferro rod'], { seed: 3, weight: 200 }); check('the camping site has a can to carry and boil water in', (c.containers || 0) >= 1, c.containers);
 }
 (async () => {

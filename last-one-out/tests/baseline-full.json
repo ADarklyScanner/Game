@@ -17,9 +17,10 @@
  "US-S1#3333": {
   "d5": "e22060c45e47",
   "d25": "c7b0d85a8076",
-  "end": "87d40c89d88c",
-  "day": 49,
-  "status": "medical"
+  "d50": "c46a47c63953",
+  "end": "c18d6d61cf0f",
+  "day": 54,
+  "status": "tapped"
  },
  "US-S2#11": {
   "d5": "6d532d532c72",

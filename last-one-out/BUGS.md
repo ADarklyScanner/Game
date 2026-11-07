@@ -242,6 +242,10 @@ Checked and left as they are: a wrong-sized snare is still set (it catches less,
 | 180 | In Camping, weight lost while learning never came back: meals were capped at the day's burn | In the valley a full ration can be up to 1.3x the burn when you are underweight and have the food |
 | 181 | Starting Camping overwrote the run in progress: both used the same save | Camping has its own save; going into the valley from a run saves the run, and leaving puts you back in it |
 | 182 | In Camping, the gift food for a lesson could be eaten before it was used; "nothing to clean" sent the player hunting instead of fishing | Lesson food is set aside until used; the first-step chain is clean, fish, make a handline, twist cord |
+| 183 | Snow blindness checked for "Sunglasses", which was not on the kit list, so nothing could ever prevent it | Sunglasses can be brought; snow goggles can be carved from a pole or bone and cord |
+| 184 | Elk were fully defined and drawn but lived in no place, so you could never meet one | Elk are big game on the Rainforest Coast (northern Vancouver Island has Roosevelt elk) |
+| 185 | A hint in the fire mini-game looked for a canteen where the game never records one, so it never said "from the canteen" | It checks the kit |
+| 186 | One function was never used (nearestTree) | Removed |
 
 ### Test-side problems (not game bugs)
 
