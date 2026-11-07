@@ -2254,6 +2254,7 @@ function nightAndBody(s, burn, done, lines) {
   if (lf > 0.2 && chance(s, 0.1)) lines.push(['Hips and ribs on the ground. There is no way to lie that does not hurt.', 'muted']);
   if (fedFrac < 0.35 && s.day > 10 && chance(s, 0.12)) { lines.push([pick1(s, ['Nosebleed this morning, out of nowhere.', 'Heart racing, lying dead still.', 'Stood up too fast and the world went black for a second.', 'Gas and cramps all night. Nothing in you to make either.', 'Hands shaking too much to tie a knot.', 'Cold all the time now, even by the fire.']), 'warn']); if (lf > 0.22 && s.health < 30 && chance(s, 0.15)) { s.health -= 4; s.morale -= 5; lines.push(['Blacked out on the way to the water and came to on the ground.', 'bad']); } }
   if (ate.hard && !s.once_tooth && chance(s, 0.0025)) { s.once_tooth = true; addCond(s, { name: 'Cracked tooth', days: 14, dmg: 0.4 }); s.morale -= 7; lines.push(['Cracked a molar on a strip of dried meat. Every mouthful is going to hurt for a while.', 'bad']); }
+  s.starveDays = fed < 0.15 ? (s.starveDays || 0) + 1 : 0; if (s.starveDays > 7) { dmg += Math.min(4, 0.35 * (s.starveDays - 7)); if (s.starveDays === 8 || s.starveDays % 5 === 0) lines.push([s.starveDays >= 12 ? 'Twelve days and more with almost nothing to eat. You are weak enough that standing up is a decision.' : 'Days now with almost nothing to eat. Your body has started taking itself apart for fuel.', 'bad']); }
   const recovery = (fed < 0.35 ? 0 : 7 * (1 - (early + serious) / 28) * clamp(fed, 0.35, 1) * sleepQ) * (burn < 900 ? 1.35 : burn < 1400 ? 1.1 : 1) * (1 - 0.08 * (s.nightHours || 0));
   s.health = clamp(Math.min(ceiling, s.health + recovery - dmg), 0, 100);
 
@@ -2274,19 +2275,23 @@ function nightAndBody(s, burn, done, lines) {
   const resilience = Math.min(0.85, habits.reduce((a, h) => a + h[1], 0)); s.lastResilience = resilience; s.lastHabits = habits.map(h => h[0]);
   let dm = -drain * (1 - resilience);
   { if (resilience >= 0.5 && chance(s, 0.2)) lines.push([`What kept you going today: ${habits.slice(0, 3).map(h => h[0]).join(', ')}.`, 'good']); else if (resilience < 0.2 && chance(s, 0.35)) lines.push(['An empty day. Nothing done, nothing to hold on to. That is how the doubts get in.', 'warn']); }
+  let now = 0; /* neglect: no fire, no shelter, a day of doing nothing. Counted in full from the start; the rest creeps in */
   dm -= Math.max(0, deficit) / 1000; if (deficit < 300) dm += 1.5; if (fedFrac >= 0.85) dm += 1; if (fedFrac < 0.25) { dm -= 1; if (chance(s, 0.3)) lines.push(['Hunger is all you can think about.', 'warn']); }
   // a camp that works is a reason to stay: fire in a real shelter, and food put by
   if (fire && s.shelterLvl >= 2) dm += 1; if (s.shelterLvl === 3) dm += 0.5; if (fire && s.fireInside) dm += 0.5;
   if (storeKcal(s) > tdee * 3) dm += 1;
   if (s.moon === 'full' && !s.storm && !s.rain) dm += 0.5; if (s.aurora) { dm += 2; lines.push(['Lights in the north tonight, green curtains the whole width of the sky.', 'good']); }
   if (!fire) dm -= 4; if (s.storm) dm -= 3; if (cold > 400) dm -= 2.5; if (s.shelterLvl === 0) dm -= 2; if (s.wet > 0.5) dm -= 1.5;
+  if (s.day > 2) { if (!fire && !s.firstFire) now -= 2; if (s.shelterLvl === 0) now -= 1.5; } /* days in and still no fire ever lit, or no roof at all */
   s.recent.push(ate.types); if (s.recent.length > 7) s.recent.shift();
   const distinct = new Set(s.recent.flat()).size;
   if (s.day > 7 && distinct < 3) dm -= 0.6 * (3 - distinct);
   if (s.health < 40) dm -= 1;
-  const jobs = (s.today ? s.today.done : []).filter(x => x !== 'rest').length; if (jobs === 0) { if (s.storm) { dm -= 1; lines.push(['Waited the storm out under cover. A long day of listening to it.', 'muted']); } else { dm -= 3; lines.push(['A whole day in the bag with nothing to do but think. That is how people tap.', 'warn']); } } else if (jobs === 1 && !s.storm) dm -= 1;
+  const jobs = (s.today ? s.today.done : []).filter(x => !['rest', 'photo', 'talk_camera', 'read_letter', 'read_sky', 'change_dry'].includes(x)).length; /* a photo and a word to the camera help, but they are not a day's work */ s.idleDays = jobs === 0 && !s.storm ? (s.idleDays || 0) + 1 : 0;
+  if (jobs === 0) { if (s.storm) { dm -= 1; lines.push(['Waited the storm out under cover. A long day of listening to it.', 'muted']); } else { now -= 3 + 2 * Math.min(5, s.idleDays - 1); lines.push([s.idleDays >= 3 ? `${s.idleDays} days in a row of doing nothing. The days have stopped meaning anything. That is how people tap.` : 'A whole day in the bag with nothing to do but think. That is how people tap.', 'warn']); } } else if (jobs === 1 && !s.storm) dm -= 1;
   if (chance(s, 0.06 + Math.min(0.05, s.day / 1200))) { const hit = 5 + Math.floor(rnd(s) * 9); dm -= hit; lines.push([LONELY[Math.floor(rnd(s) * LONELY.length)], 'warn']); }
-  if (dm < 0) dm *= willRamp(s, se); // the will drains slowly at first and only reaches full strength well after most rivals have gone home
+  if (dm < 0) dm *= willRamp(s, se); // loneliness drains slowly at first and only reaches full strength well after most rivals have gone home
+  dm += now * (s.day <= 3 ? 0.6 : 1); /* the first days are adrenaline */
   s.morale = clamp(s.morale + dm, 0, 100);
 
   const gone = s.rivals.filter(r => !r.out && r.days < s.day);

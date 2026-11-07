@@ -151,6 +151,11 @@ const nights = (mk, n, f) => { let hit = 0; for (let i = 0; i < n; i++) { const 
   if (E.temperature(camp('AU-S2', 97)) > 12) check('insects off still water cost will without smoke', bug(false) < bug(true), [bug(false), bug(true)]);
   const sun = camp('US-S6', 98); E.sysOf(sun).campSpot = { sun: true }; sun.wet = 0.6; sun.sys.bedDamp = 0.5; sun.day = 5; let dried = false; for (let i = 0; i < 6 && !dried; i++) { E.endDay(sun); sun.wet = 0.6; sun.sys.bedDamp = 0.5; E.beginDay(sun); sun.event = null; dried = !sun.rain && !sun.storm && !sun.fog && !sun.snowfall && sun.wet < 0.6 && sun.sys.bedDamp < 0.5; } check('the morning sun dries things out on fair days', dried);
 }
+{ // doing nothing is not a strategy: resting and sleeping every day ends the run early
+  for (const k of ['US-S6', 'AU-S2']) { const t = E.newGame(k, ['Knife', 'Sleeping bag', 'Pot', 'Ferro rod', 'Axe', 'Fishing gear', 'Tarp', 'Rations', 'Paracord', 'Saw'], { seed: 7, weight: 180 }); E.beginDay(t); t.event = null; t.campChosen = true;
+    for (let d = 0; d < 30 && t.status === 'playing'; d++) { E.act(t, 'rest'); E.act(t, 'rest'); E.endDay(t); if (t.event) try { E.choose(t, 0); } catch (e) {} E.beginDay(t); if (t.event) try { E.choose(t, 0); } catch (e) {} }
+    check(`resting every day at ${k} ends the run within two weeks`, t.status !== 'playing' && t.day <= 14, [t.status, t.day, Math.round(t.health), Math.round(t.morale)]); }
+}
 { // a roof on the raft: dry in the rain, and it catches the wind
   const r = camp('US-S6', 99, ['Axe', 'Fishing gear']); E.sysOf(r).raft = { float: 1, inWater: false }; Object.assign(r.mats, { poles: 4, cordage: 4, boughs: 8 });
   check('a roof can go on a raft', E.available(r, 'raft_cover').ok, E.available(r, 'raft_cover').why); E.act(r, 'raft_cover', { extra: { good: true } }); check('and it is built', r.sys.raft.cover === true);

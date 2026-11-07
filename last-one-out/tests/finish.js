@@ -25,7 +25,7 @@ const bearEvent = s => { s.event = { id: 'bear', optIds: E.EVENTS.bear.options.m
   check('dry autumn leaves give you away', n({}, snowDay - 5) < 1, n({}, snowDay - 5)); check('a hard winter crust is loud', n({}, 95) < 1 || E.temperature(Object.assign(camp('US-S6'), { day: 95 })) >= -15);
 }
 { // the latrine: without one the camp fouls the water; with one it clears
-  const s = camp('US-S6'); for (let i = 0; i < 20; i++) { s.event = null; E.endDay(s); E.beginDay(s); s.event = null; s.stores = [{ id: 'ration', por: 30, left: Infinity, smoked: false }]; } check('a camp with no latrine fouls', E.fouling(s) > 0.2, E.fouling(s));
+  const s = camp('US-S6'); for (let i = 0; i < 20; i++) { s.event = null; s.morale = s.moraleDawn = 80; E.endDay(s); E.beginDay(s); s.event = null; s.stores = [{ id: 'ration', por: 30, left: Infinity, smoked: false }]; } check('a camp with no latrine fouls', E.fouling(s) > 0.2, E.fouling(s));
   const sick = foul => rate(4000, i => { const t = camp('US-S6', 900 + i, ['Axe']); t.sys.fouling = foul; t.boiled = 0; t.event = null; E.endDay(t); return t.conditions.some(c => /Giardia/.test(c.name)); });
   const clean = sick(0), foul = sick(1); check('fouled water makes giardia likelier', foul > clean * 1.8, [clean, foul]);
   s.hours = 1; s.phase = 0; check('a latrine is offered', E.available(s, 'dig_latrine').ok); E.act(s, 'dig_latrine'); const f0 = E.fouling(s); for (let i = 0; i < 5; i++) { s.event = null; E.endDay(s); E.beginDay(s); s.event = null; } check('with a latrine it clears', E.fouling(s) < f0, [f0, E.fouling(s)]);

@@ -37,10 +37,10 @@ const rate = (n, f) => { let k = 0; for (let i = 0; i < n; i++) if (f(i)) k++; r
 }
 { // the plan's test: soot over 80% brings spark warnings while the fire is high; sweeping clears it
   const s = camp(); s.shelterType = 'cabin'; s.shelterLvl = 3; s.fireInside = true; s.fire = true; s.crafts.chimney = 2; s.firewood = 40;
-  for (let i = 0; i < 6; i++) { s.fire = true; night(s); } check('soot builds up in the flue', s.sys.soot > 0.1, s.sys.soot);
-  s.sys.soot = 0.85; let warned = false, fired = false; for (let i = 0; i < 12; i++) { s.fire = true; s.firewood = 40; night(s); const l = s.log[s.log.length - 1].lines.map(x => x[0]).join(' '); if (/spits sparks onto the roof|flue caught/.test(l)) warned = true; if (/flue caught/.test(l)) fired = true; if (s.sys.soot < 0.8) s.sys.soot = 0.85; }
+  for (let i = 0; i < 6; i++) { s.fire = true; s.morale = 90; s.moraleDawn = 90; night(s); } check('soot builds up in the flue', s.sys.soot > 0.1, s.sys.soot);
+  s.sys.soot = 0.85; let warned = false, fired = false; for (let i = 0; i < 12; i++) { s.fire = true; s.firewood = 40; s.morale = 90; s.moraleDawn = 90; night(s); const l = s.log[s.log.length - 1].lines.map(x => x[0]).join(' '); if (/spits sparks onto the roof|flue caught/.test(l)) warned = true; if (/flue caught/.test(l)) fired = true; if (s.sys.soot < 0.8) s.sys.soot = 0.85; }
   check('over 80% the flue warns of sparks', warned);
-  check('the sweep job is offered', E.available(s, 'check_roof').ok); E.act(s, 'check_roof'); check('sweeping clears most of it', s.sys.soot < 0.3, s.sys.soot);
+  if (process.env.DBG) console.log(s.status, s.day, Math.round(s.morale), Math.round(s.health), s.phase, s.hours, JSON.stringify(E.available(s, 'check_roof'))); check('the sweep job is offered', E.available(s, 'check_roof').ok); E.act(s, 'check_roof'); check('sweeping clears most of it', s.sys.soot < 0.3, s.sys.soot);
   const g = camp(); g.shelterType = 'cabin'; g.shelterLvl = 3; g.fireInside = true; g.crafts.chimney = 2; g.greenWood = 20; g.firewood = 30; g.fire = true; night(g); const n = camp(); n.shelterType = 'cabin'; n.shelterLvl = 3; n.fireInside = true; n.crafts.chimney = 2; n.firewood = 30; n.fire = true; night(n);
   check('green wood fouls the flue faster', g.sys.soot > n.sys.soot, [n.sys.soot, g.sys.soot]);
 }
