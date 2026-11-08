@@ -747,6 +747,167 @@ function sprayLeft(s) { return s.sys && s.sys.spray != null ? s.sys.spray : (has
 function note(s, text) { const sys = sysOf(s); sys.notes = [...(sys.notes || []), { day: s.day, text }].slice(-40); }
 // plants with look-alikes: a rushed pick sometimes brings home the wrong one. The details are invented on purpose: no real-world rule here
 const LOOKALIKE = { roots: 'a root like the others, but the skin was paler and it smelled sharp when cut', greens: 'leaves like the rest, but finer cut, with a bitter smell on your fingers' };
+// ------------------------------------------------------------------ real plants and what the season has done to them
+/* Each place grows its own species. A pick is tagged with its species (x.sp) and the state the season left it in (x.stage).
+   Species can carry their own nutrition (ing) and, for roots and greens, their own look-alike: [name, what you noticed too late, severe].
+   The look-alike notes are what the forager saw after the fact, not a field guide: never eat a wild plant on the strength of a game. */
+const FLORA = {
+  coastrain: {
+    berries: [{ n: 'Salal' }, { n: 'Salmonberry' }, { n: 'Red huckleberry', ing: ['fruit', 'fruit'] }, { n: 'Evergreen huckleberry', holds: true }],
+    greens: [{ n: "Miner's lettuce", ing: ['greens', 'fruit'] }, { n: 'Fireweed leaves' }, { n: 'Chickweed', alike: ['Scarlet pimpernel', 'the stems had no line of fine hairs down one side'] }, { n: 'Dandelion', ing: ['greens', 'vegetable'] }],
+    roots: [{ n: 'Nodding onion', alike: ['Death camas', 'no onion smell when you crushed it', true] }, { n: 'Blue camas', alike: ['Death camas', 'you dug it after the flowers had gone, and these had been creamy, not blue', true] }, { n: 'Wapato', alike: ['Water hemlock', 'the leaves by it were feathery, not arrow-shaped', true] }],
+    bark: [{ n: 'Sitka spruce' }],
+    tea: [{ n: 'Sitka spruce', ing: ['greens', 'greens'] }, { n: 'Douglas fir', ing: ['greens'] }, { n: 'Western hemlock', ing: ['greens', 'greens'] }],
+    yew: ['Western yew', 'flat needles with no white lines underneath, and a red berry cup on the twig'],
+    shellfish: [{ n: 'Blue mussels', ing: ['fish', 'meat'], mussel: true }, { n: 'Butter clams' }, { n: 'Limpets' }, { n: 'Pacific oysters', ing: ['fish', 'meat'] }],
+    seaweed: [{ n: 'Bull kelp', ing: ['seaweed', 'seaweed'] }, { n: 'Dulse', ing: ['seaweed', 'vegetable'] }, { n: 'Sea lettuce', ing: ['seaweed', 'greens'] }],
+  },
+  chilko: {
+    berries: [{ n: 'Black huckleberry', ing: ['fruit', 'fruit'] }, { n: 'Saskatoon berries' }, { n: 'Soapberries', bitter: true }, { n: 'Kinnikinnick', holds: true }],
+    greens: [{ n: 'Fireweed leaves' }, { n: "Lamb's quarters", ing: ['greens', 'greens'] }, { n: 'Dandelion', ing: ['greens', 'vegetable'] }],
+    roots: [{ n: 'Nodding onion', alike: ['Death camas', 'no onion smell when you crushed it', true] }, { n: 'Biscuitroot', alike: ['Water hemlock', 'the top of the root was hollow, in chambers', true] }, { n: 'Spring beauty corms', alike: ['Death camas', 'it was a bulb in papery coats, not a little round corm', true] }],
+    bark: [{ n: 'Lodgepole pine', ing: ['starch', 'fruit'] }],
+    tea: [{ n: 'Lodgepole pine', ing: ['greens', 'fruit'] }, { n: 'Engelmann spruce', ing: ['greens', 'greens'] }, { n: 'Subalpine fir', ing: ['greens'] }],
+    yew: ['Western yew', 'flat needles with no white lines underneath, and a red berry cup on the twig'],
+  },
+  shield: {
+    berries: [{ n: 'Blueberries' }, { n: 'Lingonberries', holds: true, ing: ['fruit', 'fruit'] }, { n: 'Bog cranberries', holds: true, ing: ['fruit', 'fruit'] }, { n: 'Saskatoon berries' }],
+    greens: [{ n: 'Fireweed leaves' }, { n: 'Dandelion', ing: ['greens', 'vegetable'] }, { n: "Lamb's quarters", ing: ['greens', 'greens'] }, { n: 'Wood sorrel', ing: ['greens', 'fruit'] }],
+    roots: [{ n: 'Arrowhead tubers', alike: ['Water hemlock', 'the leaves by it were feathery, not arrow-shaped', true] }, { n: 'Wild chives', alike: ['White camas', 'no onion smell when you crushed it', true] }],
+    bark: [{ n: 'Jack pine', ing: ['starch', 'fruit'] }, { n: 'Paper birch' }],
+    tea: [{ n: 'Black spruce', ing: ['greens', 'greens'] }, { n: 'Balsam fir', ing: ['greens'] }, { n: 'Jack pine', ing: ['greens', 'fruit'] }],
+  },
+  taiga: {
+    berries: [{ n: 'Bilberries' }, { n: 'Lingonberries', holds: true, ing: ['fruit', 'fruit'] }, { n: 'Crowberries', holds: true }, { n: 'Sea buckthorn', holds: true, ing: ['fruit', 'fruit', 'fat'] }],
+    greens: [{ n: 'Fireweed leaves' }, { n: 'Wild sorrel', ing: ['greens', 'fruit'] }, { n: 'Ramsons', ing: ['greens', 'vegetable'], alike: ['Lily of the valley', 'no garlic smell when you crushed the leaf', true] }],
+    roots: [{ n: 'Wild onion', alike: ['Lily of the valley', 'no onion smell when you crushed it', true] }, { n: 'Siberian lily bulbs', ing: ['starch', 'starch'], alike: ['False hellebore', 'it was a thick rootstock, not a scaly bulb, and the leaves were deeply pleated', true] }],
+    bark: [{ n: 'Scots pine', ing: ['starch', 'fruit'] }, { n: 'Silver birch' }],
+    tea: [{ n: 'Scots pine', ing: ['greens', 'fruit'] }, { n: 'Siberian spruce', ing: ['greens', 'greens'] }, { n: 'Siberian fir', ing: ['greens'] }],
+  },
+  delta: {
+    berries: [{ n: 'Cloudberries', ing: ['fruit', 'fruit'] }, { n: 'Bog blueberries' }, { n: 'Crowberries', holds: true }, { n: 'Lingonberries', holds: true, ing: ['fruit', 'fruit'] }],
+    greens: [{ n: 'Fireweed leaves' }, { n: 'Mountain sorrel', ing: ['greens', 'fruit'] }, { n: 'Roseroot leaves' }],
+    roots: [{ n: 'Eskimo potato', ing: ['starch', 'vegetable', 'starch'], alike: ['Wild sweet pea', 'the leaflets had no side veins you could see, and the flowers were bigger'] }],
+    bark: [{ n: 'White spruce' }, { n: 'Paper birch' }],
+    tea: [{ n: 'White spruce', ing: ['greens', 'greens'] }, { n: 'Black spruce', ing: ['greens', 'greens'] }, { n: 'Tamarack', ing: ['greens'] }],
+  },
+  barrens: {
+    berries: [{ n: 'Crowberries', holds: true }, { n: 'Cloudberries', ing: ['fruit', 'fruit'] }, { n: 'Bog blueberries' }, { n: 'Bearberries', holds: true, bitter: true }],
+    greens: [{ n: 'Mountain sorrel', ing: ['greens', 'fruit'] }, { n: 'Scurvy grass', ing: ['greens', 'fruit'] }, { n: 'Roseroot leaves' }],
+    roots: [{ n: 'Eskimo potato', ing: ['starch', 'vegetable', 'starch'], alike: ['Wild sweet pea', 'the leaflets had no side veins you could see, and the flowers were bigger'] }],
+    bark: [{ n: 'Black spruce' }],
+    tea: [{ n: 'Black spruce', ing: ['greens', 'greens'] }, { n: 'Labrador tea', ing: ['greens'], cup: 'Labrador tea, steeped weak: it is strong stuff.' }],
+    shellfish: [{ n: 'Blue mussels', ing: ['fish', 'meat'], mussel: true }, { n: 'Soft-shell clams' }, { n: 'Periwinkles' }],
+    seaweed: [{ n: 'Kelp', ing: ['seaweed', 'seaweed'] }, { n: 'Dulse', ing: ['seaweed', 'vegetable'] }, { n: 'Sea lettuce', ing: ['seaweed', 'greens'] }],
+  },
+  sapmi: {
+    berries: [{ n: 'Lingonberries', holds: true, ing: ['fruit', 'fruit'] }, { n: 'Crowberries', holds: true }, { n: 'Bilberries' }, { n: 'Cloudberries', ing: ['fruit', 'fruit'] }],
+    greens: [{ n: 'Mountain sorrel', ing: ['greens', 'fruit'] }, { n: 'Fireweed leaves' }, { n: 'Angelica stalks', ing: ['greens', 'vegetable'], alike: ['Cowbane', 'the root under it was hollow, in chambers, and smelled of raw parsnip', true] }],
+    roots: [{ n: 'Angelica root', alike: ['Cowbane', 'the top of the root was hollow, in chambers', true] }],
+    bark: [{ n: 'Scots pine', ing: ['starch', 'fruit'] }, { n: 'Mountain birch' }],
+    tea: [{ n: 'Scots pine', ing: ['greens', 'fruit'] }, { n: 'Norway spruce', ing: ['greens', 'greens'] }],
+  },
+  patagonia: {
+    berries: [{ n: 'Calafate', ing: ['fruit', 'fruit'] }, { n: 'Chaura berries' }, { n: 'Maqui berries', ing: ['fruit', 'fruit'] }],
+    greens: [{ n: 'Dandelion', ing: ['greens', 'vegetable'] }, { n: 'Wild celery', ing: ['greens', 'vegetable'], alike: ['Poison hemlock', 'the stem was smooth with purple blotches, and smelled mousy', true] }, { n: 'Chickweed', alike: ['Scarlet pimpernel', 'the stems had no line of fine hairs down one side'] }],
+    roots: [{ n: 'Wild carrot', alike: ['Poison hemlock', 'the stem was smooth with purple blotches, and smelled mousy', true] }],
+    tea: [{ n: 'Cypress', ing: ['greens'], cup: 'Cypress-tip tea, resiny and bitter.' }],
+  },
+  karoo: {
+    berries: [{ n: 'Sour figs' }, { n: 'Wild raisins', ing: ['fruit', 'starch'] }, { n: 'Num-num berries', ing: ['fruit', 'fruit'] }],
+    greens: [{ n: 'Purslane', ing: ['greens', 'nuts'], alike: ['Spurge', 'the stems bled white, milky sap'] }, { n: 'Wild amaranth', ing: ['greens', 'greens'] }, { n: "Lamb's quarters", ing: ['greens', 'greens'] }],
+    roots: [{ n: 'Uintjies', ing: ['starch', 'starch'], alike: ['Tulp', 'the flowers had been salmon-orange, not white and blue', true] }, { n: 'Kambro root', ing: ['vegetable'], alike: ['Bushman poison bulb', 'it was a big scaly bulb on the surface, under a fan of leaves', true] }],
+  },
+  tasrain: {
+    berries: [{ n: 'Native currants' }, { n: 'Pigface fruit' }, { n: 'Mountain pepper berries', bitter: true, ing: ['fruit', 'nuts'] }],
+    greens: [{ n: 'Warrigal greens', ing: ['greens', 'greens'] }, { n: 'Sow thistle', ing: ['greens', 'vegetable'] }, { n: 'Chickweed', alike: ['Scarlet pimpernel', 'the stems had no line of fine hairs down one side'] }],
+    roots: [{ n: 'Native leek', alike: ['Early Nancy', 'the flowers had been white with purple bands, not yellow stars', true] }, { n: 'Murnong', ing: ['starch', 'vegetable'], alike: ["Cat's ear", 'the flower stalk was branched, not a single nodding bud'] }],
+  },
+  nzbeech: {
+    berries: [{ n: 'Wineberries' }, { n: 'Konini berries' }, { n: 'Supplejack berries', bitter: true }, { n: 'Snowberries', holds: true }],
+    greens: [{ n: 'Puha', ing: ['greens', 'vegetable'] }, { n: 'Watercress', ing: ['greens', 'fruit'] }, { n: 'Pikopiko fern tips', alike: ['Bracken', 'the young fronds were furred and three-forked, not smooth and single'] }],
+    roots: [{ n: 'Wild carrot', alike: ['Poison hemlock', 'the stem was smooth with purple blotches, and smelled mousy', true] }],
+    tea: [{ n: 'Rimu', ing: ['greens'], cup: 'Rimu-tip tea, the way Cook brewed it for scurvy.' }],
+    shellfish: [{ n: 'Green-lipped mussels', ing: ['fish', 'meat'], mussel: true }, { n: 'Pipi' }, { n: 'Limpets' }, { n: 'Bluff oysters', ing: ['fish', 'meat'] }],
+    seaweed: [{ n: 'Karengo', ing: ['seaweed', 'vegetable'] }, { n: 'Sea lettuce', ing: ['seaweed', 'greens'] }, { n: 'Bull kelp', ing: ['seaweed', 'seaweed'] }],
+  },
+};
+// grubs all year under bark; ants once it is warm; grasshoppers only in the heat of late summer
+const INSECTS = [{ n: 'Beetle grubs', ing: ['meat', 'fat'] }, { n: 'Ant larvae', ing: ['meat'], warm: 8 }, { n: 'Grasshoppers', ing: ['meat'], warm: 12 }];
+const SHELLFISH_ANY = [{ n: 'Mussels', ing: ['fish', 'meat'], mussel: true }, { n: 'Clams' }, { n: 'Limpets' }];
+const SEAWEED_ANY = [{ n: 'Kelp', ing: ['seaweed', 'seaweed'] }, { n: 'Sea lettuce', ing: ['seaweed', 'greens'] }];
+function floraOf(s) { return FLORA[biomeOf(s.seasonKey).id] || FLORA.shield; }
+// the species list for a forage job here, today (insects change with the warmth)
+function speciesList(s, id) {
+  if (id === 'insects') { const t = temperature(s); return INSECTS.filter(x => !x.warm || t >= x.warm); }
+  const F = floraOf(s); if (id === 'shellfish') return F.shellfish || SHELLFISH_ANY; if (id === 'seaweed') return F.seaweed || SEAWEED_ANY;
+  return F[id] || null;
+}
+// which species this pick is: a bush on the map always holds the same one (q), a pick from the job list is seeded by the hour
+function speciesOf(s, id, q) { const L = speciesList(s, id); if (!L || !L.length) return null; const u = q != null ? (q * 997) % 1 : drand(s, 'sp:' + id + ':' + s.hours); return L[Math.min(L.length - 1, Math.floor(u * L.length))]; }
+function speciesByName(s, id, n) { const L = id === 'needletea' ? floraOf(s).tea : speciesList(s, id); return (L || []).find(x => x.n === n) || null; }
+// first frost: two weeks before the snow stays, or the first day the mean drops to 3 degrees
+function firstFrost(s) { if (s.practice) return s.winter ? -99 : 999; const c = season(s).climate; let d = c.snow != null ? c.snow - 14 : 999; for (let k = 0; k <= 100 && k < d; k++) if (c.t0 + (c.t1 - c.t0) * k / 100 <= 3) { d = k; break; } return d; }
+const frosted = (s, day = s.day) => day >= firstFrost(s);
+// warming days: spring. The drop sites all start late in the year and cool, so this is for places that start in spring
+const warming = s => !s.practice && temperature(s, s.day + 10) > temperature(s, s.day) + 1;
+/* what the season has done to a plant today: label, yield, keep, a morale nudge, and the line that says so.
+   q: the bush on the map (its own ripening day), sp: the species */
+function plantStage(s, id, q, sp) {
+  const t = temperature(s), fr = frosted(s);
+  if (id === 'berries') {
+    const b = s.berrySeason; const frozenNow = t <= 0; /* hard frozen: a frosty night alone does not do it */
+    if (frozenNow) return { key: 'frozen', label: 'frozen on the bush', mult: sp && sp.holds ? 1 : 0.8, keep: 20, morale: sp && sp.holds ? 1 : 0, line: sp && sp.holds ? 'Frozen hard on the bush and sweeter for it.' : 'Frozen on the bush. They go to mush as they thaw.' };
+    if (b) { const ripeDay = q != null ? b.start + q * b.span : null; const over = ripeDay != null ? s.day > ripeDay + b.hold * 0.6 : (s.day > b.start + b.hold && berryRipe(s, s.day + 3) < berryRipe(s));
+      if (over) return { key: 'overripe', label: 'overripe', mult: 0.85, keep: 2, morale: 0, line: 'Soft and splitting, a few fermenting. Eat them soon.' }; }
+    return { key: 'ripe', label: 'ripe', mult: 1, keep: 5, morale: sp && sp.bitter ? -1 : 0, line: sp && sp.bitter ? 'Bitter. You eat them for what they are, not for the taste.' : null };
+  }
+  if (id === 'greens') {
+    if (fr) return { key: 'bitter', label: 'bitter after frost', mult: 0.75, keep: null, morale: -1, line: 'The frost has got into them: bitter, and best boiled.' };
+    if (t >= 12 || warming(s)) return { key: 'young', label: 'young', mult: 1, keep: null, morale: 0, line: null };
+    return { key: 'tough', label: 'tough', mult: 0.85, keep: null, morale: 0, line: 'Gone tough and stringy this late. You take the newest leaves.' };
+  }
+  if (id === 'nettle') {
+    if (!fr && (t >= 10 || warming(s))) return { key: 'young', label: 'young tops', mult: 1, keep: null, morale: 0, line: null };
+    return { key: 'old', label: 'old stems', mult: 0.5, keep: null, morale: 0, line: 'Old, woody stems now. Only the top few leaves of each are worth eating.' };
+  }
+  if (id === 'cattail') {
+    if (s.practice) return { key: 'rhizome', label: 'rhizome', name: 'Cattail rhizome', ing: null, mult: 1, keep: null, morale: 0, line: null }; /* the valley teaches the digging stick on cattails */
+    if (warming(s)) return { key: 'shoots', label: 'shoots', name: 'Cattail shoots', ing: ['vegetable', 'greens'], mult: 1, keep: 3, morale: 1, line: 'Peeled the young shoots down to the white heart. Like cucumber.' };
+    if (t >= 13 && !fr) return { key: 'pollen', label: 'pollen', name: 'Cattail pollen', ing: ['starch', 'nuts'], mult: 0.7, keep: 30, morale: 1, line: 'Bent the yellow heads into a bag and shook the pollen out. Flour for nothing.' };
+    return { key: 'rhizome', label: 'rhizome', name: 'Cattail rhizome', ing: null, mult: 1, keep: null, morale: 0, line: null };
+  }
+  if (id === 'rosehips') {
+    if (fr || t <= 0) return { key: 'frosted', label: 'after frost', mult: 1, keep: 12, morale: 1, line: 'The frost has softened them and they taste sweeter.' };
+    return { key: 'firm', label: 'before frost', mult: 1, keep: 20, morale: 0, line: 'Still hard. You split them and scrape out the hairy seeds.' };
+  }
+  if (id === 'mushrooms') {
+    const u = drand(s, 'mush:' + s.hours + ':' + (q ?? ''));
+    if (u < (s.rain ? 0.05 : 0.1)) return { key: 'wormy', label: 'wormy', mult: 0.6, keep: 1, morale: 0, line: 'Half of them were riddled with worm holes. You cut away what you could.' };
+    if (u < 0.3) return { key: 'old', label: 'old', mult: 0.8, keep: 1, morale: 0, line: 'Past their best: soft at the edges. Eat them today.' };
+    return { key: 'fresh', label: 'fresh', mult: 1, keep: 3, morale: 0, line: null };
+  }
+  return null;
+}
+// a short note for the job list
+function stageHint(s, id) { const st = plantStage(s, id); return st && st.key !== 'ripe' && st.key !== 'fresh' && st.key !== 'young' && st.key !== 'rhizome' ? st.label[0].toUpperCase() + st.label.slice(1) : ''; }
+// red tide: mussels pull in the most poison and still carry it for a few days after the water clears
+function musselRisk(s) { const w = (s.windows || []).find(x => x.id === 'redtide'); return !!w && s.day > w.to && s.day <= w.to + 4; }
+// the nutrition of what is in a store: the species' own, the stage's, or the food's
+function ingOf(x) { const f = DATA.foods[x.id]; if (x.ing && Array.isArray(x.ing)) return x.ing; return f.ing; }
+/* tag the pick just added to the stores with its species and stage, and say so. Returns the display name */
+function tagPick(s, id, X, lines) {
+  const x = s.stores[s.stores.length - 1]; if (!x || x.id !== id) return null;
+  const want = X.sp || X.name; const sp = want ? speciesByName(s, id, want) : speciesOf(s, id, X.q); /* a plant named on the map that is not on this place's list keeps its own name */ const st = plantStage(s, id, X.q, sp);
+  if (sp) { x.sp = sp.n; if (sp.ing) x.ing = sp.ing; }
+  if (st) { x.stage = st.key; if (st.mult !== 1) x.por = Math.max(0.5, round1(x.por * st.mult)); if (st.ing) x.ing = st.ing; if (st.keep != null) x.left = st.keep; if (st.morale) s.morale += st.morale; if (st.line) lines.push([st.line, 'muted']); if (st.name && !sp) x.sp = st.name; }
+  return x.sp ? plantName(id, x.sp) : null;
+}
+const PROPER = /^(Sitka|Douglas|Engelmann|Siberian|Scots|Norway|Labrador|Eskimo|Pacific|Bluff|Early Nancy|Bushman)\b/;
+// a species name in the middle of a sentence
+function spLow(n) { return PROPER.test(n) ? n : n[0].toLowerCase() + n.slice(1); }
+// what a pick is called: the bark says which tree it came off
+function plantName(id, n) { return id === 'bark' ? n + ' inner bark' : n; }
 // direction: a shadow stick on a sunny day gives you a heading for the day; moss on one side of a tree tells you nothing
 const sunny = s => !(s.fog || s.rain || s.storm || s.snowfall) && s.phase >= 0 && s.phase < 3;
 // ------------------------------------------------------------------ reading the land: the sky, scent, the ice
@@ -1154,14 +1315,15 @@ function available(s, id) {
     case 'berries': case 'greens': case 'mushrooms': case 'roots': case 'shellfish': case 'seaweed': case 'insects': case 'nettle': case 'cattail': case 'pinenuts': case 'rosehips': case 'seeds': {
       if (!poolHas(s, id)) return r(false, 'None recorded here');
       if (id === 'shellfish' && windowOn(s, 'redtide')) return r(false, 'Red tide. The shellfish are poison this week');
-      if (id === 'cattail' && !digger(s)) return r(false, 'Needs a shovel or digging stick');
+      if (id === 'cattail' && !digger(s) && plantStage(s, 'cattail').key === 'rhizome') return r(false, 'Needs a shovel or digging stick');
       if (!inSeason(s, id)) return r(false, snowy(s) ? 'Under the snow' : 'Out of season');
       if (id === 'roots' && !digger(s)) return r(false, 'Needs a shovel or digging stick');
       if (id === 'shellfish' && !lowTide(s)) return r(false, 'Wait for low tide');
       if (id === 'shellfish' && s.storm) return r(false, 'Surf is too high');
-      if (id === 'berries') { const f = berryRipe(s); if (f <= 0.02) return r(false, s.berrySeason && s.day < s.berrySeason.start + 2 ? 'Not ripe yet' : 'Gone over for the year'); const rising = berryRipe(s, s.day + 3) >= f; return r(true, '', f > 0.5 ? 'Most patches ripe' : rising ? `Some ripe · ${Math.round(f * 100)}% of patches` : `Going over · ${Math.round(f * 100)}% left`); }
+      if (id === 'berries') { const f = berryRipe(s); if (f <= 0.02) return r(false, s.berrySeason && s.day < s.berrySeason.start + 2 ? 'Not ripe yet' : 'Gone over for the year'); const rising = berryRipe(s, s.day + 3) >= f; const sh = stageHint(s, id); return r(true, '', (f > 0.5 ? 'Most patches ripe' : rising ? `Some ripe · ${Math.round(f * 100)}% of patches` : `Going over · ${Math.round(f * 100)}% left`) + (sh ? ' · ' + sh.toLowerCase() : '')); }
       if (id === 'insects' && frozen(s)) return r(false, 'Ground is frozen');
-      return r(true, '', id === 'mushrooms' ? 'Some are poisonous' : '');
+      if (id === 'shellfish' && musselRisk(s)) return r(true, '', 'Tide has cleared · mussels can still hold it');
+      return r(true, '', id === 'mushrooms' ? 'Some are poisonous' : stageHint(s, id));
     }
     case 'bait': return frozen(s) ? r(false, 'Ground is frozen. Use guts from cleaning') : r(true, '', `worms and grubs · you have ${s.mats.bait}`);
     case 'forage': { const pool = foragePool(s); const pf = s.patch && s.patch.forage != null ? s.patch.forage : 1; return pool.length ? r(true, '', pct(0.62 * se.mult.forage * s.skill.forage * (snowy(s) ? 0.6 : 1) * pf) + (pf < 0.6 ? ' · picked over' : '')) : r(false, 'Nothing to gather under the snow'); }
@@ -1628,9 +1790,11 @@ function doAction(s, id, lines, mod, opts) {
       let por;
       if (X.total) { por = X.got > 0 ? Math.max(1, Math.round(foodPortions(s, id, X, mod) * X.got / X.total)) : 0; if (!por) { lines.push(['Walked away with nothing picked.', 'muted']); break; } }
       else { por = Math.max(1, Math.round(foodPortions(s, id, X, mod))); if (!chance(s, 0.45 + 0.4 * se.mult.forage * s.skill.forage)) { por = Math.max(1, Math.round(por * 0.4)); lines.push(['Slim pickings here.', 'muted']); } }
-      if (id === 'mushrooms') { const bad = X.tox != null ? X.tox : chance(s, 0.12 / s.skill.forage); if (bad) { addFood(s, 'mushrooms', por); s.stores[s.stores.length - 1].tox = true; if (X.look) s.stores[s.stores.length - 1].look = X.look; lines.push([`Picked ${por} handful${por > 1 ? 's' : ''} of mushrooms. You are fairly sure about them.`, 'info']); } else { addFood(s, 'mushrooms', por); if (X.look) s.stores[s.stores.length - 1].look = X.look; lines.push([`Picked ${por} handful${por > 1 ? 's' : ''} of ${X.name ? low(X.name) : 'mushrooms'} (${Math.round(por * 25)} kcal).`, 'good']); } }
-      else { addFood(s, id, por); lines.push([`Gathered ${X.name ? low(X.name) : low(DATA.foods[id].name)} (${Math.round(por * DATA.foods[id].kcal)} kcal).`, 'good']); if (X.name) { const sys = sysOf(s); sys.known = sys.known || {}; if (!sys.known['plant:' + X.name]) { sys.known['plant:' + X.name] = 'good'; (sys.knownDay || (sys.knownDay = {}))['plant:' + X.name] = s.day; lines.push([`Into the field notes: ${low(X.name)}, where it grows and how it tastes.`, 'muted']); } }
-        if (LOOKALIKE[id] && chance(s, (s.sys && s.sys.inspectDay === s.day) ? 0.004 : 0.03 * (s.skill.forage > 1.25 ? 0.5 : 1))) { const x = s.stores[s.stores.length - 1]; x.tox = true; x.look = LOOKALIKE[id]; } }
+      if (id === 'mushrooms') { const bad = X.tox != null ? X.tox : chance(s, 0.12 / s.skill.forage); const mL = []; if (bad) { addFood(s, 'mushrooms', por); s.stores[s.stores.length - 1].tox = true; if (X.look) s.stores[s.stores.length - 1].look = X.look; tagPick(s, id, X, mL); lines.push([`Picked ${por} handful${por > 1 ? 's' : ''} of mushrooms. You are fairly sure about them.`, 'info']); } else { addFood(s, 'mushrooms', por); if (X.look) s.stores[s.stores.length - 1].look = X.look; tagPick(s, id, X, mL); lines.push([`Picked ${por} handful${por > 1 ? 's' : ''} of ${X.name ? low(X.name) : 'mushrooms'} (${Math.round(s.stores[s.stores.length - 1].por * 25)} kcal).`, 'good']); } lines.push(...mL); }
+      else { addFood(s, id, por); const x0 = s.stores[s.stores.length - 1]; const sL = []; const nm = tagPick(s, id, X, sL) || X.name; const stg = x0.stage && !['ripe', 'fresh', 'young', 'rhizome', 'pollen', 'shoots'].includes(x0.stage) ? `, ${plantStage(s, id, X.q).label}` : '';
+        lines.push([`Gathered ${nm ? spLow(nm) : low(DATA.foods[id].name)}${stg} (${Math.round(x0.por * DATA.foods[id].kcal)} kcal).`, 'good']); lines.push(...sL); if (nm) { const sys = sysOf(s); sys.known = sys.known || {}; if (!sys.known['plant:' + nm]) { sys.known['plant:' + nm] = 'good'; (sys.knownDay || (sys.knownDay = {}))['plant:' + nm] = s.day; lines.push([`Into the field notes: ${spLow(nm)}, where it grows and how it tastes.`, 'muted']); } }
+        if (LOOKALIKE[id] && chance(s, (s.sys && s.sys.inspectDay === s.day) ? 0.004 : 0.03 * (s.skill.forage > 1.25 ? 0.5 : 1))) { const x = s.stores[s.stores.length - 1]; const sp = x.sp ? speciesByName(s, id, x.sp) : null; const al = sp && sp.alike; /* each species has its own look-alike; one with none is never mistaken */ if (al || !sp) { x.tox = true; x.look = al ? `${al[0]}: ${al[1]}` : LOOKALIKE[id]; if (al) { x.alike = al[0]; if (al[2]) x.severe = true; } } }
+        if (id === 'shellfish' && x0.sp && (speciesByName(s, id, x0.sp) || {}).mussel && musselRisk(s) && dchance(s, 'psp:' + s.hours, 0.5)) { x0.tox = true; x0.look = 'mussels still holding the red tide'; x0.alike = 'red tide poison'; x0.severe = true; } }
       if (X.total == null) { s.patch = s.patch || {}; s.patch[id] = Math.max(0.1, (s.patch[id] == null ? 1 : s.patch[id]) - (PATCH[id] || 0.05)); }
       s.skill.forage = Math.min(1.3, s.skill.forage + 0.02); s.morale += 1;
       if (id === 'shellfish' || id === 'seaweed') s.wet = Math.min(1, s.wet + 0.2);
@@ -1640,7 +1804,10 @@ function doAction(s, id, lines, mod, opts) {
       break;
     }
     case 'bait': { const n = X.total ? X.got : Math.max(1, Math.round((2 + Math.floor(rnd(s) * 3)) * Math.min(1, mod))); if (n) gain('bait', n, 'Dug up worms and grubs'); else lines.push(['Gave up on the worms.', 'muted']); break; }
-    case 'needle_tea': { s.potWater -= 1; s.mats.boughs -= 1; s.teaToday = true; addFood(s, 'needletea', 2, 2); s.morale += 2; s.wet = Math.max(0, s.wet - 0.1); lines.push(['Spruce tea, hot and sharp. Scurvy is for other people.', 'good']); break; }
+    case 'needle_tea': { s.potWater -= 1; s.mats.boughs -= 1; s.teaToday = true; addFood(s, 'needletea', 2, 2); s.morale += 2; s.wet = Math.max(0, s.wet - 0.1); const F = floraOf(s); const tea = F.tea ? F.tea[Math.floor(drand(s, 'tea:' + s.hours) * F.tea.length)] : null; const x = s.stores[s.stores.length - 1];
+      if (tea) { x.sp = tea.n; if (tea.ing) x.ing = tea.ing; }
+      /* in BC the yew grows among the firs and hemlocks: a bough of it in the pot is poison */ if (F.yew && dchance(s, 'yew:' + s.hours, (s.sys && s.sys.inspectDay === s.day) ? 0.004 : 0.03 * (s.skill.forage > 1.25 ? 0.5 : 1))) { x.tox = true; x.look = `${F.yew[0]}: ${F.yew[1]}`; x.alike = F.yew[0]; x.severe = true; }
+      lines.push([tea ? (tea.cup || `${tea.n} needle tea, hot and sharp. Scurvy is for other people.`) : 'Spruce tea, hot and sharp. Scurvy is for other people.', 'good']); break; }
     case 'bone_broth': { s.potWater -= 1; s.mats.bone -= 2; addFood(s, 'broth', 3, 2); sysOf(s).brothDay = s.day; lines.push(['Cracked the bones and boiled them down. Marrow and fat in the broth.', 'good']); break; }
     case 'read_letter': { s.letterDay = s.day; s.morale += 9; lines.push(['You read it twice, slowly, and fold it back along the same creases.', 'good']); break; }
     case 'change_dry': { const sys = sysOf(s); s.wet = 0.1; sys.sparesWet = true; s.morale += 2; lines.push(['Stripped off the wet layers and pulled on the spares: dry shirt, dry pants, dry wool socks, the other boots. The wet set is hanging up now.', 'good']); break; }
@@ -1662,10 +1829,10 @@ function doAction(s, id, lines, mod, opts) {
       if (X.total) { /* by hand: what you picked as you walked, and whether you left enough to come back to */
         s.patch = s.patch || {}; const frac = X.picked / X.total; s.patch.forage = frac > 0.6 ? Math.max(0.25, pf - 0.1 * frac) : Math.min(1, pf + 0.02);
         const por = X.picked ? Math.max(1, Math.round(X.picked * 0.55 * Math.min(1.4, se.mult.forage) * pf * (snowy(s) ? 0.6 : 1))) : 0;
-        if (por) { const t = pickW(s, pool); addFood(s, t, por); lines.push([`Picked ${low(DATA.foods[t].name)} as you walked (${Math.round(por * DATA.foods[t].kcal)} kcal).`, 'good']); s.morale += 1; s.skill.forage = Math.min(1.3, s.skill.forage + 0.02); } else lines.push(['Walked the slope and came back with nothing in your hands.', 'muted']);
+        if (por) { const t = pickW(s, pool); addFood(s, t, por); const sL = []; const nm = tagPick(s, t, {}, sL); lines.push([`Picked ${nm ? spLow(nm) : low(DATA.foods[t].name)} as you walked (${Math.round(s.stores[s.stores.length - 1].por * DATA.foods[t].kcal)} kcal).`, 'good'], ...sL); s.morale += 1; s.skill.forage = Math.min(1.3, s.skill.forage + 0.02); } else lines.push(['Walked the slope and came back with nothing in your hands.', 'muted']);
         lines.push([frac > 0.6 ? 'You stripped it. This patch will be thin for a while.' : 'You left plenty. It will come back.', 'muted']); break; }
       const p = 0.62 * se.mult.forage * s.skill.forage * (snowy(s) ? 0.6 : 1) * pf; s.patch = s.patch || {}; s.patch.forage = Math.max(0.25, pf - 0.04);
-      if (chance(s, p)) { const t = pickW(s, pool); const por = 1 + Math.floor(rnd(s) * 3); addFood(s, t, por); lines.push([`Found ${low(DATA.foods[t].name)} (${Math.round(por * DATA.foods[t].kcal)} kcal).`, 'good']); s.morale += 1; }
+      if (chance(s, p)) { const t = pickW(s, pool); const por = 1 + Math.floor(rnd(s) * 3); addFood(s, t, por); const sL = []; const nm = tagPick(s, t, {}, sL); lines.push([`Found ${nm ? spLow(nm) : low(DATA.foods[t].name)} (${Math.round(s.stores[s.stores.length - 1].por * DATA.foods[t].kcal)} kcal).`, 'good'], ...sL); s.morale += 1; }
       else lines.push(['Wandered for a couple of hours. Not much out there.', 'muted']);
       if (chance(s, 0.3)) gain('tinder', 1, 'Pocketed some dry bark');
       break;
@@ -2573,7 +2740,8 @@ function nightAndBody(s, burn, done, lines) {
   if (s.sys && s.sys.taint > 0 && (s.potWater >= 1 || (s.today && s.today.done.includes('water'))) && chance(s, 0.04) && !s.conditions.some(c => c.name === 'Sick from residue in a salvaged can')) { sick(s, 'Sick from residue in a salvaged can', lines); lines.push(['The water had a taste you could not boil out. Whatever that can held, some of it is still in there.', 'warn']); }
   if (s.sys && s.sys.hands > 0) { if (ate.kcal > 0 && chance(s, 0.015 * s.sys.hands)) sick(s, 'Stomach bug from dirty hands', lines); s.sys.hands = 0; }
   if (s.day > 8 && !s.recent.flat().some(t => DATA.foods[t] && DATA.foods[t].kind === 'plant') && !s.conditions.some(c => /Bound up/.test(c.name)) && chance(s, 0.02)) { addCond(s, { name: 'Bound up (no greens for a week)', days: 3, dmg: 1 }); s.morale -= 4; lines.push(['A week of nothing but meat. Your guts have stopped. Eat something green.', 'warn']); }
-  if (ate.tox) { const what = ate.toxWhat === 'mushrooms' || !ate.toxWhat ? 'mushrooms' : low(DATA.foods[ate.toxWhat].name); addCond(s, { name: what === 'mushrooms' ? 'Mushroom poisoning' : 'Poisoned by a look-alike plant', days: 4, dmg: 4 }); s.morale -= 10; lines.push([`Those ${what} were not what you thought. Vomiting all night.`, 'bad']); note(s, `Ate ${what}${ate.toxLook ? ` (${ate.toxLook})` : ''}. Sick all night.`); }
+  if (ate.tox) { const what = ate.toxWhat === 'mushrooms' || !ate.toxWhat ? 'mushrooms' : low(DATA.foods[ate.toxWhat].name); const sev = !!ate.toxSevere; addCond(s, { name: what === 'mushrooms' ? 'Mushroom poisoning' : ate.toxWhat === 'shellfish' ? 'Shellfish poisoning' : 'Poisoned by a look-alike plant', days: sev ? 5 : 4, dmg: sev ? 6 : 4 }); s.morale -= sev ? 14 : 10;
+    lines.push([ate.toxAlike ? (ate.toxWhat === 'shellfish' ? `The ${ate.toxSp ? spLow(ate.toxSp) : 'shellfish'} still held the red tide. Your lips went numb, then your fingers. A long, bad night.` : `That was not ${ate.toxSp ? spLow(ate.toxSp) : what}. It was ${spLow(ate.toxAlike)}. ${sev ? 'Cramps, a racing heart, and vomiting all night.' : 'Vomiting all night.'}`) : `Those ${what} were not what you thought. Vomiting all night.`, 'bad']); note(s, `Ate ${what}${ate.toxLook ? ` (${ate.toxLook})` : ''}. Sick all night.`); }
   else if (ate.okLook) note(s, `Ate mushrooms (${ate.okLook}). No trouble.`);
   /* what you eat teaches you: the field notes remember which mushrooms were fine and which made you sick */
   if (ate.toxLook || ate.okLook) { const sys = sysOf(s); sys.known = sys.known || {}; sys.knownDay = sys.knownDay || {}; for (const l of [ate.toxLook, ate.okLook]) if (l && sys.knownDay[l] == null) sys.knownDay[l] = s.day; if (ate.toxLook) sys.known[ate.toxLook] = 'bad'; if (ate.okLook && sys.known[ate.okLook] !== 'bad') sys.known[ate.okLook] = 'good'; }
@@ -2675,7 +2843,7 @@ function nightAndBody(s, burn, done, lines) {
 function medicalLimit(s) { const bmi0 = s.weight0 * 0.4536 / 3.17; return clamp(1 - 17.5 / bmi0, 0.22, 0.42); }
 function sick(s, name, lines) { if (s.conditions.some(c => c.name === name)) return; addCond(s, { name, days: 5, dmg: 2 }); s.morale -= 6; lines.push([`Sick: ${name.toLowerCase()}.`, 'bad']); }
 
-function mergeAte(a, b) { if (!a) return b; if (!b) return a; const units = Object.assign({}, a.units); for (const k in b.units) units[k] = (units[k] || 0) + b.units[k]; return { kcal: a.kcal + b.kcal, units, types: [...new Set([...a.types, ...b.types])], lean: a.lean + b.lean, fat: a.fat + b.fat, protein: a.protein + b.protein, rawMeat: a.rawMeat || b.rawMeat, oldMeat: a.oldMeat || b.oldMeat, tox: a.tox || b.tox, hard: a.hard || b.hard, ...(a.rawFish || b.rawFish ? { rawFish: true } : {}), ...(a.worms || b.worms ? { worms: a.worms || b.worms } : {}), ...(a.wormsRaw || b.wormsRaw ? { wormsRaw: true } : {}), ...(a.toxWhat || b.toxWhat ? { toxWhat: a.toxWhat || b.toxWhat, toxLook: a.toxLook || b.toxLook } : {}), ...(a.okLook || b.okLook ? { okLook: a.okLook || b.okLook } : {}) }; }
+function mergeAte(a, b) { if (!a) return b; if (!b) return a; const units = Object.assign({}, a.units); for (const k in b.units) units[k] = (units[k] || 0) + b.units[k]; return { kcal: a.kcal + b.kcal, units, types: [...new Set([...a.types, ...b.types])], lean: a.lean + b.lean, fat: a.fat + b.fat, protein: a.protein + b.protein, rawMeat: a.rawMeat || b.rawMeat, oldMeat: a.oldMeat || b.oldMeat, tox: a.tox || b.tox, hard: a.hard || b.hard, ...(a.rawFish || b.rawFish ? { rawFish: true } : {}), ...(a.worms || b.worms ? { worms: a.worms || b.worms } : {}), ...(a.wormsRaw || b.wormsRaw ? { wormsRaw: true } : {}), ...(a.toxWhat || b.toxWhat ? { toxWhat: a.toxWhat || b.toxWhat, toxLook: a.toxLook || b.toxLook } : {}), ...(a.toxAlike || b.toxAlike ? { toxAlike: a.toxAlike || b.toxAlike, toxSp: a.toxSp || b.toxSp, toxSevere: a.toxSevere || b.toxSevere } : {}), ...(a.okLook || b.okLook ? { okLook: a.okLook || b.okLook } : {}) }; }
 // eat from stores up to target kcal; spoiling food first, fat alongside lean meat
 // what has to be carried home, in kg a unit (a 'day' of firewood is about ten kilos of split wood)
 const WEIGHT = { poles: 4, logs: 22, boughs: 1.2, moss: 0.8, stone: 5, clay: 4, firewood: 10 };
@@ -2741,11 +2909,11 @@ function waterCap(s) { return (has(s, 'Pot') ? 2 : clayPots(s) ? 1 : 0) + cantee
 // a stew needs a pot of water from the shore; without one the meal goes on the coals instead
 function eatCooked(s, target, L) { const stew = s.cook === 'boil' && potLike(s) && s.fire; if (stew && !(s.potWater >= 1)) { s.cook = 'roast'; const a = eat(s, target); s.cook = 'boil'; if (a.kcal > 0 && L) L.push(['No water at camp for a stew. Roasted it instead.', 'muted']); return a; } const a = eat(s, target); if (stew && a.kcal > 0) s.potWater -= 1; return a; }
 function eat(s, target) {
-  const units = {}; const types = new Set(); let kcal = 0, lean = 0, fat = 0, protein = 0, rawMeat = false, oldMeat = false, tox = false, hard = false, rawFish = false, worms = null, wormsRaw = false, toxWhat = null, toxLook = null, okLook = null;
+  const units = {}; const types = new Set(); let kcal = 0, lean = 0, fat = 0, protein = 0, rawMeat = false, oldMeat = false, tox = false, hard = false, rawFish = false, worms = null, wormsRaw = false, toxWhat = null, toxLook = null, okLook = null, toxAlike = null, toxSp = null, toxSevere = false;
   const order = s.stores.filter(x => !x.lesson).sort((a, b) => ((a.where ? 1 : 0) - (b.where ? 1 : 0)) || (a.left - b.left) || (DATA.foods[b.id].kcal - DATA.foods[a.id].kcal));
   const eatOne = (x, por) => {
     const f = DATA.foods[x.id]; x.por = round1(x.por - por); kcal += por * f.kcal; types.add(x.id === 'ration' ? 'ration' : x.id);
-    if (x.tox) { tox = true; toxWhat = x.id; if (x.look) toxLook = x.look; } else if (x.id === 'mushrooms' && x.look) okLook = x.look;
+    if (x.tox) { tox = true; toxWhat = x.id; if (x.look) toxLook = x.look; if (x.alike) { toxAlike = x.alike; toxSp = x.sp; if (x.severe) toxSevere = true; } } else if (x.id === 'mushrooms' && x.look) okLook = x.look;
     if (f.kind === 'fat') fat += por; else if (['game', 'fish', 'shellfish', 'insect'].includes(f.kind)) { if (f.ing.includes('fat')) fat += por * 0.4; else lean += por; }
     if (['game', 'organ'].includes(f.kind) && (!s.fire || s.cook === 'raw') && !x.smoked && !x.dried) rawMeat = true;
     if (COOK_RISKS) {
@@ -2757,14 +2925,14 @@ function eat(s, target) {
     if (['game', 'fish'].includes(f.kind) && s.fire && s.cook !== 'raw') { if (s.cook === 'boil' && potLike(s)) { kcal += por * f.kcal * 0.08; fat += por * 0.1; } else if (s.cook === 'roast' && f.ing.includes('fat')) { if (has(s, 'Frying pan')) { kcal += por * f.kcal * 0.05; fat += por * 0.05; } else fat -= por * 0.15; } else if (s.cook === 'boil' && has(s, 'Frying pan')) { kcal += por * f.kcal * 0.04; } }
     if (['game', 'fish'].includes(f.kind) && !x.smoked && !x.dried && x.left <= 1 && temperature(s) > 3) oldMeat = true;
     if (x.smoked || x.dried || x.id === 'pemmican') hard = true;
-    for (const ing of f.ing) { const I = DATA.ing[ing]; if (!I) continue; for (const m of I.meters) units[m] = (units[m] || 0) + I.units * por; for (const [m, u] of Object.entries(I.extra || {})) units[m] = (units[m] || 0) + u * por; }
+    for (const ing of ingOf(x)) { const I = DATA.ing[ing]; if (!I) continue; for (const m of I.meters) units[m] = (units[m] || 0) + I.units * por; for (const [m, u] of Object.entries(I.extra || {})) units[m] = (units[m] || 0) + u * por; }
   };
   for (const x of order) { if (kcal >= target) break; const f = DATA.foods[x.id]; const want = Math.min(x.por, (target - kcal) / f.kcal); if (want <= 0.05) continue; eatOne(x, round1(Math.max(0.1, want))); }
   if (lean > 3 && fat < 1.5) { const fx = s.stores.find(x => x.id === 'fat' && x.por > 0 && !x.lesson); if (fx) eatOne(fx, Math.min(fx.por, 1.5)); }
   s.stores = s.stores.filter(x => x.por > 0.05);
   protein = units['Protein'] || 0;
   const res = { kcal, units, types: [...types], lean, fat, protein, rawMeat, oldMeat, tox, hard };
-  if (rawFish) res.rawFish = true; if (toxWhat) res.toxWhat = toxWhat; if (toxLook) res.toxLook = toxLook; if (okLook) res.okLook = okLook; if (worms) { res.worms = worms; if (wormsRaw) res.wormsRaw = true; } // only written when true, so older meal records stay the same
+  if (rawFish) res.rawFish = true; if (toxWhat) res.toxWhat = toxWhat; if (toxLook) res.toxLook = toxLook; if (toxAlike) { res.toxAlike = toxAlike; if (toxSp) res.toxSp = toxSp; if (toxSevere) res.toxSevere = true; } if (okLook) res.okLook = okLook; if (worms) { res.worms = worms; if (wormsRaw) res.wormsRaw = true; } // only written when true, so older meal records stay the same
   return res;
 }
 
@@ -2789,7 +2957,7 @@ const GEAR_COST = { 'Gillnet': 12, 'Fishing gear': 4, 'Axe': 4, 'Sleeping bag': 
   'Rations': 1, 'Multitool': 1, 'Soap': 1, 'Scotch eyed auger': 1, 'Trapping wire': 1, 'Shovel': 1, 'Salt': 1, 'Tarp': 1, 'Frying pan': 1, 'Wire': 1, 'Canteen': 1, 'Rope': 1, 'Slingshot': 1, 'Sunglasses': 1 };
 const BUDGET = 20;
 const gearCost = id => GEAR_COST[id] ?? (VARIANT[id] && VARIANT[id].cost) ?? 2; const kitCost = gear => gear.reduce((a, g) => a + gearCost(g), 0);
-const API = { kitLeft, useKit, headlampOk, GEAR_FAMILY, VARIANT, kindsOf, variantOf, campStock, jobHours, surplusPor, PRACTICE_KEY, placeOf, practicePlace, hydOf, waterNow, drinkUp, fishDepth, campSummary, shelterScores, bedDampOf, prevailOf, CAMP_FIXED, zoneOf, layoutNotes, kitchenMult, GEAR_COST, BUDGET, gearCost, kitCost, waterToday, note, sunny, sprayLeft, fallChance, climbAnchor, stalkNoise, fouling, latrineOk, raftOf, raftOk, flintOf, hasBow, bowPower, castReach, cutsFor, fineBlade, pointBig, driftChance, bearings, wade, clothesOf, tomorrow, skyAcc, thinIce, potLike, clayPots, greenPots, bedWarmth, snowLoadOf, bedOf, lampOk, nightOk, haftOf, tinderDamp, fireOdds, fireKit, matchesLeft, fuelLeft, sealOf, hasHearth, isDry, onStation, RACK_CAP, DRY_AT, dryDaysLeft, sysOf, cacheSign, low, matName, BIOMES, biomeOf, treeKind, realMedianOf: se => { const d = se.rivals.filter(r => r.days != null).map(r => r.days).sort((a, b) => a - b); return d[d.length >> 1]; }, WEIGHT, loadOf, carryCap, moveCampCost, moveCamp, collectSize, berryRipe, bushRipeDay, stockOf, stockWord, billFor, nightOk, NIGHT_OK, treeYield, treeNames, fishPool, sizeOf, SHELTERS, shelterOptions, chooseShelter, dropPlan, makeCamp, foundWreck, shelterName, canWorkInside, travel, activeWindows, windowOn, timeMult, weatherName, dayFrac, midday, setTune, DATA, C, MATS, ACTIONS, EVENTS, newGame, runDay, beginDay, act, endDay, choose, carryLoad, available, tapOut, placing, status, season, storeKcal, temperature, shelterLevel, SHELTER_NAMES, shelterBill, shelterMissing, matList, fishOdds, huntOdds, bowDrillOdds, dayHours, hoursLeft, phaseOf, lowTide, igniter, blade, cutter, chopper, hasRod, digger };
+const API = { speciesOf, speciesList, plantStage, spLow, frosted, eat, kitLeft, useKit, headlampOk, GEAR_FAMILY, VARIANT, kindsOf, variantOf, campStock, jobHours, surplusPor, PRACTICE_KEY, placeOf, practicePlace, hydOf, waterNow, drinkUp, fishDepth, campSummary, shelterScores, bedDampOf, prevailOf, CAMP_FIXED, zoneOf, layoutNotes, kitchenMult, GEAR_COST, BUDGET, gearCost, kitCost, waterToday, note, sunny, sprayLeft, fallChance, climbAnchor, stalkNoise, fouling, latrineOk, raftOf, raftOk, flintOf, hasBow, bowPower, castReach, cutsFor, fineBlade, pointBig, driftChance, bearings, wade, clothesOf, tomorrow, skyAcc, thinIce, potLike, clayPots, greenPots, bedWarmth, snowLoadOf, bedOf, lampOk, nightOk, haftOf, tinderDamp, fireOdds, fireKit, matchesLeft, fuelLeft, sealOf, hasHearth, isDry, onStation, RACK_CAP, DRY_AT, dryDaysLeft, sysOf, cacheSign, low, matName, BIOMES, biomeOf, treeKind, realMedianOf: se => { const d = se.rivals.filter(r => r.days != null).map(r => r.days).sort((a, b) => a - b); return d[d.length >> 1]; }, WEIGHT, loadOf, carryCap, moveCampCost, moveCamp, collectSize, berryRipe, bushRipeDay, stockOf, stockWord, billFor, nightOk, NIGHT_OK, treeYield, treeNames, fishPool, sizeOf, SHELTERS, shelterOptions, chooseShelter, dropPlan, makeCamp, foundWreck, shelterName, canWorkInside, travel, activeWindows, windowOn, timeMult, weatherName, dayFrac, midday, setTune, DATA, C, MATS, ACTIONS, EVENTS, newGame, runDay, beginDay, act, endDay, choose, carryLoad, available, tapOut, placing, status, season, storeKcal, temperature, shelterLevel, SHELTER_NAMES, shelterBill, shelterMissing, matList, fishOdds, huntOdds, bowDrillOdds, dayHours, hoursLeft, phaseOf, lowTide, igniter, blade, cutter, chopper, hasRod, digger };
 Object.assign(API, { GOOD, goodLine, migWin });
 if (typeof module !== 'undefined') module.exports = API; else root.Engine = API;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -3444,7 +3612,8 @@ const MUSH_LOOKS = [['brown cap, white gills, no ring', 0], ['honey-coloured clu
 const MUSH_NAMES = ['Brown meadow cap', 'Honey cluster', 'Blue-bruise orange cap', 'White cup cap', 'Grey sponge cap', 'Red fleck cap', 'Tan stalk cap', 'Hollow honeycomb', 'Stuffed brain-cap'];
 const MUSH_INSIDE = ['firm white flesh, smells of the soil', 'firm, and smells sweet', 'the cut edge turns blue as you watch', 'white all through, and the cup at the base is a sac around the stem', 'spongy pores over firm white flesh', 'white flesh under the red skin', 'a thin, tough stem', 'hollow from the tip of the cap to the foot of the stem, one clean chamber', 'packed with cottony fibres inside, not hollow'];
 const GREEN_NAMES = ['Dandelion', 'Chickweed', 'Sheep sorrel', 'Fireweed shoots', 'Wild lettuce', 'Plantain leaves'];
-const greenName = b => GREEN_NAMES[Math.floor((b.q || 0) * 997) % GREEN_NAMES.length];
+const greenName = b => { const sp = E.speciesOf(S, 'greens', b.q || 0); return sp ? sp.n : GREEN_NAMES[Math.floor((b.q || 0) * 997) % GREEN_NAMES.length]; };
+const bushSp = b => { const sp = ['berries', 'roots'].includes(b.kind) ? E.speciesOf(S, b.kind, b.q || 0) : null; return sp ? E.spLow(sp.n) : null; };
 
 function phaseName() {
   if (!S) return 'morning';
@@ -3991,7 +4160,7 @@ function interactionsHere() {
     const t7 = nearestOf(W.trees, 46, x => !x.gone && !x.flipped && (x.cut || E.treeYield(S, 'insects', x).n > 0)); if (t7) push('insects', t7.kind === 'log' ? 'Roll the log for grubs' : 'Peel the dead bark for grubs', () => startCollect('insects', 'grub', t7)); const t8 = nearestOf(W.trees, 46, x => !x.gone && x.cones && !x.used.pinenuts); if (t8) push('pinenuts', null, () => startCollect('pinenuts', 'cone', t8)); }
   if (moss) push('moss', null, () => startCollect('moss', 'moss', moss));
   if (bush && bush.kind === 'berries') { const st = bushStage(bush); if (st !== 'ripe') { out.push({ label: st === 'green' ? 'Berries still green' : 'Berries gone over', sub: st === 'green' ? `ripe in about ${Math.max(1, Math.ceil(E.bushRipeDay(S, bush.q) - S.day))} day${Math.ceil(E.bushRipeDay(S, bush.q) - S.day) > 1 ? 's' : ''}` : 'shrivelled and dropped', dim: true, fn: () => banner([[st === 'green' ? 'Hard and green. Mark it and come back.' : 'Dropped or shrivelled. Nothing worth picking.', 'muted']]) }); } }
-  if (bush && !(bush.kind === 'berries' && bushStage(bush) !== 'ripe')) { const id = bush.kind; if (id === 'mushrooms') push('mushrooms', 'Look at the mushrooms', () => startMushroom(bush)); else if (id === 'greens') push(id, `Pick ${greenName(bush).toLowerCase()}`, () => startCollect(id, 'leaf', bush)); else push(id, null, () => startCollect(id, { roots: 'root', cattail: 'root', berries: 'berry', rosehips: 'hip', seeds: 'seed', nettle: 'nettle' }[id] || 'leaf', bush)); }
+  if (bush && !(bush.kind === 'berries' && bushStage(bush) !== 'ripe')) { const id = bush.kind; if (id === 'mushrooms') push('mushrooms', 'Look at the mushrooms', () => startMushroom(bush)); else if (id === 'greens') push(id, `Pick ${greenName(bush).toLowerCase()}`, () => startCollect(id, 'leaf', bush)); else push(id, bushSp(bush) ? `${id === 'roots' ? 'Dig' : 'Pick'} ${bushSp(bush)}` : null, () => startCollect(id, { roots: 'root', cattail: 'root', berries: 'berry', rosehips: 'hip', seeds: 'seed', nettle: 'nettle' }[id] || 'leaf', bush)); }
   const pile = (S.piles || []).find(q => near(q, 50)); const kgNow = E.loadOf(S.pack || {});
   if (pile) { const room = E.carryCap(S) - kgNow; const fits = BULKY.some(k => (pile.m[k] || 0) > 0 && E.WEIGHT[k] * Math.min(1, pile.m[k]) <= room); out.unshift(fits ? { label: 'Load up from the stack', sub: `${packText(pile.m)} · ${Math.round(E.loadOf(pile.m))} kg here, room for ${Math.round(room)} kg`, primary: true, fn: () => loadFromPile(pile) } : { label: 'Stack is here', sub: `${packText(pile.m)} · your pack is too full; unload at camp first`, dim: true, fn: () => banner([['Nothing more will fit. Carry this load home first.', 'muted']]) }); }
   if (kgNow > 0.5 && !pile) out.push({ label: 'Stack your load here', sub: `${packText(S.pack)} · come back for it`, fn: dropLoad });
@@ -4447,7 +4616,7 @@ function startCollect(id, kind, at) {
     if (key) { const PK = S.partialKind || (S.partialKind = {}); if (left > 0) { P[key] = left; PK[key] = kind; } else { delete P[key]; delete PK[key]; } leftoverRefresh(); }
     if (!got) { worldToast([[how === 'walk' ? `Walked off. The ${noun} are still there.` : `Left them. The ${noun} are still there.`, 'muted']], p.x, p.y); return; }
     if (left > 0) setTimeout(() => worldToast([[`Left ${left} ${noun} ${how === 'walk' ? 'behind when you walked off' : 'where they lie'}. They will keep till you come back.`, 'muted']], p.x, p.y - 18), 900);
-    const ex = { picked: got, got, total: full, tree, ripe, name: id === 'greens' && at && W.bushes.includes(at) ? greenName(at) : undefined };
+    const ex = { picked: got, got, total: full, tree, ripe, name: id === 'greens' && at && W.bushes.includes(at) ? greenName(at) : undefined, q: at && W.bushes.includes(at) ? (at.q || 0) : undefined };
     if (left <= 0) { if (at) { if (at.used && typeof at.used === 'object') { at.used[id] = true; sharedParts(at, id); persistTree(at); } else if ('used' in at) { at.used = true; if (at === W.pondCat) { at.cat = (at.cat || 0) + 1; if (at.cat >= 3) markRegrow('pc', 'cattail'); else at.used = false; } else if (W.beds.includes(at)) markRegrow('s' + at.k, 'shellfish'); else if (W.bushes.includes(at)) { markRegrow('b' + at.k, at.kind); if (at.kind === 'berries' && S.berrySeason && S.day + 5 <= E.bushRipeDay(S, at.q || 0) + S.berrySeason.hold) S.regrow['b' + at.k] = S.day + 5; /* more ripen behind the ones you took */ } else { const mi = W.mossSpots.indexOf(at); if (mi >= 0) markRegrow('m' + mi, 'moss'); } } if (id === 'insects') { at.flipped = true; markRegrow('g' + at.k, 'insects'); } } }
     doAct(id, ex); };
   W.collect = items;

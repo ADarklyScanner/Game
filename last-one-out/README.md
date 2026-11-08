@@ -6,6 +6,25 @@ Open `index.html` in a browser to play. Everything (game data, engine, UI) is in
 
 Live version: https://claude.ai/artifact/9zr7wjnNT3b8se9xjqKGbp
 
+## Plants and forage update (Nov 8, 2026)
+
+Forage is now real plants, and the season changes them.
+
+- **Real species for each place.** Berries, greens, roots, inner bark, needle tea, shellfish and seaweed are named for where you are: salal and huckleberries on the BC coast, lingonberries and blueberries on the Shield, cloudberries and crowberries in the delta and barrens, sour figs and num-num in the Karoo, wineberries and puha in Fiordland, and so on. A bush on the map always holds the same species, and the job button says what it is ("Pick salal", "Dig nodding onion"). Each new species goes into the field notes.
+- **Each species has its own nutrition.** Cloudberries and lingonberries carry more vitamin C than blueberries, kelp more iodine than dulse, mussels and oysters more iron than clams, grubs some fat.
+- **Berries:** ripe, overripe (soft, keeps two days) or frozen on the bush. Lingonberries, crowberries, cranberries and the like hold up frozen and taste sweeter; soft berries go to mush.
+- **Wild greens:** young in the warmth, tough later in the year, bitter after frost.
+- **Nettle:** young tops, or old stems where only the tops are worth taking.
+- **Cattail:** pollen heads in the heat of summer (no digging tool needed), the rhizome in fall and winter, and shoots in spring if a place ever starts in spring.
+- **Rose hips:** firm before frost, softer and sweeter after.
+- **Mushrooms:** fresh, old (eat today) or wormy (less to keep).
+- **Insects:** grubs all year, ant larvae once it is warm, grasshoppers in the heat.
+- **Look-alikes:** each root and some greens have their own real look-alike: nodding onion and death camas, biscuitroot and water hemlock, Eskimo potato and wild sweet pea, wild carrot and poison hemlock, native leek and Early Nancy, and others. The odds of a wrong pick are unchanged (about 3% rushed, far fewer looking closely), but when it happens the log says what it really was, and the deadly ones make you much sicker.
+- **Yew in BC needle tea:** on the BC coast and in the interior, a yew bough can end up in the pot with the fir and hemlock. It is poison.
+- **Red tide:** mussels can still carry it for a few days after the water clears. The job list warns you.
+- The look-alike notes are what the forager noticed too late, not a field guide. Never eat a wild plant on the strength of a game.
+- Balance: overall median survival over 1,020 bot games unchanged at 63 days (mean 63.2 to 63.0).
+
 ## Fixes made before the bravery update (Nov 1, 2026)
 
 - **Map freeze on rainy days.** The first animation frame could get a negative time step, which pushed the world clock below zero. The rain ripples then got a negative size, the browser threw an error, and the map stopped animating. The time step is now never below zero.

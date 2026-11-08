@@ -18,6 +18,7 @@ node bowmap.js
 node crafts.js
 node finish.js
 node conseq.js
+node plants.js
 node regress.js
 node lazy.js
 node upkeep.js
