@@ -2,7 +2,8 @@
 const { chromium } = require('playwright'); const path = require('path');
 const { loadGame } = require('./load-game'); const E = loadGame(process.env.GAME_FILE || undefined);
 let fails = 0, passes = 0; const check = (name, ok, detail) => { if (ok) passes++; else { fails++; console.log('FAIL', name, detail ?? ''); } };
-check('every item has a cost', E.DATA.gear.every(g => E.GEAR_COST[g.id] >= 1), E.DATA.gear.filter(g => !E.GEAR_COST[g.id]).map(g => g.id));
+const ownCost = id => E.GEAR_COST[id] ?? (E.VARIANT[id] && E.VARIANT[id].cost); /* a kit variant carries its cost with it */
+check('every item has a cost', E.DATA.gear.every(g => ownCost(g.id) >= 1), E.DATA.gear.filter(g => !ownCost(g.id)).map(g => g.id));
 const popular = E.DATA.gear.slice(0, 10).map(g => g.id);
 check('the ten most common do not fit the budget', E.kitCost(popular) > E.BUDGET, E.kitCost(popular));
 check('a budget run remembers it', E.newGame('US-S6', ['Axe'], { seed: 1, budget: true }).opts.budget === E.BUDGET && !E.newGame('US-S6', ['Axe'], { seed: 1 }).opts.budget);
