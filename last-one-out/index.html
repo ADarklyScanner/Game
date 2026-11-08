@@ -886,6 +886,7 @@ const ACTIONS = {
   photo: { label: 'Look at the photograph', hours: 0.1, effort: 'rest', group: 'Camp', where: 'any' },
   cut_belt: { label: 'Cut up your belt for lacing', hours: 0.25, effort: 'light', group: 'Camp', where: 'camp' },
   talk_camera: { label: 'Talk to the camera', hours: 0.5, effort: 'rest', group: 'Camp', where: 'any' },
+  sit: { label: 'Sit and watch', hours: 1, effort: 'rest', group: 'Camp', where: 'any' },
   setlines: { label: 'Set lines overnight', hours: 1, effort: 'light', group: 'Food', where: 'shore' },
   forage: { label: 'Forage around', hours: 2, effort: 'light', group: 'Food', where: 'any' },
   // camp and materials
@@ -1102,6 +1103,7 @@ function available(s, id) {
     case 'photo': return s.sys && s.sys.photoDay === s.day ? r(false, 'You looked at it today') : r(true, '', 'lifts your will a little');
     case 'cut_belt': return s.sys && s.sys.beltCut ? r(false, 'Already cut up') : !blade(s) ? r(false, 'Needs a knife') : r(true, '', '+2 cordage · your trousers on a cord after');
     case 'talk_camera': return s.talkedToday ? r(false, 'Said your piece today') : r(true, '', 'lifts your will a little');
+    case 'sit': return s.storm ? r(false, 'Not in this weather') : s.sys && s.sys.sitDay === s.day ? r(false, 'You sat a while already today') : r(true, '', 'lifts your will a little · sometimes something shows itself');
     case 'setlines': return !hasRod(s) && s.hooks < 2 ? r(false, 'Needs hooks') : s.hooks < 2 ? r(false, 'Needs 2 hooks') : s.mats.cordage < 2 && s.line < 20 ? r(false, 'Needs 2 cordage or line') : s.setlines ? r(false, 'Lines are out. Check them in the morning') : frozen(s) && !cutsIce(s) ? r(false, 'Ice') : s.storm ? r(false, 'Too rough') : r(true, '', 'Baited lines fish while you sleep');
     case 'check_roof': return !s.shelterType ? r(false, 'No shelter') : (s.crafts.chimney >= 2 || s.crafts.stove >= 1) ? (((s.sys && s.sys.soot) || 0) >= 0.1 ? r(true, '', 'sweep the soot out of the flue') : r(false, 'Nothing to check')) : SHELTERS[s.shelterType].safeFire ? r(false, 'Nothing to check') : r(true, '', '');
     case 'caulk': { if (!WALLED.includes(s.shelterType)) return r(false, 'No walls to chink'); if (sealOf(s) >= 0.85) return r(false, 'The walls are tight'); if (!(s.mats.clay >= 3 || s.mats.moss >= 4)) return r(false, 'Needs 4 moss or 3 clay'); const tallow = s.stores.some(x => x.id === 'fat' && x.rendered && x.por >= 0.5); return r(true, '', `${s.mats.clay >= 3 ? 'clay' : 'moss'}${tallow ? ' and tallow' : ''} · fewer drafts`); }
@@ -1348,6 +1350,8 @@ function beginDay(s) {
   if (s.sys && s.sys.plantTest && s.sys.plantTest.day < s.day) { const pt = s.sys.plantTest; s.sys.plantTest = null; const readSafe = chance(s, 0.75) ? pt.safe : !pt.safe; // the test can lie
     if (readSafe) { addFood(s, 'berries', 3); s.stores[s.stores.length - 1].tox = !pt.safe; lines.push(['No reaction from the berries overnight. You pick a bagful.', 'info']); note(s, 'Tested the dark berries for a day: no reaction.'); }
     else { lines.push(['Your lip tingled in the night where the berry touched it. You leave them.', 'muted']); note(s, 'Tested the dark berries: a tingle on the lip. Left them alone.'); } }
+  if (s.sys && s.sys.spareFerro && !has(s, 'Ferro rod')) { s.sys.spareFerro = false; s.gear.push('Ferro rod'); lines.push(['You dig the spare striker from the wreck out of the bottom of the pack. Fire is a scrape away again.', 'good']); } /* the wreck's fire-starter, kept back for the day the first one is gone */
+  if (s.sys && s.sys.treeLeak && s.day > s.sys.treeLeak) { s.sys.treeLeak = 0; s.firewood = Math.min(30, round1(s.firewood + 4)); lines.push(['In the dry of the morning you roll the fallen tree off the roof and buck it up: four days of firewood.', 'info']); }
   s.today.lines.push(...lines);
   maybeEvent(s, 'begin', lines);
   return lines;
@@ -1541,6 +1545,10 @@ function doAction(s, id, lines, mod, opts) {
     case 'photo': { const sys = sysOf(s); sys.photoDay = s.day; const worked = s.today.done.some(x => !['rest', 'photo', 'talk_camera', 'read_letter'].includes(x)); s.morale += worked ? 3 : 1; lines.push([pick1(s, ['Took the photograph out and looked at it for a long time.', 'The photograph is soft at the corners now. You look anyway.', 'Looked at the photograph. Said a few words to it.']), 'muted']); break; }
     case 'cut_belt': { const sys = sysOf(s); sys.beltCut = true; s.mats.cordage += 2; lines.push(['Cut the leather belt into long thongs. Strong lacing. Your trousers are held up with a length of cord now.', 'info']); break; }
     case 'talk_camera': { s.talkedToday = true; s.morale += 2; lines.push([['Told the camera about the fish that got off.', 'Explained to nobody why the shelter faces this way.', 'Said good night to everyone by name.', 'Admitted to the lens that you cried a little this morning.'][Math.floor(rnd(s) * 4)], 'muted']); break; }
+    case 'sit': { /* an hour of doing nothing on purpose: the quiet is half of what is out here. Now and then something shows itself */ const sys = sysOf(s); sys.sitDay = s.day; s.morale += 1; const r0 = drand(s, 'sit');
+      if (r0 < 0.3) { const g = goodLine(s, null, ['wonder']); if (g) { s.morale += Math.min(2, g.lift); lines.push([g.text, 'good']); break; } }
+      if (r0 > 0.72 && season(s).pools.hunt.length) { s.today.sitAnimal = true; lines.push([pickD(s, 'sitani', ['Something moved at the edge of the trees. You kept very still and let it come.', 'A twig snapped off to one side, and it was not you. You held your breath.']), 'info']); break; }
+      lines.push([pickD(s, 'sitq', ['Sat still for an hour and watched. Nothing happened, and that was the point.', 'You watched the light move across the far side until your thoughts slowed down to match it.', 'An hour of just sitting: wind in the tops, a bird somewhere, your own breathing.', 'You sat still long enough that the birds forgot about you and came back.']), 'muted']); break; }
     case 'setlines': { s.hooks -= 2; const cord = s.mats.cordage >= 2; if (cord) s.mats.cordage -= 2; else s.line -= 20; s.lineGear = { hooks: 2, cord, line: cord ? 0 : 20 }; if (X.depthOk != null) s.lineGear.depthOk = X.depthOk; const baited = s.mats.bait >= 1; s.lineGear.bare = !baited; s.mats.bait = Math.max(0, s.mats.bait - 2); s.setlines = true; lines.push([baited ? 'Baited two lines and tied them off to a root. Morning will tell.' : 'No bait, so two bare hooks went out on the lines. Something might hit them. Probably not.', 'info']); break; }
     case 'dig_clay': { let n = X.total ? X.got : 3; const roll = drand(s, 'clay' + s.hours); if (n && roll < 0.18) { n += 2; lines.push(['Under the gravel, a seam of fine blue-grey clay, smooth between the fingers. The best you have found.', 'good']); } else if (n && roll > 0.85) { n = Math.max(1, n - 1); lines.push(['This bank is gritty with sand. You pick the worst of it out, and get less.', 'muted']); } if (n) gain('clay', n, 'Dug from the bank'); s.wet = Math.min(1, s.wet + (s.rain ? 0.3 : 0.15)); break; }
     case 'fire_in': { s.fireInside = true; lines.push([SHELTERS[s.shelterType].safeFire || s.crafts.chimney >= 2 || s.crafts.stove >= 1 ? 'Moved the fire in under the roof. The walls hold the heat.' : 'Moved the fire inside. The smoke finds its own way out, mostly.', 'info']); break; }
@@ -1852,6 +1860,90 @@ function carryLoad(s) {
 }
 const LONELY = ['A hard night. You miss home badly.', 'Thought about your family all day.', 'The silence is getting loud.', 'You caught yourself talking to the camera for an hour.', 'A birthday back home you are missing.', 'Doubts all day: what are you proving out here?'];
 const FOUND_USE = { 'Cordage': 'Four lengths of cordage.', 'Container': 'It will carry and boil water.', 'Metal hardware': 'Snare wire, or the makings of a stove.', 'Lumber': 'Boards worth three logs.', 'Netting': 'It could be rigged into a net.', 'Float': 'It could float a net.' };
+// ------------------------------------------------------------------ the good nights: the other side of LONELY. Most of a long stay out here is quiet, and some of it is wonderful
+/* [text, cond(s, night) or null, morale, kind]. night is what the body had tonight ({ fire, fed, sleep, chill, ate, tdee }); it is null in daylight, so the lines about the body only show after a real night of it */
+const bioId = s => biomeOf(s.seasonKey).id;
+const clearSky = s => !s.rain && !s.storm && !s.fog && !s.snowfall;
+const pickD = (s, salt, arr) => arr[Math.floor(drand(s, salt) * arr.length)];
+const hasRavens = s => !['nzbeech', 'patagonia'].includes(bioId(s));
+const didToday = (s, ...ids) => !!(s.today && s.today.done && s.today.done.some(x => ids.includes(x)));
+const GOOD = [
+  // the body, when it has actually had a good night
+  ['Woke up warm. Actually warm. You lay there a minute just enjoying it.', (s, n) => !!n && n.fire && n.chill < 0.1 && n.sleep >= 1, 2, 'body'],
+  ['Your socks were dry when you put them on this morning. You had forgotten what that felt like.', (s, n) => !!n && s.wet < 0.1 && !s.rain && !s.storm && s.day - s.lastStorm >= 1 && s.day - s.lastStorm <= 4, 2, 'body'],
+  ['Full belly, warm fire, nowhere to be. You sat there grinning at nothing.', (s, n) => !!n && n.fed >= 0.85 && n.fire && !s.storm && !s.rain, 2, 'body'],
+  ['Slept straight through and never woke once. You did not know that was still possible.', (s, n) => !!n && n.sleep >= 1.05 && n.chill < 0.1 && n.fed >= 0.5, 2, 'body'],
+  ['The broth tonight was so good you drank it slowly on purpose, to make it last.', (s, n) => !!n && !!n.ate && n.ate.types.includes('broth'), 2, 'body'],
+  ['Dry clothes, a dry bed and a roof that does not drip. By the standards out here, you are rich.', (s, n) => !!n && n.fire && s.wet < 0.15 && s.shelterLvl >= 2 && s.shelterCond >= 0.6 && !(s.sys && s.sys.leaky) && bedDampOf(s) < 0.3, 2, 'body'],
+  ['You stretched by the fire and nothing hurt. Not one thing. That goes in the journal.', (s, n) => !!n && n.fire && n.fed >= 0.6 && s.health >= 85 && !s.conditions.length, 2, 'body'],
+  // small wins, and getting good at this
+  ['Fire, first try. You whooped like an idiot.', s => didToday(s, 'light_fire') && s.fire, 2, 'win'],
+  ['Whittled a spoon that actually looks like a spoon.', s => didToday(s, 'whittle'), 2, 'win'],
+  ['Six weeks ago you could not light a fire without swearing at it. Now you do not even think about it.', s => s.day >= 42 && s.firstFire && s.fire, 2, 'win'],
+  ['You read the water, put the line where the fish should be, and there they were. That is not luck any more.', s => s.day >= 12 && !!(s.today && s.today.lines && s.today.lines.some(l => /^(Landed|Through the ice)/.test(l[0]))), 2, 'win'],
+  ['The woodpile is taller than you now. You stood back and admired it like a painting.', s => s.firewood >= 12, 2, 'win'],
+  ['Rain on the roof all night and not a drop came through. You lay there listening to it, very pleased with yourself.', s => (s.rain || s.storm) && s.shelterLvl >= 2 && s.shelterCond >= 0.6 && !(s.sys && s.sys.leaky), 2, 'win'],
+  // the place itself
+  ['A kingfisher flashed down the river like a thrown jewel.', s => !frozen(s) && !snowy(s) && season(s).climate.water !== 'scarce', 2, 'wonder'],
+  ['Two ravens playing over the cliff. Not hunting, not going anywhere, just playing.', s => hasRavens(s) && !s.storm, 2, 'wonder'],
+  ['Watched an otter family for twenty minutes. They did not care in the least that you were there.', s => ['coastrain', 'barrens', 'shield', 'delta', 'chilko', 'taiga'].includes(bioId(s)) && !frozen(s), 2, 'wonder'],
+  ['The lake went so still at dusk that it held the whole sky upside down.', s => season(s).climate.water === 'lake' && !frozen(s) && !s.wind && clearSky(s), 2, 'wonder'],
+  ['Snow fell all evening in big soft flakes with no wind behind them. The quietest the world has ever been.', s => s.snowfall && !s.wind, 2, 'wonder'],
+  ['The full moon came up orange over the trees and laid a road across the water.', s => s.moon === 'full' && clearSky(s) && season(s).climate.water !== 'scarce', 2, 'wonder'],
+  ['Stars so thick tonight that the dark between them looked crowded.', s => s.moon === 'new' && clearSky(s), 2, 'wonder'],
+  ['Orcas came down the channel at dusk, five of them. You could hear every breath across the water.', s => bioId(s) === 'coastrain' && !s.storm, 3, 'wonder'],
+  ['A sea otter drifted past on its back, cracking a shell on its chest as if it had all the time in the world.', s => bioId(s) === 'coastrain' && !s.storm, 2, 'wonder'],
+  ['A humpback breached far out past the point. The sound of it landing reached you a second after the splash.', s => bioId(s) === 'barrens' && season(s).climate.coast && !frozen(s), 3, 'wonder'],
+  ['A loon called across the lake at dusk, and another answered from somewhere you could not see.', s => ['shield', 'chilko', 'delta', 'sapmi'].includes(bioId(s)) && !frozen(s), 2, 'wonder'],
+  ['A platypus surfaced in the pool below camp, rolled once and was gone. You waited an hour for it to come back. It never did, and it was still worth the hour.', s => bioId(s) === 'tasrain', 3, 'wonder'],
+  ['A fantail followed you down the track, snapping up the flies your boots kicked up. It felt a lot like company.', s => bioId(s) === 'nzbeech' && !snowy(s), 2, 'wonder'],
+  ['Condors rode the wind above the ridge all afternoon and never once moved a wing.', s => bioId(s) === 'patagonia' && !s.storm, 2, 'wonder'],
+  ['The Milky Way out here is bright enough to see your hand by. You lay on your back and forgot about food for an hour.', s => bioId(s) === 'karoo' && clearSky(s), 3, 'wonder'],
+  ['A pair of cranes danced on the gravel bar this morning, bowing and leaping. You did not move until they had finished.', s => bioId(s) === 'taiga' && !snowy(s), 3, 'wonder'],
+  // pride
+  ['Looked at your hands. Split, scarred, stained. They have never looked better.', s => s.day >= 15, 2, 'pride'],
+  [s => `${s.day} notches on the tally stick. The person who stepped off that boat would not believe it.`, s => !s.practice && s.day >= 25 && s.day % 5 === 0, 2, 'pride'],
+  ['You fixed something today without stopping to work out how. Your hands just knew, and that is new.', s => s.day >= 20 && !!(s.today && s.today.done && s.today.done.some(x => ['repair', 'mend', 'fix_axe', 'repair_cache', 'caulk'].includes(x) || x.startsWith('craft_'))), 2, 'pride'],
+  // the funny side
+  ['A squirrel yelled at you for ten solid minutes. You yelled back. Nobody won.', s => season(s).pools.hunt.some(([k]) => k === 'squirrel'), 2, 'funny'],
+  ['Named the raven that keeps stealing your fish. Kevin. Kevin is a menace.', s => hasRavens(s) && Object.keys(s.stats.caught || {}).some(k => DATA.foods[k] && DATA.foods[k].kind === 'fish'), 2, 'funny'],
+  ['Made a spoon so ugly it would embarrass a duck. You are proud of it anyway.', s => didToday(s, 'whittle'), 2, 'funny'],
+  ['A little bird landed on your boot, looked you over, and decided you were furniture.', null, 2, 'funny'],
+  // people, and the heart
+  ['Talked to the fire for a while. Best conversation you have had in weeks.', (s, n) => !!n && n.fire && s.day >= 10, 2, 'heart'],
+  ['Said your family’s names out loud, all of them, and for a moment it was like having them here.', null, 3, 'heart'],
+  ['Remembered a stupid joke from years ago and laughed out loud, alone in the dark.', null, 2, 'heart'],
+  ['Thought about home today and for once it did not hurt. It just felt warm.', s => s.day >= 14, 2, 'heart'],
+  // once in a run, if you are lucky
+  ['A wolf stood on the far shore and looked at you for a long time. Then it turned and went.', s => hasPred(s, /wolves|wolf/) && s.day >= 15, 6, 'rare'],
+  ['You found your own footprints from the first week, half grown over. It felt like meeting a stranger.', s => s.day >= 30, 5, 'rare'],
+  ['You caught yourself thinking of this place as home. Not camp. Home.', s => s.day >= 40, 6, 'rare'],
+  ['A moose walked out of the trees into the shallows, drank, and looked at you with water dripping off its chin. Neither of you moved for a full minute.', s => (season(s).big || []).includes('moose') && !frozen(s), 5, 'rare'],
+  ['The aurora went red at the edges tonight and pulsed like something breathing. You will never manage to describe it to anyone.', s => !!s.aurora, 6, 'rare'],
+];
+/* one good line: never one already seen this run, never the same kind twice running, the rare ones at most one a fortnight. kinds limits the pick (sitting still in daylight shows only the wonders) */
+function goodLine(s, n, kinds) {
+  const sys = sysOf(s); const seen = Array.isArray(sys.good) ? sys.good : (sys.good = []);
+  const rareOk = s.day - (sys.goodRare ?? -99) >= 14 && drand(s, 'goodrare') < 0.15;
+  const pool = []; GOOD.forEach((g, i) => { if (seen.includes(i) || g[3] === sys.goodKind || (kinds && !kinds.includes(g[3])) || (g[3] === 'rare' && !rareOk)) return; let ok = true; try { ok = !g[1] || !!g[1](s, n); } catch (e) { ok = false; } if (ok) pool.push(i); });
+  if (!pool.length) return null; const rare = pool.filter(i => GOOD[i][3] === 'rare'); const from = rare.length ? rare : pool;
+  const i = from[Math.floor(drand(s, 'goodpick' + seen.length) * from.length)]; const g = GOOD[i]; seen.push(i); sys.goodKind = g[3]; if (g[3] === 'rare') sys.goodRare = s.day;
+  return { text: typeof g[0] === 'function' ? g[0](s) : g[0], lift: g[2] ?? 2, kind: g[3], i };
+}
+const YOUNG = { deer: 'fawn', reddeer: 'fawn', roedeer: 'fawn', elk: 'calf', moose: 'calf', caribou: 'calf', springbok: 'lamb' };
+function curiousOf(s) {
+  const se = season(s); const big = se.big || []; const hunt = se.pools.hunt.map(x => x[0]); const b = bioId(s); const opts = [];
+  if (hasPred(s, /fox/) || ['shield', 'delta', 'barrens', 'chilko', 'taiga', 'sapmi', 'coastrain'].includes(b)) opts.push('A fox came to the edge of the firelight last night and sat down like a dog waiting for scraps. It watched you for a long time, then curled its tail round its feet and dozed, just out of reach.');
+  if (big.some(k => /deer|elk/.test(k))) opts.push('A deer stepped out of the trees this morning, twenty yards off, and did not run. It looked at you, flicked an ear, and went back to browsing as if you were part of the scenery.');
+  if (big.includes('caribou')) opts.push('A young caribou trotted right up to camp this morning, snorting, curious about the smoke. It circled twice and went off with its head high.');
+  if (hunt.includes('pademelon') || hunt.includes('wallaby')) opts.push('A pademelon hopped to the edge of camp at first light and sat nibbling the grass, close enough to touch. It did not seem to think much of you.');
+  if (b === 'nzbeech') opts.push('A weka marched into camp this morning, inspected everything you own, and left with a strip of bark it clearly thought was valuable.');
+  if (b === 'karoo') opts.push('A bat-eared fox trotted past the fire at first light, stopped, turned those enormous ears your way, and decided you were nothing to worry about.');
+  return opts.length ? pickD(s, 'curious', opts) : 'A hare came and sat a few feet from the fire this morning, washing its face. It stayed until the pot started to hiss.';
+}
+/* the season's big movements, the ones worth stopping for: the fish run, birds on migration, caribou on the move */
+function migWin(s) { const se = season(s); if (windowOn(s, 'run')) return 'run'; if (windowOn(s, 'migration')) return 'migration'; if (windowOn(s, 'rut') && (se.big || []).includes('caribou')) return 'caribou'; return null; }
+function migKey(s) { const m = migWin(s); if (!m) return null; const w = activeWindows(s).find(x => x.id === (m === 'caribou' ? 'rut' : m)); return m + (w ? w.from : ''); } /* one sitting per window */
 
 // ------------------------------------------------------------------ things that happen to you (one a day at most)
 const hasPred = (s, re) => season(s).predators.some(p => re.test(p[0]));
@@ -2002,6 +2094,74 @@ const EVENTS = {
     options: [
       { label: 'Clean and dress it properly', sub: 'Takes the rest of the day. Heals faster.', go(s, L) { const c = s.conditions[s.conditions.length - 1]; c.dmg *= 0.5; c.days = Math.max(2, c.days - 2); c.dressedWound = true; s.hours = dayHours(s); s.phase = 3; L.push([s.boiled || potLike(s) ? 'Boiled water, flushed it, wrapped it. Nothing else gets done today.' : 'Rinsed it as best you could without boiled water and wrapped it.', 'info']); if (!(s.boiled || potLike(s)) && chance(s, 0.15)) infect(s, c, L); } },
       { label: 'Wrap it and keep going', sub: 'Risk of infection.', go(s, L) { if (chance(s, 0.25)) infect(s, s.conditions[s.conditions.length - 1], L); else L.push(['It holds. You get on with it.', 'muted']); } },
+    ] },
+  // the quiet ones: most of a long stay is nothing happening, and now and then something wonderful. No loot, no harm, a little lift
+  curious: { when: 'begin', p: 0.03, cond: s => s.day > 10 && !s.storm && s.phase === 0,
+    title: 'A visitor', text: s => curiousOf(s),
+    options: [
+      { label: 'Keep still and watch', sub: 'It costs nothing.', go(s, L) { s.morale += 3; L.push([pickD(s, 'curious2', ['You did not move until it had gone. One leg went to sleep. Worth it.', 'For a few minutes you were not the only one who thought this place was home.', 'You tried to tell the camera about it afterwards and could not quite get it across.']), 'good']); } },
+    ] },
+  meteors: { when: 'begin', p: 0.05, cond: s => s.moon === 'new' && clearSky(s) && !s.wind && s.phase === 0 && s.day - ((s.sys && s.sys.meteorDay) ?? -99) >= 20,
+    title: 'Falling stars', text: () => 'You got up in the night to pee and stopped dead. Meteors, one every few seconds, scratching white lines across the whole sky. Some left a trail that hung there glowing after the streak had gone. You stood out in the cold until you could not feel your feet.',
+    options: [
+      { label: 'Remember it', sub: '', go(s, L) { sysOf(s).meteorDay = s.day; s.morale += 4; note(s, 'A meteor shower in the night. Stood out in it until my feet went numb.'); L.push(['You went back to bed grinning, and lay awake an hour anyway.', 'good']); } },
+    ] },
+  smoke: { when: 'begin', p: 0.03, cond: s => !s.practice && s.day > 7 && !s.rain && !s.storm && !s.snowfall && !s.fog && s.phase === 0 && s.rivals.some(r => !r.out) && s.day - ((s.sys && s.sys.smokeDay) ?? -99) >= 10,
+    title: 'Smoke', text: s => `A thin line of smoke far off across the ${season(s).climate.water === 'scarce' ? 'valley' : 'water'}, going straight up in the still air. Somebody else’s fire. Somebody else still out here.`,
+    options: [
+      { label: 'Watch it until it goes out', sub: 'A quarter of an hour.', go(s, L) { sysOf(s).smokeDay = s.day; s.hours = round1(s.hours + 0.25); s.phase = phaseOf(s); s.morale += 3; L.push(['It thinned and leaned and was gone. You wondered what they were cooking, and whether they ever watch yours.', 'good']); } },
+    ] },
+  marine: { when: 'begin', p: 0.03, cond: s => season(s).climate.coast && ['coastrain', 'barrens'].includes(bioId(s)) && !s.practice && !frozen(s) && !s.storm && !s.fog && s.phase === 0,
+    title: 'In the bay', text: s => bioId(s) === 'coastrain' ? pickD(s, 'marine', ['A pod of orcas came into the bay at first light, black fins slicing the flat water, the tall one in front. One of them blew right off the point and you heard it like a door slamming.', 'Sea lions hauled out on the rocks off the point this morning, a dozen of them, barking and shoving and stinking. The big bull roared at everything, including you.', 'A grey whale is feeding in the shallows of the bay, rolling up mud, close enough that you can see the barnacles on its back.']) : pickD(s, 'marine', ['A humpback is feeding out past the point, blowing every few minutes. Once it rolled and lifted one long white flipper out of the water, like a wave.', 'A pod of small whales went by just beyond the surf this morning, rolling in a line, puffing. Then the bay was empty again.']),
+    options: [
+      { label: 'Sit on the rocks and watch', sub: 'A quarter of an hour.', go(s, L) { s.hours = round1(s.hours + 0.25); s.phase = phaseOf(s); s.morale += 4; L.push(['You stayed until it was over. Your hands were cold and you did not care.', 'good']); } },
+    ] },
+  migration: { when: 'begin', p: 0.3, cond: s => s.phase === 0 && !s.storm && !!migKey(s) && (s.sys && s.sys.migSeen) !== migKey(s),
+    title: 'On the move', text: s => { const m = migWin(s); return m === 'run' ? (season(s).pools.fish.some(([k]) => k === 'salmon') ? 'The river is thick with salmon pushing upstream, backs out of the water in the shallows, red and battered and not stopping for anything. Gulls and eagles everywhere.' : 'Fish are moving along the shore in their thousands. The water off the point is dark with them, and every bird for miles has come to see.') : m === 'caribou' ? 'Caribou moving across the far side of the valley, hundreds of them in long lines. In the stillness you can hear the clicking of their ankles carrying across the water.' : 'Geese going over all morning, skein after skein, calling. You hear each one long before you see it, and long after it has gone.'; },
+    options: [
+      { label: 'Sit and watch a while', sub: 'Half an hour of daylight.', go(s, L) { sysOf(s).migSeen = migKey(s); s.hours = round1(s.hours + 0.5); s.phase = phaseOf(s); s.morale += 4; L.push(['Half an hour of watching the world go about its business without you. The best half hour of the week.', 'good']); } },
+      { label: 'Watch a minute, then get on', sub: '', go(s, L) { sysOf(s).migSeen = migKey(s); s.morale += 1; L.push(['You stood and watched for a minute with the pot in your hand, then went back to work.', 'muted']); } },
+    ] },
+  eagle: { when: 'act', p: 0.04, cond: s => s.lastAction === 'fish' && !s.storm && bioId(s) !== 'nzbeech' && s.raw.length > 0 && DATA.foods[s.raw[s.raw.length - 1].id].kind === 'fish' && s.raw[s.raw.length - 1].por <= 3,
+    title: 'Thief', text: s => { const b = bioId(s); const bird = ['taiga', 'sapmi'].includes(b) ? pickD(s, 'eagle', ['white-tailed eagle', 'osprey']) : b === 'tasrain' ? 'sea eagle' : b === 'karoo' ? 'fish eagle' : b === 'patagonia' ? 'black-chested buzzard-eagle' : pickD(s, 'eagle', ['bald eagle', 'osprey']); return `You laid the ${low(DATA.foods[s.raw[s.raw.length - 1].id].name)} on the rocks and turned to rebait. ${cap(article(bird))} came down out of nowhere, hit it with both feet and lifted off, wings booming, with your supper. It landed in a dead tree across the water and started eating, watching you the whole time.`; },
+    options: [
+      { label: 'Watch it eat', sub: 'The fish is gone either way.', go(s, L) { const k = s.raw.map(x => DATA.foods[x.id].kind).lastIndexOf('fish'); if (k >= 0) s.raw.splice(k, 1); s.morale += 1; L.push(['You have never been so close to one. You lost a fish, and you are not even that angry about it.', 'good']); } },
+    ] },
+  fawn: { when: 'act', p: 0.25, cond: s => s.lastAction === 'hunt' && !!s.carcass && s.carcass.day === s.day && !s.carcass.dressed && !!YOUNG[s.carcass.id] && !snowy(s) && s.day < 45 && !(s.sys && s.sys.fawnSeen),
+    title: 'Not alone', text: s => `When you get to the ${low(DATA.foods[s.carcass.id].name)} you see she was a mother. ${cap(article(YOUNG[s.carcass.id]))} is standing in the trees forty feet away, legs splayed, watching you. It does not run.`,
+    options: [
+      { label: 'Take it too', sub: 'Meat is meat out here. It will not feel like that.', go(s, L) { sysOf(s).fawnSeen = s.day; s.carcass.por = round1(s.carcass.por + Math.min(12, s.carcass.por * 0.15)); s.morale -= 6; note(s, `Took the ${YOUNG[s.carcass.id]} as well as its mother. It was the right call for the food. It does not feel like one.`); L.push(['It was quick, and you did it properly, and afterwards you still had to sit down for a while.', 'warn']); } },
+      { label: 'Leave it', sub: 'It may make it on its own. It may not.', go(s, L) { sysOf(s).fawnSeen = s.day; s.morale += 2; L.push([`You turned your back and got to work. When you looked up again the ${YOUNG[s.carcass.id]} was gone.`, 'info']); } },
+    ] },
+  almost: { when: 'begin', p: 0.02, cond: s => !s.practice && s.day > 35 && s.morale < 55 && !(s.sys && s.sys.almost) && s.phase === 0,
+    title: 'The rock by the water', text: () => 'You walked down to the water this morning and sat on a rock with the radio in your hand, and thought about pressing the button. A hot shower. A bed. A plate of food you did not have to catch. You sat there a long time.',
+    options: [
+      { label: 'Keep going', sub: '', go(s, L) { sysOf(s).almost = s.day; s.morale += 5; note(s, `Day ${s.day}. Sat on the rock with the radio for an hour. Did not press it.`); L.push(['Then you put the radio back in your pocket, stood up, and went to get on with the day.', 'good']); } },
+    ] },
+  // people, and the show
+  homemsg: { when: 'begin', p: 0.04, cond: s => !s.practice && s.day > 30 && !(s.sys && s.sys.homeMsg) && s.phase === 0,
+    title: 'A message', text: () => 'A boat at first light, which never happens. The medic steps ashore, hands you a folded sheet of paper, and says production made an exception. It is from home.',
+    options: [
+      { label: 'Read it. Then read it again.', sub: '', go(s, L) { sysOf(s).homeMsg = s.day; s.hours = round1(s.hours + 0.5); s.phase = phaseOf(s); s.morale += 10; note(s, 'A message from home came out with the medic. I have read it so many times the folds are going soft.'); L.push(['Everyone is fine. They are proud of you. Somebody drew a picture. You fold it small and put it inside your jacket, against your chest.', 'good']); } },
+    ] },
+  radio: { when: 'begin', p: 0.35, cond: s => !s.practice && s.day >= 5 && s.phase === 0 && s.day - ((s.sys && s.sys.radioDay) ?? 0) >= 7,
+    title: 'Check-in', text: () => 'The radio crackles at first light. Production, doing the weekly check: “Morning. How are you doing out there? Honestly.”',
+    options: [
+      { label: 'Tell the truth', sub: 'Saying it out loud costs something. It helps, too.', go(s, L) { sysOf(s).radioDay = s.day; const h = s.history[s.history.length - 1]; const thin = !!h && h.kcal < h.tdee * 0.4; const hard = s.morale < 50; s.morale += hard ? 4 : 2; L.push([hard ? 'You told them it has been hard and the nights are long. They listened and did not try to fix it. That helped more than you expected.' : thin ? 'You told them the food is thin and the work is good. They wrote it down. It felt like being seen.' : 'You told them it is going well, and found as you said it that it was true.', 'good']); } },
+      { label: 'Say you are fine', sub: 'Short and easy.', go(s, L) { sysOf(s).radioDay = s.day; if (s.morale < 45) { s.morale -= 2; L.push(['“Fine,” you said. “All good.” The lie sat in your stomach for the rest of the morning.', 'muted']); } else L.push(['“Fine. All good out here.” “Copy that.” And that was that.', 'muted']); } },
+    ] },
+  // weather that turns in the middle of the day, and a tree in the night
+  squall: { when: 'act', p: 0.03, cond: s => !s.practice && !s.storm && !s.rain && !s.snowfall && dayFrac(s) >= 0.5 && dayFrac(s) < 0.85 && !!ACTIONS[s.lastAction] && !!ACTIONS[s.lastAction].where && !['camp', 'inside'].includes(ACTIONS[s.lastAction].where),
+    title: 'Weather coming', text: s => snowy(s) ? 'The sky went the colour of a bruise in ten minutes. Now the wind is up and the first snow is coming sideways off the hills.' : 'The afternoon went dark in the space of ten minutes. Cloud stacked up over the hills, and the first fat drops are hitting the ground around you.',
+    options: [
+      { label: 'Run for camp', sub: 'Quicker. You will be soaked.', go(s, L) { s.hours = round1(s.hours + 0.5); s.today.burn += 120; s.phase = phaseOf(s); s.wet = Math.min(1, s.wet + 0.3); s.morale -= 2; s.today.squallRun = true; L.push(['You ran. It caught you halfway, and you got to camp soaked to the skin and gasping, with water running out of your sleeves.', 'warn']); } },
+      { label: 'Hunker down where you are', sub: 'An hour and a half under a tree. You stay mostly dry.', go(s, L) { s.hours = round1(s.hours + 1.5); s.today.burn += 75; s.phase = phaseOf(s); s.wet = Math.min(1, s.wet + 0.1); s.morale -= 1; L.push(['You sat it out under the thickest tree you could find, knees up, hood up, watching it march across the water. It blew through as fast as it came.', 'muted']); } },
+    ] },
+  treefall: { when: 'begin', p: 0.15, cond: s => !s.practice && s.storm && s.shelterLvl > 0 && s.phase === 0 && bioId(s) !== 'karoo' && s.day - ((s.sys && s.sys.treeDay) ?? -99) >= 10,
+    title: 'A tree down', text: () => 'A crack in the night like a rifle shot, then a long tearing crash. In the grey light you find a dead tree lying across the end of the shelter, and the rain coming in around it.',
+    options: [
+      { label: 'Lever it off now, in the rain', sub: 'An hour and a half, soaked. Firewood out of it today.', go(s, L) { sysOf(s).treeDay = s.day; s.hours = round1(s.hours + 1.5); s.today.burn += 300; s.phase = phaseOf(s); s.wet = Math.min(1, s.wet + 0.4); s.shelterCond = Math.max(0.2, (s.shelterCond ?? 1) - 0.12); s.firewood = Math.min(30, round1(s.firewood + 3)); s.morale -= 1; L.push(['You got a pole under it and heaved until it rolled off. The roof is torn where it lay, but the trunk is dry inside: three days of firewood.', 'info']); } },
+      { label: 'Leave it till the rain stops', sub: 'A leaky day and night. Firewood in the morning.', go(s, L) { const sys = sysOf(s); sys.treeDay = s.day; sys.treeLeak = s.day; s.shelterCond = Math.max(0.2, (s.shelterCond ?? 1) - 0.04); s.morale -= 2; L.push(['You leave it where it is. Water runs down the trunk and drips onto the end of your bed all day.', 'muted']); } },
     ] },
 };
 function pick1(s, arr) { return arr[Math.floor(rnd(s) * arr.length)]; }
@@ -2320,6 +2480,14 @@ function nightAndBody(s, burn, done, lines) {
   const chill = ((Tin < 5 ? clamp((5 - Tin) / 30, 0, 1.2) * clamp(1 - bedding, 0, 1) : 0) + pastBag + openAir) * doorMod * (banked ? 0.8 : 1) * (fire && s.fireInside ? (star ? 0.5 : 0.4) : fire ? (star ? 0.82 : 0.75) - (door === 'fire' && ['leanto', 'tarp'].includes(s.shelterType) ? 0.07 : 0) : 1) * (s.shelterLvl >= 3 ? 0.6 : s.shelterLvl === 2 ? 0.8 : 1);
   if (chill > 0.15) { dmg += chill * 4; s.morale -= chill * 3; if (chance(s, 0.5)) lines.push([chill > 0.6 ? 'Shivering all night, curled round the coals. You did not sleep.' : 'Too cold to sleep more than an hour at a time.', chill > 0.6 ? 'bad' : 'warn']); }
   const sleepQ = [0.5, 0.75, 1, 1.1][s.shelterLvl] * (fire ? 1 : 0.7) * (s.storm ? 0.7 : 1) * (lf > 0.2 ? 0.85 * (has(s, 'Hammock') ? 1.12 : 1) : 1) * (1 - Math.min(0.6, chill)) * (has(s, 'Hammock') && T > 3 ? 1.15 : 1); /* in a hammock the hip bones do not grind on the ground, and on a mild night it is the best sleep in the woods */
+  /* sleep debt: bad nights stack up and good ones pay them back. Run up enough of it and the days go foggy for a while: clumsy hands, a short temper, and it lifts by itself */
+  { const sys = sysOf(s); const FOG = 'Fog of bad sleep'; const fogNow = s.conditions.some(c => c.name === FOG);
+    if (sys.treeLeak === s.day && (s.rain || s.storm)) { s.wet = Math.min(1, s.wet + 0.15); s.morale -= 1; lines.push(['The tree is still lying on the roof, and the rain runs down it straight onto your bed.', 'warn']); }
+    const d0 = sys.sleepDebt || 0; const d = Math.round(clamp(d0 + (0.8 - sleepQ) * 1.5, 0, 6) * 100) / 100; sys.sleepDebt = d;
+    if (fogNow) sys.clumsyDay = s.day + 1;
+    else if (d >= 3 && s.day - (sys.fogDay ?? -99) >= 7) { sys.fogDay = s.day; sys.sleepDebt = round1(d - 1.5); addCond(s, { name: FOG, days: 3, dmg: 0.1 }); sys.clumsyDay = s.day + 1; s.morale -= 2; lines.push([pickD(s, 'fog', ['Too many broken nights in a row. You woke up stupid with tiredness: you put the pot down and could not remember where, and cried a little over a dropped knot.', 'Night after night of bad sleep has caught up with you. Everything takes twice as long and your hands will not do what they are told.']), 'warn']); note(s, 'Too many bad nights in a row. Foggy, clumsy, short-tempered. Sleep is a job too.'); }
+    else if (d >= 2 && d0 < 2) lines.push(['Another broken night. The tiredness is starting to stack up.', 'muted']);
+    if (!fogNow && sys.fogDay != null && s.day === sys.fogDay + 3 && sleepQ >= 0.75) lines.push(['Slept like a stone and woke up clear-headed. The fog has lifted.', 'good']); }
   if (lf > 0.2 && chance(s, 0.1)) lines.push(['Hips and ribs on the ground. There is no way to lie that does not hurt.', 'muted']);
   if (fedFrac < 0.35 && s.day > 10 && chance(s, 0.12)) { lines.push([pick1(s, ['Nosebleed this morning, out of nowhere.', 'Heart racing, lying dead still.', 'Stood up too fast and the world went black for a second.', 'Gas and cramps all night. Nothing in you to make either.', 'Hands shaking too much to tie a knot.', 'Cold all the time now, even by the fire.']), 'warn']); if (lf > 0.22 && s.health < 30 && chance(s, 0.15)) { s.health -= 4; s.morale -= 5; lines.push(['Blacked out on the way to the water and came to on the ground.', 'bad']); } }
   if (ate.hard && !s.once_tooth && chance(s, 0.0025)) { s.once_tooth = true; addCond(s, { name: 'Cracked tooth', days: 14, dmg: 0.4 }); s.morale -= 7; lines.push(['Cracked a molar on a strip of dried meat. Every mouthful is going to hurt for a while.', 'bad']); }
@@ -2362,6 +2530,8 @@ function nightAndBody(s, burn, done, lines) {
   if (dm < 0) dm *= willRamp(s, se); // loneliness drains slowly at first and only reaches full strength well after most rivals have gone home
   dm += now * (s.day <= 3 ? 0.6 : 1); /* the first days are adrenaline */
   if (s.practice && dm < 0) dm *= 0.4; /* practice is gentle on the will */
+  /* the good nights: when the day has gone well (and now and then on any ordinary night) something worth remembering. Never on the same night as a lonely one */
+  { const lonely = lines.some(l => LONELY.includes(l[0])); if (!lonely && s.day > 2 && drand(s, 'goodnight') < (dm > 0 ? 0.5 : 0.1)) { const g = goodLine(s, { fire, fed: fedFrac, sleep: sleepQ, chill, ate, tdee }); if (g) { dm += g.lift; lines.push([g.text, 'good']); } } }
   s.morale = clamp(s.morale + dm, 0, 100);
 
   const gone = s.rivals.filter(r => !r.out && r.days < s.day);
@@ -2384,6 +2554,8 @@ function nightAndBody(s, burn, done, lines) {
     else if (s.health < 18) end(s, 'medical', l > 0.15 ? `Medical check: down ${Math.round(l * 100)}%, blood pressure and heart rate too low. Pulled.` : s.conditions.length ? `Medical check: ${low(s.conditions[0].name)}, and your vitals are too low. Pulled.` : 'Medical check: blood pressure too low. Pulled.');
     else lines.push([`Medical check: ${Math.round(s.weight)} lb, down ${Math.round(l * 100)}%.${l >= lim - 0.05 ? ' The medics warn you are close to the limit.' : ''}`, l >= lim - 0.05 ? 'warn' : 'info']);
   }
+  /* the medic leaves a short note at each weekly check: the weight, and which way it is going. Nothing here can pull you out */
+  if (s.status === 'playing' && !s.practice && s.lastMed === s.day && s.day > 0) { const wk = s.history.length > 7 ? s.history[s.history.length - 8].weight : s.weight0; const dw = Math.round(wk - s.weight); note(s, `Medic\u2019s note: ${Math.round(s.weight)} lb, ${dw > 0 ? `down ${dw} lb this week` : dw < 0 ? `up ${-dw} lb this week` : 'the same as last week'}. ${dw >= 6 ? '\u201cThat is a lot in a week. Fat, if you can get it.\u201d' : dw >= 3 ? '\u201cSteady loss. Keep eating what you can.\u201d' : '\u201cHolding up well. Keep doing what you are doing.\u201d'}`); }
   if (s.status === 'playing' && s.day >= s.winDay) end(s, 'won', season(s).winText ?? 'A boat comes around the point. You are the last one out here. You win.');
   s.morale = clamp(s.morale, 0, 100); // a few night costs land after the main tally
   logDay(s, s.day, (s.today ? s.today.lines : []).concat(lines));
@@ -2422,6 +2594,7 @@ function foundWreck(s) {
     s.mats.wire += 6; s.mats.cordage += 4; s.containers = (s.containers || 0) + 1; s.found.push({ cls: 'Metal hardware', name: 'A curved shard of the wreck' }); s.stats.found += 1;
     L.push(['Torn loose from the rim: a bundle of fine bright wire that will not kink, a coil of braided cable, and a curved shard of the hull that holds water and does not scorch in a fire. 6 wire, 4 cordage, and a pot.', 'good']); }
   else L.push(['The wreck is still here. Nothing has moved.', 'muted']);
+  if (first) { if (!has(s, 'Ferro rod')) { s.gear.push('Ferro rod'); L.push(['Wedged in a seam, a short dark rod that throws a shower of white sparks when you drag the knife down it. A fire-starter, and a good one.', 'good']); } else { sysOf(s).spareFerro = true; L.push(['Wedged in a seam, a short dark rod that throws white sparks when you scrape it: a second fire-starter. It goes in the bottom of the pack for the day you lose the first.', 'good']); } } /* and a fire-starter, so the walk out here pays */
   s.today.lines.push(...L); return L;
 }
 function moveCamp(s, metres, opts = {}) {
@@ -2505,6 +2678,7 @@ const GEAR_COST = { 'Gillnet': 12, 'Fishing gear': 4, 'Axe': 4, 'Sleeping bag': 
 const BUDGET = 20;
 const gearCost = id => GEAR_COST[id] ?? (VARIANT[id] && VARIANT[id].cost) ?? 2; const kitCost = gear => gear.reduce((a, g) => a + gearCost(g), 0);
 const API = { GEAR_FAMILY, VARIANT, kindsOf, variantOf, campStock, jobHours, surplusPor, PRACTICE_KEY, placeOf, practicePlace, hydOf, waterNow, drinkUp, fishDepth, campSummary, shelterScores, bedDampOf, prevailOf, CAMP_FIXED, zoneOf, layoutNotes, kitchenMult, GEAR_COST, BUDGET, gearCost, kitCost, waterToday, note, sunny, sprayLeft, fallChance, climbAnchor, stalkNoise, fouling, latrineOk, raftOf, raftOk, flintOf, hasBow, bowPower, driftChance, bearings, wade, clothesOf, tomorrow, skyAcc, thinIce, potLike, clayPots, greenPots, bedWarmth, snowLoadOf, bedOf, lampOk, nightOk, haftOf, tinderDamp, fireOdds, sealOf, hasHearth, isDry, onStation, RACK_CAP, DRY_AT, dryDaysLeft, sysOf, cacheSign, low, matName, BIOMES, biomeOf, treeKind, realMedianOf: se => { const d = se.rivals.filter(r => r.days != null).map(r => r.days).sort((a, b) => a - b); return d[d.length >> 1]; }, WEIGHT, loadOf, carryCap, moveCampCost, moveCamp, collectSize, berryRipe, bushRipeDay, stockOf, stockWord, billFor, nightOk, NIGHT_OK, treeYield, treeNames, fishPool, sizeOf, SHELTERS, shelterOptions, chooseShelter, dropPlan, makeCamp, foundWreck, shelterName, canWorkInside, travel, activeWindows, windowOn, timeMult, weatherName, dayFrac, midday, setTune, DATA, C, MATS, ACTIONS, EVENTS, newGame, runDay, beginDay, act, endDay, choose, carryLoad, available, tapOut, placing, status, season, storeKcal, temperature, shelterLevel, SHELTER_NAMES, shelterBill, shelterMissing, matList, fishOdds, huntOdds, bowDrillOdds, dayHours, hoursLeft, phaseOf, lowTide, igniter, blade, cutter, chopper, hasRod, digger };
+Object.assign(API, { GOOD, goodLine, migWin });
 if (typeof module !== 'undefined') module.exports = API; else root.Engine = API;
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
@@ -3668,6 +3842,7 @@ function interactionsHere() {
     else if (push('shelter', null, startBuild)) { const o = out[out.length - 1]; o.label = `Build the ${E.low(E.SHELTERS[S.shelterGoal].name)}`; o.sub = E.available(S, 'shelter').odds + ` · next: ${STAGE_NAME[buildStage()] || 'build'}`; }
     else { const miss = E.shelterMissing(S); if (miss && miss.length) out.push({ label: `${E.SHELTERS[S.shelterGoal].name}`, sub: 'Needs ' + miss.join(', '), fn: openNeeds, dim: true }); }
     push('change_dry'); push('cook', null, startCook); push('melt_snow', null, startMelt); push('melt_ice'); push('catch_rain'); push('star_fire'); push('photo'); push('cut_belt'); if (S.cachePlace === 'camp') push('repair_cache'); push('fire_in'); push('fire_out'); push('mend', null, () => startCraft('mend')); push('work_hide', null, () => startCraft('work_hide')); push('smoke_clothes'); push('read_sky'); push('shape_pot', null, () => startCraft('shape_pot')); push('fire_pots', null, () => startCraft('fire_pots')); push('clear_roof'); push('splint', null, () => startCraft('splint')); push('dig_latrine'); push('bed', null, () => startCraft('bed')); push('bury'); push('scrub'); push('check_roof'); push('caulk', null, () => startCraft('caulk')); push('fix_axe'); push('drink'); push('repair', S.sys && S.sys.damage ? { frame: 'Re-lash the frame', walls: 'Re-chink the walls', roof: 'Fix the roof' }[S.sys.damage] : null, startRepair); push('air_bed'); push('boil', null, muddy() ? startFilter : null); push('lay_out_camp', null, openLayout); push('needle_tea'); push('bone_broth'); push('dry'); if (push('smoke', 'Hot smoke', () => startSmoke('hot'))) { const ref = out[out.length - 1]; push('smoke', 'Cold smoke', () => startSmoke('cold')); if (out[out.length - 1] !== ref) out[out.length - 1].sub = 'a smoulder, no flame · slower, less wood, does not cook it'; } push('dry_food', null, () => E.blade(S) ? startSlice() : doAct('dry_food')); push('render_fat', null, startRender); push('talk_camera'); push('cordage', null, startCordage); push('sharpen', null, startSharpen); push('rest');
+    push('sit'); /* an hour by the fire doing nothing on purpose */
     { const ready = Object.keys(E.ACTIONS).some(k => k.startsWith('craft_') && av(k).ok); out.push({ label: 'Craft…', sub: ready ? '' : 'see what each thing needs', fn: () => openBuild(false) }); }
     return overflow(out);
   }
@@ -3713,6 +3888,7 @@ function interactionsHere() {
   if (!W.inside) push('dew');
   if (dist(W.player, W.camp) > 300) { push('shadow_stick'); push('moss_check'); }
   if (W.bushes.some(b => near(b, 60))) push('inspect');
+  if (atShore() || near(W.cliff, 90)) push('sit'); /* somewhere with a view */
   if (near(W.cliff, 90)) push('climb', null, () => { doAct('climb'); if (S.sys && S.sys.lookout === S.day) { reveal(W.cliff.x, W.cliff.y, 1600); worldToast([['You can see a long way from up here. Your map has filled in.', 'good']], W.player.x, W.player.y - 10); } });
   if (dist(W.player, W.camp) > 300 && !((S.sys && S.sys.cairns) || []).some(c => c.x != null && dist(c, W.player) < 140)) push('cairn', null, () => startCraft('cairn', false, { x: Math.round(W.player.x), y: Math.round(W.player.y) }));
   if (hasCamp() && S.phase < 2 && dist(W.player, W.camp) > 420 && !atShore() && !atRiver() && !(W.pond && near(W.pond, W.pond.r + 40)) && !near(W.cliff, 80)) { const c = E.moveCampCost(S, mFromPx(dist(W.player, W.camp))); out.push({ label: 'Move camp here', sub: `${c.trips} trip${c.trips > 1 ? 's' : ''} · ${c.kg} kg · about ${fmtH(c.hours)}`, fn: openMoveCamp }); }
@@ -3856,6 +4032,7 @@ const AI = {
 };
 function actIcon(id = '', label = '') {
   const t = id + ' ' + label.toLowerCase();
+  if (/^sit\b/.test(t)) return `<svg class="ai" viewBox="0 0 24 24" aria-hidden="true"><path d="${AI.eye}"/></svg>`; /* sitting still is all looking */
   const k = /check_roof|clear_roof/.test(t) ? 'tent' : /light_fire|tend_fire|star_fire|fire_in|fire_out|smoke|dry_food|render|charcloth|harden/.test(t) ? 'fire' : /dew|water|ice_hole|boil|melt_ice/.test(t) ? 'drop' : /catch_rain/.test(t) ? 'rain' : /melt_snow|snowshoe/.test(t) ? 'snow'
     : /cut_logs|firewood|fix_axe|sharpen/.test(t) ? 'axe' : /cut_poles|craft_platform|craft_rack|raft/.test(t) ? 'pole' : /boughs|bed\b|^bed/.test(t) ? 'bough' : /\bbark/.test(t) ? 'bark' : /tinder/.test(t) ? 'tinder'
     : /setnet|checknet|craft_net/.test(t) ? 'net' : /setlines|hook|handline|leader|lure/.test(t) ? 'hook' : /fish/.test(t) ? 'fish' : /snare|deadfall|checktraps|trapline/.test(t) ? 'snare'
@@ -3868,6 +4045,7 @@ function actIcon(id = '', label = '') {
 }
 /* two words or so for the tile; the full label stays on the button for screen readers and for the record */
 const SHORT = { photo: 'Photograph', talk_camera: 'Talk it out', read_letter: 'The letter', dig_latrine: 'Latrine', lay_out_camp: 'Lay out', air_bed: 'Air bedding', work_hide: 'Scrape hide', caulk: 'Chink walls', repair: 'Patch shelter', cook: 'Cook', smoke_clothes: 'Smoke clothes', clean: 'Clean catch', cut_belt: 'Cut belt', dress: 'Dress it', raft_fish: 'Raft fishing', beach_raft: 'Beach raft', check_roof: 'Check roof', clear_roof: 'Clear roof', light_fire: 'Light fire', tend_fire: 'Tend fire', star_fire: 'Star fire', melt_snow: 'Melt snow', melt_ice: 'Melt ice', catch_rain: 'Catch rain', change_dry: 'Dry clothes', cut_poles: 'Poles', cut_logs: 'Logs', firewood: 'Firewood', checktraps: 'Trapline', setlines: 'Set lines', checknet: 'Check net', setnet: 'Set net', ice_hole: 'Ice hole', shadow_stick: 'Find north', moss_check: 'Moss side', read_sky: 'Read sky', render_fat: 'Render fat', dry_food: 'Dry meat', craft_charcloth: 'Char cloth', harden_stakes: 'Harden stakes', repair_cache: 'Mend cache', whittle: 'Whittle', inspect: 'Look closely' };
+SHORT.sit = 'Sit a while';
 const FILLER = /^(the|a|an|your|and|up|to|of|for|some|it|them|from|at|on|in|into|with|now|out)$/i;
 function shortLabel(a) { if (a.id && SHORT[a.id] && !(a.id === 'repair' && /^Re-|^Fix/.test(a.label || ''))) return SHORT[a.id]; const L = a.label || ''; if (L.length <= 14) return L; const w = L.replace(/^(Gather|Pick|Look at the|Look at|Cut|Make|Build|Go|Set|Check|Lay|Rig the|Melt|Fetch|Break a hole in the)\s+/i, (m) => /^(Pick|Cut|Build|Set|Check|Lay|Melt|Fetch)/i.test(m) ? m : '').split(' ').filter((x, i) => i === 0 || !FILLER.test(x)); /* never end on 'the' or 'your' */ const s = w.slice(0, 2).join(' '); return s.charAt(0).toUpperCase() + s.slice(1); }
 function tileChips(sub) {
@@ -3996,6 +4174,7 @@ function afterAct(id, lines, before) {
   if (id === 'hunt' && S.wounded) { W.blood = []; const ls = W.lastShot; const a = ls ? ls.a + (Math.random() - 0.5) * 0.8 : Math.random() * 6.28; let x = ls ? ls.x : p.x, y = ls ? ls.y : p.y; /* the trail starts where it was hit and runs away from you */ for (let i = 0; i < 6; i++) { x += Math.cos(a + Math.sin(i) * 0.6) * 55; y += Math.sin(a + Math.sin(i) * 0.6) * 55; x = Math.max(60, Math.min(MAP.w - 60, x)); y = Math.max(60, Math.min(MAP.h - 60, y)); W.blood.push({ x, y, seen: i < 2 }); } }
   if (id === 'track') { W.blood = []; if (S.carcass) W.carcassPos = { x: p.x + 40, y: p.y + 30 }; }
   if (id === 'light_fire' && S.fire) W.fx.push({ kind: 'glow', age: 0, life: 1 });
+  if (id === 'sit' && S.today && S.today.sitAnimal) { S.today.sitAnimal = false; spawnAnimal(); } /* sit still long enough and something comes out */
   S.hints = S.hints || {};
   if (id === 'hunt' && S.carcass && !S.hints.kill) { S.hints.kill = true; setTimeout(() => banner([['It is lying where it fell. Walk to it and gut it, or the scavengers have it by morning.', 'info']], 6000), 1200); }
   if ((id === 'clean' || id === 'dress' || id === 'checktraps') && S.stores.length && !S.hints.eat) { S.hints.eat = true; setTimeout(() => banner([['In the stores now. You eat from the stores every night by the fire; cook a meal at camp if you cannot wait, and set how much you ration under Camp.', 'info']], 7000), 1200); }
@@ -4010,6 +4189,7 @@ function pick(i) {
   if (ev.id === 'bear' && W.actor) { const b = W.actor; b.done = true; b.leaving = true; b.t = 0; const a = Math.atan2(b.y - W.camp.y, b.x - W.camp.x); b.vx = Math.cos(a) * 90; b.vy = Math.sin(a) * 90; }
   if (ev.id === 'grouse' && W.actor) { if (lines.some(l => l[1] === 'good')) W.actor.dead = true; else W.actor = null; }
   if (ev.id === 'carcass') W.carcassEv = null;
+  if (ev.id === 'squall' && S.today && S.today.squallRun && hasCamp()) { S.today.squallRun = false; W.player.x = W.camp.x; W.player.y = W.camp.y + 60; input.target = null; } /* you ran for it: you are at camp now, dripping */
   worldToast(lines, W.player.x, W.player.y); updateHud(); diffFloats(before); feel(lines); save();
   if (E.hoursLeft(S) < 0.5) dusk(); if (S.status !== 'playing') W.over = true;
   lastActs = ''; refreshActs();
@@ -6724,6 +6904,13 @@ function vignette(id) {
     case 'duff': s += fire(150, 86) + Array.from({ length: 10 }, () => `<path d="${P3.blob(r, 90 + r() * 140, 80 + r() * 10, 6 + r() * 6, 2)}" fill="#c8642a" opacity=".6" filter="url(#tw)"/>`).join('') + Array.from({ length: 5 }, (_, i) => `<circle cx="${130 + i * 10}" cy="${50 - i * 6}" r="${8 + i * 3}" fill="#8a8680" opacity=".22"/>`).join(''); break;
     case 'ferro': s += `<path d="M130 82 L190 74" stroke="#4a4c4a" stroke-width="5" stroke-linecap="round" filter="url(#tw)"/><path d="M188 74 L204 72" stroke="#6a4e34" stroke-width="5" stroke-linecap="round"/>`; break;
     case 'axetide': case 'axefound': s += `<path d="M150 ${id === 'axetide' ? 76 : 86} L196 ${id === 'axetide' ? 70 : 80}" stroke="#6a4e34" stroke-width="4" stroke-linecap="round" filter="url(#tw)"/><path d="M192 ${id === 'axetide' ? 64 : 74} L204 ${id === 'axetide' ? 62 : 72} L206 ${id === 'axetide' ? 76 : 86} L194 ${id === 'axetide' ? 76 : 86}Z" fill="#6a6e70" filter="url(#tw)"/>`; break;
+    /* the quiet ones */
+    case 'curious': s += fire(70, 84) + an('fox', 210, 82, 1.2, true, false); break;
+    case 'meteors': s += `<rect width="${Wd}" height="62" fill="#1a1e2c" opacity=".88"/>` + Array.from({ length: 40 }, () => `<circle cx="${F1(r() * Wd)}" cy="${F1(r() * 56)}" r="${F1(0.4 + r() * 0.7)}" fill="#ece8d8" opacity="${F1(0.4 + r() * 0.6)}"/>`).join('') + Array.from({ length: 5 }, () => { const x = 30 + r() * 260, y = 6 + r() * 30; return `<path d="M${F1(x)} ${F1(y)} l${F1(26 + r() * 20)} ${F1(10 + r() * 8)}" stroke="#f4f0e0" stroke-width="1.1" opacity=".85" stroke-linecap="round"/>`; }).join(''); break;
+    case 'smoke': s += `<path d="M250 60 C246 48 256 40 250 28 S254 12 248 2" stroke="#d8d4cc" stroke-width="2.4" fill="none" opacity=".7" filter="url(#soft)"/>`; break;
+    case 'marine': s += `<path d="M0 62 Q160 56 320 62 L320 96 L0 96Z" fill="#6e8890" filter="url(#tw)"/><path d="M120 76 Q160 62 200 76Z" fill="#2a2e32"/><path d="M168 66 l4 -12 l3 11Z" fill="#2a2e32"/><path d="M150 64 q-4 -10 0 -16 M150 64 q4 -10 0 -16" stroke="#e8eef0" stroke-width="1.2" fill="none" opacity=".8"/>`; break;
+    case 'migration': for (let i = 0; i < 14; i++) { const x = 40 + i * 17 + r() * 6, y = 14 + Math.abs(i - 7) * 3 + r() * 3; s += `<path d="M${F1(x - 4)} ${F1(y - 2)} L${F1(x)} ${F1(y)} L${F1(x + 4)} ${F1(y - 2)}" stroke="#2a2a2a" stroke-width="1.1" fill="none"/>`; } break;
+    case 'eagle': s += `<path d="M120 40 Q140 30 160 38 Q180 30 200 40 Q180 38 166 44 L160 50 L154 44 Q140 38 120 40Z" fill="#2a2420"/><circle cx="160" cy="37" r="2.2" fill="#ece8dc"/>`; break;
     case 'wound': s += `<path d="M110 84 Q150 66 210 76 Q214 86 200 90 Q150 92 112 90Z" fill="#c8a07e" filter="url(#tw)"/><path d="M140 80 L180 78" stroke="#8a2a20" stroke-width="2"/><path d="M146 74 L150 84 M156 74 L160 84 M166 73 L170 83" stroke="#e8e0d0" stroke-width="3" opacity=".8"/>`; break;
   }
   s += `<rect width="${Wd}" height="${H}" fill="none" stroke="#120e08" stroke-width="14" opacity=".3" filter="url(#soft)"/>`;
@@ -7398,6 +7585,7 @@ function migrate(g) { // fill anything a newer build added, so a save survives u
   if (g.sys !== undefined && (!g.sys || typeof g.sys !== 'object' || Array.isArray(g.sys) || g.sys.schema !== 1)) { console.warn('Save had an unreadable sys block; reset it.'); g.sys = undefined; }
   if (g.mapV === undefined) g.mapV = 1; // saves from before drop sites varied keep the map they started on
   const fresh = E.newGame(g.seasonKey, g.gear || [], { weight: g.weight0, seed: g.seed });
+  if (g.sys && typeof g.sys === 'object') { if (typeof g.sys.sleepDebt !== 'number' || !isFinite(g.sys.sleepDebt)) g.sys.sleepDebt = 0; if (!Array.isArray(g.sys.good)) g.sys.good = []; } /* the quiet update: sleep debt, and the good lines already seen */
   const fill = (dst, src) => { for (const k in src) { if (dst[k] === undefined) dst[k] = src[k]; else if (src[k] && typeof src[k] === 'object' && !Array.isArray(src[k]) && dst[k] && typeof dst[k] === 'object' && !Array.isArray(dst[k])) fill(dst[k], src[k]); } };
   fill(g, fresh); conformSave(g, fresh); if (!g.stats.walked) g.stats.walked = 0; if (g.shelterLvl && !g.shelterType) g.shelterType = ['', 'leanto', 'hut', 'cabin'][g.shelterLvl]; for (const x of (g.stores || []).concat(g.raw || [])) if (x.left == null || x.left > 1e8) x.left = Infinity; if (needRivals) scrubRivals(g); g.rivalsV = 1; g._at = null; g.v = 2; return g;
 }
