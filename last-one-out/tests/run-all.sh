@@ -40,4 +40,5 @@ node selfcheck.js
 node kit-tools.js
 node kit-camp.js
 node kit-new.js
+node quiet.js
 echo "Everything passed."
