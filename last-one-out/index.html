@@ -402,6 +402,49 @@ function addGear(base, list) { for (const v of list) { const g = { id: v.id, rat
 const kindsOf = (s, base) => [base, ...(GEAR_FAMILY[base] || [])].filter(id => s.gear.includes(id));
 const variantOf = (s, base) => { const k = kindsOf(s, base); return k.length ? (VARIANT[k[0]] || { id: k[0], base }) : null; }; /* the first one you brought; the plain item counts as itself */
 /* gear: tools and hunting */
+addGear('Bow and arrows', [
+  { id: 'Recurve bow', cost: 4, power: 1.2, delicate: true, effect: 'Hits harder than the standard bow, though rain and hard frost take the life out of its string and limbs.' },
+  { id: 'Fibreglass bow', cost: 2, power: 0.92, effect: 'Cheaper and a little weaker than the standard bow, and the weather never gets to it.' }]);
+addGear('Knife', [
+  { id: 'Folding knife', cost: 2, effect: 'Light and cheap, but it fights the joints of big game and slips more often.' },
+  { id: 'Machete', cost: 3, effect: 'Clears saplings and boughs fast, yet it is clumsy for cleaning fish or skinning.' }]);
+addGear('Axe', [
+  { id: 'Hatchet', cost: 3, effect: 'Quick work of small wood and poles, though it will never fell a tree for logs.' },
+  { id: 'Splitting maul', cost: 3, effect: 'Splits far more firewood in a session, but you cannot fell a tree or trim poles with it.' }]);
+addGear('Saw', [
+  { id: 'Folding saw', cost: 2, effect: 'Light and handy for poles and firewood, while bucking logs with it is slow going.' }]);
+addGear('Fishing gear', [
+  { id: 'Tenkara rod', cost: 3, hooks: 25, line: 40, water: { river: 1.3, pond: 1.15, lake: 0.85 }, deep: 0.5, reach: 0.35, bigBreak: 2.5, effect: 'A long rod on a fixed line that suits small fish in moving water and cannot reach deep water.' },
+  { id: 'Heavy handline', cost: 2, hooks: 15, line: 100, water: { river: 0.7, pond: 0.8, lake: 1 }, deep: 1.35, reach: 1, bigBreak: 0.3, effect: 'Thick line and sinkers that get down to deep lake fish and hold big ones, but it is clumsy in a stream.' }]);
+/* what the variants change. Every helper gives the plain item's own answer when no variant was brought, so the common kits play as they always did */
+const kitIs = (s, id) => s.gear.includes(id);
+const kitStart = (gear, base, key, plain) => { let n = gear.includes(base) ? plain : 0; for (const v of GEAR_FAMILY[base] || []) if (gear.includes(v)) n = Math.max(n, VARIANT[v][key] ?? plain); return n; }; /* arrows, hooks and line you start with */
+const recurveSapped = s => kitIs(s, 'Recurve bow') && (s.rain || s.storm || temperature(s) < -15); /* a wet string stretches; frozen limbs lose their spring */
+function kitBowPower(s) { let best = 0; for (const id of kindsOf(s, 'Bow and arrows')) { const v = VARIANT[id]; const p = !v ? 1 : v.power * (v.delicate ? (s.rain || s.storm ? 0.8 : 1) * (temperature(s) < -15 ? 0.8 : 1) : 1); best = Math.max(best, p); } return best || 1; }
+/* arrow points you make yourself (craft_arrows with extra.point): fire-hardened wood glances off a big animal, ground bone bites deeper */
+const pointShare = (s, k) => s.arrows > 0 && s.sys && s.sys[k] ? Math.min(1, Math.min(s.sys[k], s.arrows) / s.arrows) : 0;
+const pointBig = s => 1 - 0.45 * pointShare(s, 'woodPts') + 0.15 * pointShare(s, 'bonePts');
+/* the blade you do fine work with: a sheath knife or multitool does it properly, a folding knife fights big joints, a machete is clumsy */
+const fineBlade = s => kitIs(s, 'Knife') || has(s, 'Multitool') ? 'knife' : kitIs(s, 'Folding knife') ? 'folding' : kitIs(s, 'Machete') ? 'machete' : null;
+/* which job a cutting tool can take on: a hatchet or maul fells nothing, a maul trims no poles, a machete cuts saplings */
+function cutsFor(s, id) { if (!cutter(s)) return id === 'cut_poles' && kitIs(s, 'Machete'); if (has(s, 'Saw') || (kitIs(s, 'Axe') && chopper(s))) return true; return id === 'cut_logs' ? false : id === 'cut_poles' ? kitIs(s, 'Hatchet') : true; }
+const axeFor = (s, id) => kitIs(s, 'Axe') || (id === 'firewood' && kitIs(s, 'Splitting maul')); /* splits like an axe; a hatchet only cuts like a saw */
+const slowSaw = s => kitIs(s, 'Folding saw') && !kitIs(s, 'Saw') && !kitIs(s, 'Axe');
+const logsN = s => kitIs(s, 'Axe') ? 4 : slowSaw(s) ? 2 : 3;
+const maulMult = s => kitIs(s, 'Splitting maul') && chopper(s) ? 1.3 : 1;
+const brushMult = s => kitIs(s, 'Machete') ? 1.5 : 1;
+function toolPace(s, id) { let k = 1;
+  if (kitIs(s, 'Machete') && (id === 'boughs' || id === 'cut_poles')) k = 0.7;
+  if (kitIs(s, 'Hatchet') && chopper(s) && (id === 'firewood' || id === 'cut_poles')) k = Math.min(k, 0.75);
+  if (id === 'cut_logs' && slowSaw(s)) k = 1.6;
+  if (id === 'dress' && fineBlade(s) === 'folding') k = 1.3;
+  if (id === 'clean' && fineBlade(s) === 'machete') k = 1.25;
+  return k; }
+/* fishing kit: the best of what you brought for this water. A tenkara rod is a stream rod; a heavy handline is for the deep lake */
+function fishKit(s, water, key) { const w = water || 'lake'; let best = null; for (const id of kindsOf(s, 'Fishing gear')) { const v = VARIANT[id]; let x = 1;
+  if (v && key === 'odds') x = (v.water[w] ?? 1) * (w === 'lake' && fishDepth(s) === 'deep' ? v.deep : 1); else if (v && v[key] != null) x = v[key];
+  best = best == null ? x : key === 'bigBreak' ? Math.min(best, x) : Math.max(best, x); } return best == null ? 1 : best; }
+const castReach = s => fishKit(s, null, 'reach');
 /* gear: camp and fire */
 /* gear: new kit and traps */
 // a season richer than the base gets half of it as better odds and half as bigger catches; a leaner one is simply scarcer
@@ -488,7 +531,7 @@ function newGame(seasonKey, gear, opts = {}) {
     v: 2, mapV: 2, seed, rng: seed, seasonKey, day: 0, status: 'playing', endReason: '',
     weight0: opts.weight || 180, weight: opts.weight || 180, glyco: 0,
     health: 100, morale: 100, gear: gear.slice(0, 10),
-    arrows: gear.includes('Bow and arrows') ? C.arrows : 0, hooks: gear.includes('Fishing gear') ? C.hooks : 0, line: gear.includes('Fishing gear') ? C.line : 0,
+    arrows: kitStart(gear, 'Bow and arrows', 'arrows', C.arrows), hooks: kitStart(gear, 'Fishing gear', 'hooks', C.hooks), line: kitStart(gear, 'Fishing gear', 'line', C.line),
     axeEdge: 1, slingAmmo: gear.includes('Slingshot') ? 30 : 0,
     mats: { poles: 0, logs: 0, boughs: 0, moss: 0, bark: 0, cordage: (gear.includes('Paracord') ? 24 : 0) + (gear.includes('Rope') ? 12 : 0), wire: (gear.includes('Trapping wire') ? 20 : 0) + (gear.includes('Wire') ? 8 : 0), tinder: 0, bait: 0, bone: 0, hide: 0, feathers: 0, stone: 0, clay: 0 },
     found: [], snares: 0, deadfalls: 0, net: null, trapsCatch: [], fishTrap: false,
@@ -596,7 +639,7 @@ const WEARS = ['firewood', 'cut_poles', 'cut_logs', 'boughs', 'shelter', 'hunt',
 function clothesOf(s) { return s.sys && s.sys.clothes != null ? s.sys.clothes : 1; }
 // ------------------------------------------------------------------ a bow of your own: a stave carved down and strung. Uneven limbs cost it a quarter of its cast
 function hasBow(s) { return has(s, 'Bow and arrows') || s.crafts.bow >= 2; }
-function bowPower(s) { return has(s, 'Bow and arrows') ? 1 : 0.85 * ((s.sys && s.sys.tiller) || 1) * ({ hard: 1.12, soft: 0.92 }[s.sys && s.sys.bowWood] || 1); } /* a springy hardwood stave casts harder than spruce */
+function bowPower(s) { return has(s, 'Bow and arrows') ? kitBowPower(s) : 0.85 * ((s.sys && s.sys.tiller) || 1) * ({ hard: 1.12, soft: 0.92 }[s.sys && s.sys.bowWood] || 1); } /* a springy hardwood stave casts harder than spruce */
 // ------------------------------------------------------------------ finding your way: landmarks and cairns. In fog, snow, storm or dark, far from camp, you can walk in circles
 function driftChance(seen, far, poor) { if (!poor || !far) return 0; return seen >= 2 ? 0 : seen === 1 ? 0.04 : 0.08; }
 function bearings(s, seen, far, poor) {
@@ -775,7 +818,7 @@ function jobHours(s, id, extra) {
   if (id === 'smoke' || id === 'dry_food') { const w = id === 'smoke' ? 'smoker' : 'rack'; const n = Math.min(Math.max(0, capOf(s, w) - onStation(s, w)), s.stores.filter(hangable).reduce((a, x) => a + x.por, 0));
     if (n < 0.5) return id === 'smoke' ? 0.5 : A.hours; /* feed the fire and damp it down */
     return round1(Math.min(A.hours, (id === 'smoke' ? 0.5 : 0.4) + n * 0.1)); } /* cutting strips: about six minutes a portion */
-  return A.hours;
+  const tp = toolPace(s, id); return tp === 1 ? A.hours : round1(A.hours * tp); /* a variant tool can be quicker or slower at its job */
 }
 // fresh meat and fish you will not get through before it turns: what is worth drying or smoking
 function surplusPor(s) {
@@ -1066,8 +1109,8 @@ function available(s, id) {
     }
     case 'bait': return frozen(s) ? r(false, 'Ground is frozen. Use guts from cleaning') : r(true, '', `worms and grubs · you have ${s.mats.bait}`);
     case 'forage': { const pool = foragePool(s); const pf = s.patch && s.patch.forage != null ? s.patch.forage : 1; return pool.length ? r(true, '', pct(0.62 * se.mult.forage * s.skill.forage * (snowy(s) ? 0.6 : 1) * pf) + (pf < 0.6 ? ' · picked over' : '')) : r(false, 'Nothing to gather under the snow'); }
-    case 'cut_poles': return r(true, '', cutter(s) ? '4 poles' : '2 poles · no cutting tool');
-    case 'cut_logs': return cutter(s) ? r(true, '', (has(s, 'Axe') ? 4 : 3) + ' logs') : r(false, 'Needs an axe or saw');
+    case 'cut_poles': return r(true, '', cutsFor(s, id) ? '4 poles' : '2 poles · no cutting tool');
+    case 'cut_logs': return cutsFor(s, id) ? r(true, '', logsN(s) + ' logs') : r(false, cutter(s) ? (kitIs(s, 'Hatchet') ? 'A hatchet' : 'A maul') + ' will not fell a tree. Needs a felling axe or a saw' : 'Needs an axe or saw');
     case 'boughs': return r(true, '', '6 boughs');
     case 'moss': return snowy(s) ? r(false, 'Under the snow') : r(true, '', '4 moss and grass');
     case 'bark': return frozen(s) ? r(false, 'Bark will not strip in the cold') : r(true, '', '3 bark');
@@ -1075,7 +1118,7 @@ function available(s, id) {
     case 'stones': return r(true, '', '3 stones');
     case 'firewood': {
       if (s.firewood >= 30) return r(false, 'Woodpile is full');
-      return r(true, '', (cutter(s) ? (has(s, 'Axe') ? 5 : 3) : 2) + ' days of wood' + (chopper(s) && s.axeEdge < 0.5 ? ' · axe is dull' : ''));
+      return r(true, '', Math.round((cutter(s) ? (axeFor(s, id) ? 5 : 3) : 2) * maulMult(s)) + ' days of wood' + (chopper(s) && s.axeEdge < 0.5 ? ' · axe is dull' : ''));
     }
     case 'cordage': return s.mats.bark >= 3 || s.mats.hide >= 1 ? r(true, '', '3 bark → 2 cordage') : r(false, 'Needs bark strips (or hide)');
     case 'light_fire': {
@@ -1228,7 +1271,7 @@ function treeKind(key, r) { const m = biomeOf(key).mix; const tot = Object.value
 function treeYield(s, id, tree, noAxe) {
   const kind = (tree && tree.kind) || 'conifer'; const age = (tree && tree.age) || (kind === 'snag' || kind === 'log' ? 'dead' : 'mature');
   const dead = age === 'dead', young = age === 'sapling', fallen = kind === 'log', conifer = kind === 'conifer', birch = kind === 'birch', euc = kind === 'eucalypt';
-  const axe = has(s, 'Axe') && !noAxe, cut = noAxe ? (has(s, 'Saw') || has(s, 'Multitool')) : cutter(s); const r = (n, note, hours) => ({ n, note: note || '', hours });
+  const axe = axeFor(s, id) && !noAxe, cut = noAxe ? (has(s, 'Saw') || has(s, 'Multitool')) : cutsFor(s, id); const r = (n, note, hours) => ({ n, note: note || '', hours });
   switch (id) {
     case 'firewood': {
       if (young) return r(1, 'thin, green, smoky');
@@ -1245,11 +1288,11 @@ function treeYield(s, id, tree, noAxe) {
       if (!cut) return r(0); if (young) return r(0);
       if (fallen) return r(axe ? 3 : 2, 'bucked into lengths', 1.5);
       if (dead) return r(2, 'punky heart');
-      return r(axe ? 4 : 3, conifer ? 'best cabin wood' : 'heavy and twisted');
+      return r((axe ? 4 : 3) - (slowSaw(s) ? 1 : 0), conifer ? 'best cabin wood' : 'heavy and twisted');
     }
     case 'boughs': {
-      if (dead || fallen) return r(0); if (conifer) return r(young ? 3 : 6, young ? 'springy' : 'bedding and thatch');
-      if (euc) return r(3, 'dries out fast'); return r(young ? 2 : 3, 'thin thatch');
+      if (dead || fallen) return r(0); const bm = brushMult(s); if (conifer) return r(Math.ceil((young ? 3 : 6) * bm), young ? 'springy' : 'bedding and thatch');
+      if (euc) return r(Math.ceil(3 * bm), 'dries out fast'); return r(Math.ceil((young ? 2 : 3) * bm), 'thin thatch');
     }
     case 'bark': {
       if (frozen(s)) return r(0);
@@ -1280,7 +1323,7 @@ const PATCH_BACK = { forage: 0.015, greens: 0.02, nettle: 0.02, mushrooms: 0.03,
 function fishOdds(s, water) {
   const se = season(s); let p = 0.38 * se.mult.fish * s.skill.fish * stockOf(s, water || 'lake');
   if (frozen(s)) p *= 0.55; if (s.storm) p *= 0.5; if (!s.mats.bait) p *= s.lure ? (poorly(s, 'lure') ? 0.72 : 0.85) : 0.55; if (s.crafts.handline >= 1 && !has(s, 'Fishing gear')) p *= (poorly(s, 'handline') ? 0.55 : 0.65) * /* a carved gorge on twisted bark loses most of what bites; steel hooks and real line hold them */ (s.crafts.leader >= 1 && !s.spate ? 1.3 : 1); // thick cord is easy to see in clear water
-  p *= timeMult(s, 'fish'); if (windowOn(s, 'run')) p *= 1.6; if (s.wind) p *= 0.75; if (s.heat && midday(s)) p *= 0.6;
+  p *= timeMult(s, 'fish') * fishKit(s, water, 'odds'); if (windowOn(s, 'run')) p *= 1.6; if (s.wind) p *= 0.75; if (s.heat && midday(s)) p *= 0.6;
   return p;
 }
 function huntOdds(s) {
@@ -1442,7 +1485,7 @@ function doAction(s, id, lines, mod, opts) {
           const f = pickW(s, fishPool(s, X.water)); const big = DATA.foods[f].por >= 6;
           if (X.fight === 'snap' && k === 0) { lost++; s.hooks -= 1; s.line = Math.max(0, s.line - 8); s.stats.hooksLost++; if (s.lure && !hadBait && chance(s, 0.5)) { s.lure = false; lines.push(['Line snapped. The fish went off with the lure and the hook.', 'bad']); } else lines.push([`Line snapped. Lost the fish and a hook (${s.hooks} left).`, 'bad']); continue; }
           if (X.fight === 'slack' && k === 0) { lost++; lines.push(['It threw the hook.', 'muted']); continue; }
-          if (big && chance(s, 0.15)) { s.hooks -= 1; s.stats.hooksLost++; lines.push([`A big one broke off and took the hook (${s.hooks} left).`, 'bad']); continue; }
+          if (big && chance(s, 0.15 * fishKit(s, X.water, 'bigBreak'))) { s.hooks -= 1; s.stats.hooksLost++; lines.push([`A big one broke off and took the hook (${s.hooks} left).`, 'bad']); continue; }
           addRaw(s, f, lines, frozen(s) ? 'Through the ice:' : 'Landed'); takeStock(s, X.water || 'lake');
         }
         s.skill.fish = Math.min(1.6, s.skill.fish + 0.04); s.morale += 2;
@@ -1468,10 +1511,11 @@ function doAction(s, id, lines, mod, opts) {
       // an animal in front of you: the shot decides. Nothing in sight: the season's odds of something stepping out.
       let p;
       const crooked = bow && s.sys && s.sys.crooked ? Math.min(1, Math.min(s.sys.crooked, s.arrows) / s.arrows) : 0; // a crooked shaft flies wide
-      if (X.target) { p = { good: bow ? 0.82 : 0.6, poor: bow ? 0.55 : 0.4, miss: 0.04, none: 0 }[X.hit || 'none'] * (big ? (bow ? 0.75 : 0.02) : 1) /* a slingshot stone stings a moose; it does not bring one down */ * Math.min(1.15, s.skill.hunt) * (1 - 0.3 * crooked) * (bow ? bowPower(s) : 1); if (s.health < 40) p *= 0.85; const smoked = s.sys && s.sys.smokeDay != null && s.day - s.sys.smokeDay <= 1; if (X.scent === 'down') p *= smoked ? 0.8 : 0.6; else if (smoked) p *= 1.05; if (X.scent === 'up') p *= 1.15; p *= 0.5 + 0.5 * stalkNoise(s); }
+      if (X.target) { p = { good: bow ? 0.82 : 0.6, poor: bow ? 0.55 : 0.4, miss: 0.04, none: 0 }[X.hit || 'none'] * (big ? (bow ? 0.75 * pointBig(s) : 0.02) : 1) /* a slingshot stone stings a moose; it does not bring one down */ * Math.min(1.15, s.skill.hunt) * (1 - 0.3 * crooked) * (bow ? bowPower(s) : 1); if (s.health < 40) p *= 0.85; const smoked = s.sys && s.sys.smokeDay != null && s.day - s.sys.smokeDay <= 1; if (X.scent === 'down') p *= smoked ? 0.8 : 0.6; else if (smoked) p *= 1.05; if (X.scent === 'up') p *= 1.15; p *= 0.5 + 0.5 * stalkNoise(s); }
       else p = X.spooked ? 0 : huntOdds(s) * mod * (1 - 0.3 * crooked); /* a stalk that crashed in finds nothing */
+      if (bow && recurveSapped(s) && !s.today.bowNote) { s.today.bowNote = true; lines.push([s.rain || s.storm ? 'The bowstring soaked up the rain and stretched, and the recurve threw soft all day.' : 'In this frost the recurve limbs feel dead in the hand, and the arrows drop short.', 'muted']); }
       const killed = chance(s, p);
-      if (killed && (big || (!X.target && bow && se.big.length && chance(s, 0.0022 * se.mult.hunt)))) {
+      if (killed && (big || (!X.target && bow && se.big.length && chance(s, 0.0022 * se.mult.hunt * pointBig(s))))) {
         const id2 = big ? X.target : se.big[Math.floor(rnd(s) * se.big.length)];
         const f = DATA.foods[id2]; const k = X.size || sizeOf(s); s.carcass = { hour: s.hours, id: id2, por: round1(f.por * 0.85 * k), big: true, dressed: false, day: s.day, fat: f.fat, organ: f.organ, size: k };
         s.stats.bigGame.push(id2); takeStock(s, 'game', 5); s.morale += 40; s.skill.hunt = Math.min(1.35, s.skill.hunt + 0.05);
@@ -1560,14 +1604,14 @@ function doAction(s, id, lines, mod, opts) {
       if (chance(s, 0.3)) gain('tinder', 1, 'Pocketed some dry bark');
       break;
     }
-    case 'cut_poles': { const y = X.tree ? treeYield(s, id, X.tree) : null; if (X.tree && X.tree.age === 'sapling') sysOf(s).staveWood = ['deciduous', 'eucalypt'].includes(X.tree.kind) ? 'hard' : X.tree.kind === 'conifer' ? 'soft' : null; /* the last saplings you cut are the stave you have */ const n = y ? y.n : (cutter(s) ? 4 : 2); if (X.tree && X.tree.age === 'mature' && X.tree.boughsLeft && n > 0) { const b = Math.floor(treeYield(s, 'boughs', X.tree).n / 2); if (b) gain('boughs', b, 'Stripped off the limbs'); } gain('poles', n, y ? (X.tree.age === 'sapling' ? (cutter(s) ? 'Cut and trimmed the saplings' : 'Bent and snapped the saplings') : X.tree.kind === 'snag' ? 'Broke dry poles off the snag' : 'Limbed the tree') : cutter(s) ? 'Cut and limbed' : 'Dragged in deadfall'); if (chopper(s)) s.axeEdge = Math.max(0, s.axeEdge - 0.05); injuryRisk(cutter(s) ? 0.005 : 0.002, 'saw bit into your knuckle'); break; }
-    case 'cut_logs': { const y = X.tree ? treeYield(s, id, X.tree) : null; const n = y ? y.n : (has(s, 'Axe') ? 4 : 3); gain('logs', n, X.tree && X.tree.kind === 'log' ? 'Bucked the deadfall' : X.tree && X.tree.kind === 'snag' ? 'Dropped the snag and bucked it' : 'Felled and bucked'); if (chopper(s)) s.axeEdge = Math.max(0, s.axeEdge - (X.tree && X.tree.kind === 'log' ? 0.06 : 0.1)); if (X.tree && X.tree.kind === 'snag' && s.wind && chance(s, 0.03)) injuryRisk(1, 'a dead limb came down on your shoulder'); else injuryRisk(0.008 * dullRisk(s), 'axe glanced off a log into your leg');
+    case 'cut_poles': { const y = X.tree ? treeYield(s, id, X.tree) : null; if (X.tree && X.tree.age === 'sapling') sysOf(s).staveWood = ['deciduous', 'eucalypt'].includes(X.tree.kind) ? 'hard' : X.tree.kind === 'conifer' ? 'soft' : null; /* the last saplings you cut are the stave you have */ const n = y ? y.n : (cutsFor(s, id) ? 4 : 2); if (X.tree && X.tree.age === 'mature' && X.tree.boughsLeft && n > 0) { const b = Math.floor(treeYield(s, 'boughs', X.tree).n / 2); if (b) gain('boughs', b, 'Stripped off the limbs'); } gain('poles', n, y ? (X.tree.age === 'sapling' ? (cutsFor(s, id) ? 'Cut and trimmed the saplings' : 'Bent and snapped the saplings') : X.tree.kind === 'snag' ? 'Broke dry poles off the snag' : 'Limbed the tree') : cutsFor(s, id) ? 'Cut and limbed' : 'Dragged in deadfall'); if (chopper(s)) s.axeEdge = Math.max(0, s.axeEdge - 0.05); injuryRisk(cutsFor(s, id) ? 0.005 : 0.002, 'saw bit into your knuckle'); break; }
+    case 'cut_logs': { const y = X.tree ? treeYield(s, id, X.tree) : null; const n = y ? y.n : logsN(s); gain('logs', n, X.tree && X.tree.kind === 'log' ? 'Bucked the deadfall' : X.tree && X.tree.kind === 'snag' ? 'Dropped the snag and bucked it' : 'Felled and bucked'); if (chopper(s)) s.axeEdge = Math.max(0, s.axeEdge - (X.tree && X.tree.kind === 'log' ? 0.06 : 0.1)); if (X.tree && X.tree.kind === 'snag' && s.wind && chance(s, 0.03)) injuryRisk(1, 'a dead limb came down on your shoulder'); else injuryRisk(0.008 * dullRisk(s), 'axe glanced off a log into your leg');
       if (X.fell === 'aimed') lines.push(['Dropped it exactly where you meant it to go.', 'muted']); else if (X.fell === 'lean') lines.push(['It ignored your notch and went with its lean.', 'muted']);
       if (X.hung) { s.hours = round1(s.hours + 0.5); s.phase = phaseOf(s); lines.push(['It hung up in the crown of the next tree. Half an hour with a lever pole to roll it down, keeping well out from under it.', 'warn']); }
       if (X.hitCamp && s.shelterLvl) { s.shelterCond = Math.max(0.1, (s.shelterCond ?? 1) - 0.35); s.morale -= 5; sysOf(s).damage = s.shelterType === 'cabin' || s.shelterType === 'rock' ? 'walls' : 'frame'; lines.push(['It came down across the edge of camp and smashed into the shelter.', 'bad']); }
       if (X.kick) { addCond(s, { name: 'Bruised ribs from a kickback', days: 4, dmg: 0.8 }); s.health -= 5; s.morale -= 4; lines.push(['The butt jumped back off the stump as it went and caught you in the ribs. Step clear when it cracks.', 'bad']); }
       break; }
-    case 'boughs': { const y = X.tree ? treeYield(s, id, X.tree) : null; const nb = X.total ? X.got : y ? y.n : 6; if (nb) gain('boughs', nb, 'Broke off'); if (X.tree && X.tree.kind === 'scrub' && chance(s, 0.12) && !s.conditions.some(c => /Thorns/.test(c.name))) { addCond(s, { name: 'Thorns in the palms', days: 3, dmg: 0.3 }); s.morale -= 2; lines.push(['Thorn tree. Your palms look like pincushions.', 'bad']); } break; }
+    case 'boughs': { const y = X.tree ? treeYield(s, id, X.tree) : null; const nb = X.total ? X.got : y ? y.n : Math.ceil(6 * brushMult(s)); if (nb) gain('boughs', nb, 'Broke off'); if (X.tree && X.tree.kind === 'scrub' && chance(s, 0.12) && !s.conditions.some(c => /Thorns/.test(c.name))) { addCond(s, { name: 'Thorns in the palms', days: 3, dmg: 0.3 }); s.morale -= 2; lines.push(['Thorn tree. Your palms look like pincushions.', 'bad']); } break; }
     case 'moss': { let n = X.total ? X.got : 4; if (temperature(s) < 0 && n) { n = Math.max(1, Math.floor(n / 2)); lines.push(['The frost has frozen the moss to the rock. You prise it off in hard, broken slabs, and get half what you would on a mild day.', 'muted']); } if (n) gain('moss', n, 'Pulled'); break; }
     case 'bark': { const y = X.tree ? treeYield(s, id, X.tree) : null; const nk = X.total ? X.got : y ? y.n : 3; if (nk && X.tree && X.tree.kind === 'deciduous' && X.tree.age !== 'dead') { const sys = sysOf(s); sys.bast = (sys.bast || 0) + nk; lines.push(['Under the outer bark, long ribbons of inner bark: the best cord fibre there is.', 'muted']); } /* broadleaf inner bark twists stronger */ if (nk) gain('bark', nk, X.tree && X.tree.kind === 'birch' && X.tree.age !== 'sapling' ? 'Peeled sheets of birch bark' : X.tree && X.tree.kind === 'eucalypt' ? 'Pulled long strips of stringybark' : 'Stripped'); if (X.tree && X.tree.kind === 'birch' && X.tree.age === 'mature' && !s.containers && chance(s, 0.35)) { s.containers = 1; lines.push(['Folded one sheet into a bark bucket. It will hold water, and boil it with hot stones.', 'good']); } break; }
     case 'tinder': { const y = X.tree ? treeYield(s, id, X.tree) : null; const nt = X.total ? X.got : y ? y.n : (wetWeather(s) ? 1 : 3);
@@ -1576,7 +1620,7 @@ function doAction(s, id, lines, mod, opts) {
     case 'stones': { const n = X.total ? X.got : 3; if (n && drand(s, 'toe' + s.hours) < (frozen(s) || s.rain ? 0.05 : 0.025)) { addCond(s, { name: 'Bruised foot', days: 3, dmg: 0.4 }); lines.push([frozen(s) || s.rain ? 'A slick stone turned in your hands and came down on your foot.' : 'A stone rolled off the top of the load and came down on your foot.', 'warn']); } if (n) gain('stone', n, 'Carried back'); if (n && drand(s, 'flint' + s.hours) < 0.3) { const sys = sysOf(s); sys.flint = (sys.flint || 0) + 1; lines.push(['One of them is different: fine-grained, glassy where it is broken, and it rings when you tap it. Good stone for an edge.', 'info']); } break; }
     case 'firewood': {
       const edge = chopper(s) ? (0.5 + 0.5 * s.axeEdge) : 1; const y = X.tree ? treeYield(s, id, X.tree) : null; const dead = X.tree && (X.tree.age === 'dead' || X.tree.kind === 'snag' || X.tree.kind === 'log');
-      const axeN = (y ? y.n : (cutter(s) ? (chopper(s) ? 5 : 3) : 2)) * edge; const sawN = has(s, 'Axe') && has(s, 'Saw') ? (X.tree ? treeYield(s, id, X.tree, true).n : 3) : 0; const usedSaw = sawN > axeN;
+      const axeN = (y ? y.n : (cutter(s) ? (chopper(s) && axeFor(s, id) ? 5 : 3) : 2)) * edge * maulMult(s); const sawN = has(s, 'Axe') && has(s, 'Saw') ? (X.tree ? treeYield(s, id, X.tree, true).n : 3) : 0; const usedSaw = sawN > axeN;
       const add = Math.min(Math.round(Math.max(axeN, sawN) * (X.good ? 1.2 : 1)), Math.max(0, 30 - Math.round(s.firewood))); s.firewood += add;
       if (!dead && X.tree) s.greenWood = Math.min(30, (s.greenWood || 0) + add);
       if (chopper(s) && !usedSaw) s.axeEdge = Math.max(0, s.axeEdge - (dead ? 0.06 : 0.08)); if (usedSaw && !s.today.sawNote) { s.today.sawNote = true; lines.push(['The axe is too blunt to bother with. Used the saw.', 'muted']); }
@@ -1612,27 +1656,27 @@ function doAction(s, id, lines, mod, opts) {
       break;
     }
     case 'clean': {
-      const k = (blade(s) ? 1 : 0.8) * (X.good === false ? 0.85 : 1); let bait = 0, bone = 0, kcal = 0, feathers = 0;
+      const k = (blade(s) ? 1 : 0.8) * (fineBlade(s) === 'machete' ? 0.9 : 1) * (X.good === false ? 0.85 : 1); let bait = 0, bone = 0, kcal = 0, feathers = 0;
       for (const x of s.raw) { const f = DATA.foods[x.id]; addFood(s, x.id, round1(x.por * k)); if (f.fat) { addFood(s, 'fat', round1(f.fat * k)); kcal += round1(f.fat * k) * DATA.foods.fat.kcal; } if (f.organ) { addFood(s, 'organ', round1(f.organ * k)); kcal += round1(f.organ * k) * DATA.foods.organ.kcal; } kcal += x.por * k * f.kcal; bait += f.kind === 'fish' ? 2 : 1; if (f.kind === 'fish' && f.por >= 3) bone += 1; if (f.kind === 'game') { bone += 1; if (BIRDS.test(x.id)) feathers += 2; else if (f.por >= 3 && !/snake|frog/.test(x.id) && !X.torn) { s.mats.hide += 1; s.hideRaw = (s.hideRaw || 0) + 1; } } }
       const n = s.raw.length; const gameN = s.raw.filter(x => DATA.foods[x.id].kind === 'game').length; s.raw = []; if (n) { const sys = sysOf(s); sys.hands = has(s, 'Soap') ? 0 : 0.4; if (gameN) sys.offal = round1((sys.offal || 0) + gameN * 0.5); } s.mats.bait += bait; s.mats.bone += bone; s.mats.feathers += feathers; /* fish guts go back in the water or the bait tin; mammal and bird guts make the pile */
       lines.push([`Cleaned ${n} catch${n === 1 ? '' : 'es'}: ${Math.round(kcal).toLocaleString('en-US')} kcal into the stores, ${bait} bait${bone ? `, ${bone} bone` : ''}${feathers ? `, ${feathers} feathers` : ''}.`, 'good']);
-      if (!blade(s)) lines.push(['Without a knife a fifth of it was wasted.', 'muted']); else if (X.good === false) lines.push(['Ragged cuts. Some of it went in the bait tin instead of the pot.', 'muted']);
+      if (!blade(s)) lines.push(['Without a knife a fifth of it was wasted.', 'muted']); else if (fineBlade(s) === 'machete' && n) lines.push(['The machete is too big for fine work, and good flesh went with the scraps.', 'muted']); else if (X.good === false) lines.push(['Ragged cuts. Some of it went in the bait tin instead of the pot.', 'muted']);
       if (X.torn) lines.push(['The skin tore as you peeled it. No good for hide.', 'muted']); if (X.ripped) lines.push(['Plucked against the grain and tore the skin; the fat under it came away with the feathers.', 'muted']);
       break;
     }
     case 'dress': {
       { const sys = sysOf(s); sys.hands = has(s, 'Soap') ? 0 : 0.4; sys.offal = round1((sys.offal || 0) + 2); } // you rinse off after; soap gets the grease and blood off, cold water does not quite
       const c = s.carcass; const f = DATA.foods[c.id]; const late = c.hour != null ? (s.day - c.day) * 14 + (s.hours - c.hour) : 0; const swollen = late > 4 && temperature(s) > 5 && !/snake|frog|insect/.test(c.id); /* guts left in on a warm day sour the meat around them */
-      const k = (blade(s) ? 1 : 0.75) * (X.good === false ? 0.8 : 1) * (swollen ? 0.85 : 1);
+      const fb = fineBlade(s); const k = (blade(s) ? 1 : 0.75) * (fb === 'machete' ? 0.9 : fb === 'folding' && c.big ? 0.95 : 1) * (X.good === false ? 0.8 : 1) * (swollen ? 0.85 : 1);
       if (X.good === false) lines.push(['Nicked the gut. Had to cut away the tainted meat.', 'warn']);
       if (X.taint) { c.por = round1(c.por * 0.9); lines.push(['Pulled too hard and the bladder burst over the hindquarters. You washed and trimmed what you could.', 'warn']); }
       if (X.bone) { s.hours = round1(s.hours + 0.2 * X.bone); s.phase = phaseOf(s); lines.push([`Hacked through bone instead of finding the joint${X.bone > 1 ? 's' : ''}. Slow, and it dulls the blade.`, 'muted']); }
       if (swollen) lines.push(['It lay too long with the guts in, and the belly had started to swell. You cut away the sour meat around them.', 'warn']);
       c.dressed = true; c.por = round1(c.por * k); const bird = BIRDS.test(c.id); if (bird) s.mats.feathers += 2; else if (f.kind === 'game' && !/snake|frog|insect/.test(c.id)) { const hn = Math.max(0, (c.big ? 2 : 1) - (X.torn ? 1 : 0)); s.mats.hide += hn; s.hideRaw = (s.hideRaw || 0) + hn; if (X.torn) lines.push(['The hide tore as you skinned it; only part of it is worth keeping.', 'muted']); } s.mats.bone += c.big ? 4 : 1;
       if (!c.big) { addFood(s, c.id, c.por); if (c.fat) addFood(s, 'fat', c.fat); if (c.organ) addFood(s, 'organ', c.organ); s.carcass = null; lines.push([`${BIRDS.test(c.id) ? 'Gutted and plucked' : 'Gutted and skinned'} the ${low(f.name)}: ${Math.round(c.por * f.kcal).toLocaleString('en-US')} kcal${blade(s) ? '' : ', messy without a knife'}.`, 'good']); }
-      else { s.hours = round1(s.hours + 2); s.today.burn += 400; lines.push([`Opened and quartered the ${low(f.name)}. ${Math.round(c.por).toLocaleString('en-US')} portions of meat, ${c.fat} of fat. Carry it in ${Math.ceil(c.por / C.carry)} loads.`, 'good']); }
+      else { s.hours = round1(s.hours + 2 + (fb === 'folding' ? 0.5 : 0)); s.today.burn += 400; if (fb === 'folding') lines.push(['The little folding blade fought you at every joint. You sawed where a real knife would have slipped through.', 'muted']); else if (fb === 'machete') lines.push(['Too much blade for this. The machete hacked where it should have cut, and meat stayed on the bone.', 'muted']); lines.push([`Opened and quartered the ${low(f.name)}. ${Math.round(c.por).toLocaleString('en-US')} portions of meat, ${c.fat} of fat. Carry it in ${Math.ceil(c.por / C.carry)} loads.`, 'good']); }
       if (c.id === 'porcupine' && chance(s, 0.15) && !s.conditions.some(x => /Quills/.test(x.name))) { addCond(s, { name: 'Quills in the hand', days: 3, dmg: 0.5 }); s.morale -= 3; lines.push(['Quills through the glove and into the palm. Each one comes out with a barb.', 'bad']); }
-      if (chance(s, 0.004)) injuryRisk(1, 'knife slipped while skinning');
+      if (chance(s, 0.004 * (fb === 'folding' ? 2.5 : fb === 'machete' ? 1.5 : 1))) injuryRisk(1, fb === 'folding' ? 'folding knife closed on your fingers' : 'knife slipped while skinning');
       break;
     }
     case 'smoke': {
@@ -1826,7 +1870,7 @@ function doAction(s, id, lines, mod, opts) {
       if (k === 'snowshoes') { s.mats.poles -= 2; s.mats.cordage -= 3; s.crafts.snowshoes = 1; lines.push(['Steamed and bent two frames, laced them with cordage. Snowshoes.', 'good']); break; }
       if (k === 'mittens') { s.mats.hide -= 2; s.crafts.mittens = 1; lines.push(['Sewed mittens and a hat from the hides, fur in. Your hands thank you.', 'good']); break; }
       if (k === 'lure') { const tin = s.mats.feathers < 1; if (!tin) s.mats.feathers -= 1; s.lure = true; setPoor(s, 'lure', X); lines.push([X.good === false ? 'Tied a lure in a hurry. It spins on the retrieve instead of wobbling. Fish follow it less.' : tin ? 'Cut a spoon from the lid of a rusted can and hammered it bright on a stone. A lure.' : 'Tied a feather and a sliver of bone on a hook. A lure that fishes without bait.', 'good']); break; }
-      if (k === 'arrows') { s.mats.feathers -= 1; s.mats.poles -= 1; const before = s.arrows; if (s.sys && s.sys.crooked > before) s.sys.crooked = Math.max(0, before); s.arrows = Math.min(C.arrows, s.arrows + 2); const made = s.arrows - before; const bent = !s.fire || X.good === false; if (bent) { const sys = sysOf(s); sys.crooked = Math.min(s.arrows, (sys.crooked || 0) + made); } lines.push([!bent ? `Heat-straightened the shafts over the coals and fletched ${made === 1 ? 'an arrow' : made + ' arrows'} (${s.arrows} in the quiver).` : `Fletched ${made === 1 ? 'an arrow' : made + ' arrows'}${s.fire ? ' but the shafts are still not true' : ' with no fire to straighten the shafts'}. They have a wobble in them (${s.arrows} in the quiver).`, 'info']); break; }
+      if (k === 'arrows') { s.mats.feathers -= 1; s.mats.poles -= 1; const before = s.arrows; if (s.sys && s.sys.crooked > before) s.sys.crooked = Math.max(0, before); const pt = X.point === 'bone' && s.mats.bone >= 1 ? 'bone' : X.point === 'wood' ? 'wood' : null; /* a choice of point is opt-in; without one, arrows come out as they always have */ s.arrows = Math.min(C.arrows, s.arrows + (pt === 'wood' ? 3 : 2)); const made = s.arrows - before; if (pt || (s.sys && (s.sys.woodPts || s.sys.bonePts))) { const sys = sysOf(s); for (const q of ['woodPts', 'bonePts']) if (sys[q] > before) sys[q] = before; if (pt === 'bone') s.mats.bone -= 1; if (pt) sys[pt + 'Pts'] = (sys[pt + 'Pts'] || 0) + made;  } const bent = !s.fire || X.good === false; if (bent) { const sys = sysOf(s); sys.crooked = Math.min(s.arrows, (sys.crooked || 0) + made); } lines.push([!bent ? `Heat-straightened the shafts over the coals and fletched ${made === 1 ? 'an arrow' : made + ' arrows'} (${s.arrows} in the quiver).` : `Fletched ${made === 1 ? 'an arrow' : made + ' arrows'}${s.fire ? ' but the shafts are still not true' : ' with no fire to straighten the shafts'}. They have a wobble in them (${s.arrows} in the quiver).`, 'info']); if (pt === 'wood') lines.push([s.fire ? 'Carved the points from the shafts themselves and hardened them in the coals. Quick to make, fine for birds and hares, though they will not punch through the hide of anything big.' : 'Whittled the points from the shafts themselves. Quick to make, and with no coals to harden them they will glance off anything big.', 'muted']); else if (pt === 'bone') lines.push(['Ground bone points on a flat stone and bound them on tight. They will go deep into a big animal.', 'muted']); break; }
       s.crafts[k] = (s.crafts[k] || 0) + 1;
       if (s.crafts[k] === 1) { if (k === 'smoker') s.mats.poles -= 4; if (k === 'cache') { s.mats.poles -= 2; s.mats.cordage -= lash(s, 2); s.cachePlace = X.place === 'camp' ? 'camp' : 'away'; } if (k === 'fishtrap') s.mats.poles -= 2; if (k === 'chimney') { s.mats.clay -= 6; s.mats.stone -= 8; } if (k === 'bridge') { s.mats.logs -= 2; s.mats.cordage -= 2; } if (k === 'woodshed') { s.mats.poles -= 4; s.mats.boughs -= 6; } }
       if (s.crafts[k] >= need) {
@@ -1985,7 +2029,7 @@ const EVENTS = {
       { label: 'Beat it out with your jacket', sub: 'Quick. Burns, probably.', go(s, L) { s.hours = round1(s.hours + 0.5); s.phase = phaseOf(s); if (chance(s, 0.3)) { addCond(s, { name: 'Burned hands', days: 4, dmg: 0.8 }); s.morale -= 5; L.push(['Out, but both palms are blistered and the jacket has holes in it.', 'bad']); } else if (chance(s, 0.25) && s.shelterLvl) { s.shelterCond = Math.max(0.2, s.shelterCond - 0.35); L.push(['Out, but it got into the thatch first. The roof is half gone on one side.', 'bad']); } else L.push(['Stamped and beaten out. A black patch the size of a room.', 'warn']); } },
       { label: 'Haul water and dig a line round it', sub: 'Two hours. Safe.', go(s, L) { s.hours = round1(s.hours + 2); s.today.burn += 350; s.phase = phaseOf(s); s.wet = Math.min(1, s.wet + 0.2); L.push(['Pot after pot of water and a trench scraped to mineral soil. It is dead, and you are shaking.', 'info']); } },
     ] },
-  axetide: { when: 'act', p: 0.004, cond: s => has(s, 'Axe') && season(s).climate.coast && ['stones', 'search', 'shellfish', 'bait', 'dig_clay'].includes(s.lastAction) && !s.lostGear.includes('Axe'),
+  axetide: { when: 'act', p: 0.004, cond: s => kitIs(s, 'Axe') && season(s).climate.coast && ['stones', 'search', 'shellfish', 'bait', 'dig_clay'].includes(s.lastAction) && !s.lostGear.includes('Axe'),
     title: 'The axe', text: () => 'You set the axe down on the rocks to work. The tide came in over it while your back was turned.',
     options: [
       { label: 'Search at the next low tide', sub: 'Three hours tomorrow. About even.', go(s, L) { s.lostGear.push('Axe'); s.gear = s.gear.filter(g => g !== 'Axe'); s.axeSearch = s.day + 1; s.morale -= 6; L.push(['It is under four feet of grey water. You mark the spot with a cairn.', 'bad']); } },
@@ -2504,7 +2548,7 @@ const GEAR_COST = { 'Gillnet': 12, 'Fishing gear': 4, 'Axe': 4, 'Sleeping bag': 
   'Rations': 1, 'Multitool': 1, 'Soap': 1, 'Scotch eyed auger': 1, 'Trapping wire': 1, 'Shovel': 1, 'Salt': 1, 'Tarp': 1, 'Frying pan': 1, 'Wire': 1, 'Canteen': 1, 'Rope': 1, 'Slingshot': 1, 'Sunglasses': 1 };
 const BUDGET = 20;
 const gearCost = id => GEAR_COST[id] ?? (VARIANT[id] && VARIANT[id].cost) ?? 2; const kitCost = gear => gear.reduce((a, g) => a + gearCost(g), 0);
-const API = { GEAR_FAMILY, VARIANT, kindsOf, variantOf, campStock, jobHours, surplusPor, PRACTICE_KEY, placeOf, practicePlace, hydOf, waterNow, drinkUp, fishDepth, campSummary, shelterScores, bedDampOf, prevailOf, CAMP_FIXED, zoneOf, layoutNotes, kitchenMult, GEAR_COST, BUDGET, gearCost, kitCost, waterToday, note, sunny, sprayLeft, fallChance, climbAnchor, stalkNoise, fouling, latrineOk, raftOf, raftOk, flintOf, hasBow, bowPower, driftChance, bearings, wade, clothesOf, tomorrow, skyAcc, thinIce, potLike, clayPots, greenPots, bedWarmth, snowLoadOf, bedOf, lampOk, nightOk, haftOf, tinderDamp, fireOdds, sealOf, hasHearth, isDry, onStation, RACK_CAP, DRY_AT, dryDaysLeft, sysOf, cacheSign, low, matName, BIOMES, biomeOf, treeKind, realMedianOf: se => { const d = se.rivals.filter(r => r.days != null).map(r => r.days).sort((a, b) => a - b); return d[d.length >> 1]; }, WEIGHT, loadOf, carryCap, moveCampCost, moveCamp, collectSize, berryRipe, bushRipeDay, stockOf, stockWord, billFor, nightOk, NIGHT_OK, treeYield, treeNames, fishPool, sizeOf, SHELTERS, shelterOptions, chooseShelter, dropPlan, makeCamp, foundWreck, shelterName, canWorkInside, travel, activeWindows, windowOn, timeMult, weatherName, dayFrac, midday, setTune, DATA, C, MATS, ACTIONS, EVENTS, newGame, runDay, beginDay, act, endDay, choose, carryLoad, available, tapOut, placing, status, season, storeKcal, temperature, shelterLevel, SHELTER_NAMES, shelterBill, shelterMissing, matList, fishOdds, huntOdds, bowDrillOdds, dayHours, hoursLeft, phaseOf, lowTide, igniter, blade, cutter, chopper, hasRod, digger };
+const API = { GEAR_FAMILY, VARIANT, kindsOf, variantOf, campStock, jobHours, surplusPor, PRACTICE_KEY, placeOf, practicePlace, hydOf, waterNow, drinkUp, fishDepth, campSummary, shelterScores, bedDampOf, prevailOf, CAMP_FIXED, zoneOf, layoutNotes, kitchenMult, GEAR_COST, BUDGET, gearCost, kitCost, waterToday, note, sunny, sprayLeft, fallChance, climbAnchor, stalkNoise, fouling, latrineOk, raftOf, raftOk, flintOf, hasBow, bowPower, castReach, cutsFor, fineBlade, pointBig, driftChance, bearings, wade, clothesOf, tomorrow, skyAcc, thinIce, potLike, clayPots, greenPots, bedWarmth, snowLoadOf, bedOf, lampOk, nightOk, haftOf, tinderDamp, fireOdds, sealOf, hasHearth, isDry, onStation, RACK_CAP, DRY_AT, dryDaysLeft, sysOf, cacheSign, low, matName, BIOMES, biomeOf, treeKind, realMedianOf: se => { const d = se.rivals.filter(r => r.days != null).map(r => r.days).sort((a, b) => a - b); return d[d.length >> 1]; }, WEIGHT, loadOf, carryCap, moveCampCost, moveCamp, collectSize, berryRipe, bushRipeDay, stockOf, stockWord, billFor, nightOk, NIGHT_OK, treeYield, treeNames, fishPool, sizeOf, SHELTERS, shelterOptions, chooseShelter, dropPlan, makeCamp, foundWreck, shelterName, canWorkInside, travel, activeWindows, windowOn, timeMult, weatherName, dayFrac, midday, setTune, DATA, C, MATS, ACTIONS, EVENTS, newGame, runDay, beginDay, act, endDay, choose, carryLoad, available, tapOut, placing, status, season, storeKcal, temperature, shelterLevel, SHELTER_NAMES, shelterBill, shelterMissing, matList, fishOdds, huntOdds, bowDrillOdds, dayHours, hoursLeft, phaseOf, lowTide, igniter, blade, cutter, chopper, hasRod, digger };
 if (typeof module !== 'undefined') module.exports = API; else root.Engine = API;
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
@@ -4035,7 +4079,7 @@ function startFish(run) {
   const m = mini = { type: 'fish', float: fl, ice, deadline: W.t + 40,
     update(dt) {
       t += dt;
-      if (state === 'cast') { if (hold) cast = Math.min(1, cast + dt * 0.8); }
+      if (state === 'cast') { if (hold) cast = Math.min(E.castReach(S), cast + dt * 0.8); } /* a tenkara line is only as long as the rod */
       else if (state === 'wait') { if (bites && t > dipAt) { state = 'dip'; dipT = 0; } else if (!bites && t > 9) { state = 'done'; miniUI('<div class="mtext">Nothing is biting. You reel in an empty hook.</div>'); setTimeout(() => finish(1, undefined, 1, undefined, true), 700); } }
       else if (state === 'dip') { dipT += dt; fl.dip = Math.sin(dipT / 0.6 * Math.PI) * 7; if (dipT > 0.6) { state = 'missed'; miniUI('<div class="mtext">Missed it. That was the best bite of the session.</div>'); setTimeout(() => finish(1, undefined, 0.6), 700); } }
       else if (state === 'fight') { fightT += dt;
@@ -5240,8 +5284,8 @@ function openPack() {
     const kg = E.loadOf(S.pack || {});
     rows.append($(`<div class="row"><span>On your back</span><span>${kg > 0.5 ? `${esc(packText(S.pack))} · <span class="num">${Math.round(kg)}</span> of ${Math.round(E.carryCap(S))} kg` : `Nothing · you can carry about ${Math.round(E.carryCap(S))} kg`}</span></div>`));
     const note = { 'Axe': E.chopper(S) ? `edge ${Math.round(S.axeEdge * 100)}%` : '', 'Fishing gear': `${S.hooks} hooks, ${S.line} m line`, 'Bow and arrows': `${S.arrows} arrows`, 'Slingshot': `${S.slingAmmo} stones` };
-    for (const g of S.gear) rows.append($(`<div class="row"><span>${esc(gearName(g))}</span><span>${esc(note[g] || '')}</span></div>`));
-    if (S.crafts.handline && !S.gear.includes('Fishing gear')) rows.append($(`<div class="row"><span>Hand line</span><span>${S.hooks} hooks</span></div>`));
+    for (const g of S.gear) rows.append($(`<div class="row"><span>${esc(gearName(g))}</span><span>${esc(note[g] || note[(E.VARIANT[g] || {}).base] || '')}</span></div>`));
+    if (S.crafts.handline && !E.kindsOf(S, 'Fishing gear').length) rows.append($(`<div class="row"><span>Hand line</span><span>${S.hooks} hooks</span></div>`));
     if (S.found.length) rows.append($(`<div class="row"><span>Found</span><span>${esc(S.found.map(f => E.low(f.name)).join(', '))}</span></div>`));
     { const c = E.clothesOf(S); const sys = S.sys || {}; rows.append($(`<div class="row"><span>Issued clothing</span><span>${c >= 0.8 ? 'in good shape' : c >= 0.6 ? 'worn' : c >= 0.35 ? 'patched and thin' : 'in rags'} · spares ${sys.sparesWet ? '<span class="tone-warn">wet</span>' : 'dry'}${sys.beltCut ? ' · belt cut up' : ''}</span></div>`)); rows.append($(`<div class="row"><span>Personal</span><span>toothbrush, glasses, a photograph</span></div>`)); }
     if ((S.lostGear || []).length) rows.append($(`<div class="row"><span>Lost</span><span class="tone-warn">${esc(S.lostGear.join(', ').toLowerCase())}</span></div>`));
@@ -7112,7 +7156,7 @@ function pageCamp(sh, close) {
     const traps = []; if (S.snares) traps.push(`${S.snares} snares`); if (S.deadfalls) traps.push(`${S.deadfalls} deadfalls`); if (S.fishTrap) traps.push('fish trap');
     const built = Object.entries(S.crafts).filter(([k, v]) => v >= ({ smoker: 2, cache: 2, fishtrap: 3, net: 2, stove: 1, rack: 1, hearth: 1, lamp: 1, reflector: 1, platform: 1, bow: 2, staff: 1, stoneblade: 1 }[k] || 99)).map(([k]) => ({ stoneblade: 'stone blade', bow: `bow (${S.arrows} arrows${S.sys && S.sys.tiller < 1 ? ', uneven limbs' : ''})`, staff: 'wading staff', reflector: 'fire reflector', platform: 'raised bed frame', lamp: 'fat lamp', hearth: 'stone hearth', smoker: 'smoker', cache: 'food cache', fishtrap: 'fish trap', net: 'rigged net', stove: 'can stove', rack: S.sys && S.sys.rackRoof ? 'drying rack (roofed)' : 'drying rack (open)' }[k]));
     sh.append($(`<div class="rows">
-      ${S.gear.includes('Axe') ? `<div class="row"><span>Axe</span><span>${S.sys && S.sys.axeOff ? 'head off the handle' : `${S.axeEdge > 0.8 ? 'sharp' : S.axeEdge > 0.5 ? 'getting dull' : 'dull'} · ${E.haftOf(S) < 0.35 ? 'head loose' : 'head tight'}`}</span></div>` : ''}
+      ${E.kindsOf(S, 'Axe').length ? `<div class="row"><span>${esc(gearName(E.kindsOf(S, 'Axe')[0]))}</span><span>${S.sys && S.sys.axeOff ? 'head off the handle' : `${S.axeEdge > 0.8 ? 'sharp' : S.axeEdge > 0.5 ? 'getting dull' : 'dull'} · ${E.haftOf(S) < 0.35 ? 'head loose' : 'head tight'}`}</span></div>` : ''}
       <div class="row"><span>Fire</span><span>${S.fire ? 'Burning' : 'Out'} · <span class="num">${Math.round(S.firewood)}</span> days of wood · ${st.igniter === 'ferro' ? 'ferro rod' : st.igniter === 'bowdrill' ? 'bow drill' : 'no way to light one'} · ${S.mats.tinder > 0 ? `${S.mats.tinder} tinder${E.tinderDamp(S) > 0.2 ? ', damp' : ''}` : 'no tinder'}</span></div>
       <div class="row"><span>Shelter</span><span>${esc(st.shelter)}${S.shelterLvl ? ` · ${Math.round(st.shelterCond * 100)}% sound${S.sys && S.sys.leaky ? ', a leak in the roof' : ''}` : ''}${S.shelterLvl < 3 ? ` · next: ${esc(E.SHELTER_NAMES[S.shelterLvl + 1])}` : ''}</span></div>
       ${S.shelterLvl ? `<div class="row" style="display:block"><span>How it holds up</span><div class="scores" style="display:grid;grid-template-columns:auto auto 1fr;gap:3px 10px;margin-top:4px;font-size:13px">${E.shelterScores(S).map(([k, n, why]) => `<span style="text-align:left">${k}</span><span class="pips">${[0, 1, 2].map(i => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span><span class="muted" style="text-align:left">${esc(why)}</span>`).join('')}</div></div>` : ''}
@@ -7433,7 +7477,7 @@ function repairSave(g) {
   return g;
 }
 /* after filling gaps: a field whose kind differs from a new game's (a word where a number belongs, a list where a record belongs) takes the new game's value */
-const SYS_NUMS = ['clothes', 'tinderDamp', 'starved', 'snowLoad', 'seal', 'haft', 'goodSnares', 'fit', 'bed', 'soot', 'chill', 'smoking', 'crooked', 'tiller', 'taint', 'hands', 'fouling', 'spray', 'skyReads'];
+const SYS_NUMS = ['clothes', 'tinderDamp', 'starved', 'snowLoad', 'seal', 'haft', 'goodSnares', 'fit', 'bed', 'soot', 'chill', 'smoking', 'crooked', 'woodPts', 'bonePts', 'tiller', 'taint', 'hands', 'fouling', 'spray', 'skyReads'];
 function conformSave(dst, src, nested) {
   for (const k in src) { const a = dst[k], b = src[k];
     if (typeof b === 'number') { if (a === null || typeof a === 'number' && !isFinite(a) || (a !== undefined && typeof a !== 'number')) dst[k] = typeof a === 'string' && a.trim() !== '' && isFinite(+a) ? +a : b; }
