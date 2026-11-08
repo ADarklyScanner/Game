@@ -23,6 +23,7 @@ Run these before publishing any change. They test the real `../index.html`.
 | `node crafts.js` | Stone blades, woven door mats, cabin joints, rafts. | ~10 s |
 | `node finish.js` | Bear spray, climbing the rock, noise when stalking, the latrine. | ~10 s |
 | `node conseq.js` | Learning by consequence: the field notebook, look-alike plants, unknown berries, creeping cold, smoke in a shut cabin, shadow stick and moss. | ~15 s |
+| `node plants.js` | Plants and forage: real species for each place, ripe, overripe and frozen berries, young, tough and bitter greens, old nettle, cattail pollen or rhizome, rose hips before and after frost, fresh, old and wormy mushrooms, insects by warmth, each root's own look-alike, the yew in BC needle tea, mussels after a red tide. | ~10 s |
 | `node regress.js` | One check per bug fixed in the bug hunt (see ../BUGS.md). | ~30 s |
 | `node balance.js` | Survival over 1,020 bot games, per place and overall, against the original game before the realism update (`reference/original-game.html`). Fails if the overall median or mean moves more than 5%. | ~25 s |
 | `node fuzz.js [runs]` | Random play in every place, looking for crashes, broken numbers and days that never end. | ~10 s |
