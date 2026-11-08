@@ -1,4 +1,4 @@
-// Lazy-player tests for Last One Out. Each test plays a bot that skips something a real person can't skip,
+// Lazy-player tests for Hold Fast. Each test plays a bot that skips something a real person can't skip,
 // and checks how long the character lasts against a rough real-world limit.
 // Use: node lazy.js (reads the game straight out of ../index.html)
 const { loadGame } = require('./load-game'); const E = loadGame(); const D = E.DATA;
