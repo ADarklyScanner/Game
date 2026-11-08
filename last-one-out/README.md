@@ -214,6 +214,14 @@ Everyone gets the same clothing and a few personal things on top of the ten item
 - **Snake gaiters.** Backing away from a snake, a strike at your shin sometimes hits the gaiter instead. A bad moment, no bite.
 - The rest (hats, gloves, buff, shell, insulated pants, thermals) is part of how warm and dry you already are in the game, so it changes nothing new. The clothes still wear out and can be mended.
 
+## Big game by sex, age and condition; bears by kind (Nov 8, 2026)
+
+- **Every big game kill is one animal.** Moose, caribou, musk ox, mule deer, roe deer, red deer, elk, wild boar, warthog and springbok each roll a sex and age (bull, cow or yearling; buck, doe or yearling; stag or hind; boar, sow or young; ram, ewe or lamb). A bull moose carries about twice the meat of a yearling. The mix averages out near the old fixed weights, so balance is unchanged (overall mean 63.2 to 63.3 days).
+- **Condition.** Fat from the fall, burned off through the winter (slower where there is no snow), so meat and above all fat depend on when you hunt. Bulls run themselves thin in the rut and stay thin. Young ones carry less fat.
+- **On the map you can tell which is which.** "Draw on the cow moose", with "looks fat", "in the rut", "young at her side" or "herd circling up" under it.
+- **Risk.** A bull moose in the rut, or a sow with young at foot, may come at you. A musk ox herd circles up, which makes a clean shot harder. Moose bulls drop their antlers in early winter; caribou bulls after the rut. Antler counts as bone. The calf event now only follows a cow or doe.
+- **Bears by kind.** The generic "bear" is gone from every place. Vancouver Island, Reindeer Lake and Labrador have black bears; Chilko Lake and the Mackenzie and Beaufort deltas have grizzlies and black bears; Mongolia and Sapmi have Eurasian brown bears. Each bear is a lone boar, a curious yearling or a sow with cubs, in a real coat: black, brown-phase or cinnamon black bears (coastal ones are black), dark, brown or silver-tipped grizzlies. Grizzlies stand their ground more, and a black bear sow can follow you up a tree. The bear on the map and in the event picture wears its coat colour.
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.

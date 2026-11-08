@@ -41,4 +41,5 @@ node kit-tools.js
 node kit-camp.js
 node kit-new.js
 node quiet.js
+node beasts.js
 echo "Everything passed."
