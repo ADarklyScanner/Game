@@ -39,4 +39,5 @@ node deadrefs.js
 node selfcheck.js
 node kit-tools.js
 node kit-camp.js
+node kit-new.js
 echo "Everything passed."
