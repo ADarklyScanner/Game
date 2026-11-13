@@ -1,6 +1,6 @@
 # Clothing and the rest of the issued kit: design note
 
-Status: **idea for later, not started.** Written Nov 3, 2026, after the issued kit went in (see README, "Issued clothing and personal items").
+Status: **partly done (Nov 8, 2026):** per-piece kinds, colours, warmth, dryness and wear, and the loadout screen are in (see README, "Clothing, piece by piece"). Layering through the day, washing and losing pieces are still to do. Written Nov 3, 2026, after the issued kit went in (see README, "Issued clothing and personal items").
 
 ## The problem
 

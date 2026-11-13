@@ -110,6 +110,24 @@ summary { cursor: pointer; color: var(--muted); font-size: 13px; }
 .seg { display: flex; gap: 4px; }
 .seg button { flex: 1; border: 1px solid var(--line); background: none; border-radius: 8px; padding: 6px; cursor: pointer; font-size: 13px; }
 .seg button[aria-pressed="true"] { border-color: var(--ember); color: var(--ember); font-weight: 700; }
+.loadout .fig { display: flex; justify-content: center; } .figure { width: 120px; height: 200px; }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.loadout .rows { display: flex; flex-direction: column; gap: 4px; }
+.drow { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; width: 100%; border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 3px; padding: 8px 10px; cursor: pointer; }
+.drow .dl { font: 600 16px var(--display); } .drow .dl small { font: 500 12px var(--mono); color: var(--muted); }
+.drow .dv { font: 500 13px/1.35 var(--mono); color: var(--muted); }
+.sw { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
+.seg.wrap, .sheet .seg.wrap { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 5px; overflow: visible; } .seg.wrap button { min-height: 38px; }
+.dots { display: flex; flex-wrap: wrap; gap: 6px; }
+.dot { width: 36px; height: 36px; border-radius: 50%; border: 2px solid transparent; background: none; padding: 3px; cursor: pointer; }
+.dot i { display: block; width: 100%; height: 100%; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
+.dot[aria-pressed="true"] { border-color: var(--ember); }
+.dress .piece { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; } .dress .note { font-size: 13px; margin: 0; }
+.bars { display: flex; flex-direction: column; gap: 3px; margin-top: 2px; }
+.sbar { display: grid; grid-template-columns: 110px 1fr; align-items: center; gap: 8px; font: 500 12.5px var(--mono); color: var(--muted); }
+.sbar i { display: block; height: 7px; background: var(--panel2, rgba(0,0,0,.1)); border-radius: 4px; overflow: hidden; } .sbar b { display: block; height: 100%; background: var(--ember); }
+.loadout .adv .summary .row { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; border-bottom: 1px dotted var(--line); padding: 2px 0; }
+.loadout .cnotes { font-size: 13px; color: var(--muted); padding-left: 18px; margin: 6px 0 0; }
 .spark { width: 100%; height: 56px; display: block; }
 .spark path.l { fill: none; stroke: var(--ember); stroke-width: 2; }
 .spark path.a { fill: var(--ember); opacity: .12; }
@@ -464,7 +482,7 @@ addGear('Ferro rod', [
   { id: 'Stormproof matches', rate: 0.01, cost: 2, matches: 25, effect: 'A box of twenty-five matches that keep burning in rain and wind and catch damp tinder well, until the box is empty.' },
   { id: 'Magnesium block', rate: 0.01, cost: 2, effect: 'Shavings of magnesium burn hot enough to light damp tinder, as long as the wind does not blow them away first.' },
   { id: 'Lighter', rate: 0.01, cost: 1, fuel: 60, coldT: -5, effect: 'The easiest flame you can carry until hard frost stops the gas, and it runs dry after about sixty fires.' }]);
-const campKg = s => s.gear.reduce((a, id) => a + ((VARIANT[id] && VARIANT[id].moveKg) || 0), 0); /* what the variants add to the 18 kg of kit on a camp move */
+const campKg = s => s.gear.reduce((a, id) => a + ((VARIANT[id] && VARIANT[id].moveKg) || 0), 0) + (s.outfit ? outfitFx(s).kg : 0); /* what the variants add to the 18 kg of kit on a camp move */
 const kindV = (s, base, k) => { const v = variantOf(s, base); return v ? v[k] : undefined; }; /* a property of the first one you brought; the plain item has none */
 /* a sleeping bag's share of the cold that gets through: the plain bag as it always was; down and synthetic go by how wet the bag is */
 function bagMod(s) { const v = variantOf(s, 'Sleeping bag'); const h = s.bagHoles || 0; if (!v || v.dry == null) return 0.55 + Math.min(0.25, h * 0.06);
@@ -591,6 +609,7 @@ function newGame(seasonKey, gear, opts = {}) {
     opts: { showRemaining: !!opts.showRemaining, ...(opts.budget ? { budget: BUDGET } : {}) }, daily: opts.daily || null,
     salt: gear.includes('Salt') ? 60 : 0, lastMed: 0, cook: 'roast', letter: true, letterDay: -9,
     hours: 0, phase: -1, today: { burn: 0, done: [], lines: [], event: false, night: [] }, event: null, braced: false, lastAction: '',
+    ...(opts.outfit ? { outfit: cleanOutfit(opts.outfit) } : {}), // the issued clothing as picked on the loadout screen; none means the defaults
     sys: { schema: 1, rackRoof: false, smoking: 0 }, // newer systems keep their state here, so older saves stay untouched
     shelterCond: 1, fog: false, wind: false, heat: false, snowfall: false, lastStorm: -9, windows: [], windDir: 0, windStr: 0.3,
     bagHoles: 0, greenWood: 0, highGround: false, wetStreak: 0, hail: false, thunder: false, flooded: false, lostGear: [], cutTrees: [], pack: {}, piles: [], campPos: null, campChosen: false, moveDebt: 0, hideRaw: 0, hideAge: 0, cacheCond: null, potWater: 0, regrow: {}, partial: {}, partialKind: {}, stock: { lake: 1, river: 1, pond: 1, trap: 1, game: 1 }, patch: {}, lure: false, nightHours: 0, tended: false, hints: {}, explored: [], pins: [],
@@ -657,7 +676,7 @@ function storeKcal(s) { return s.stores.reduce((a, x) => a + x.por * DATA.foods[
 function tinderDamp(s) { return (s.sys && s.sys.tinderDamp) || 0; }
 function hasHearth(s) { return s.crafts.hearth >= 1 || (s.fireInside && (s.crafts.chimney >= 2 || s.shelterType === 'rock')); }
 function fireOdds(s) {
-  const d = tinderDamp(s); const clumsy = s.sys && s.sys.clumsyDay === s.day ? 0.8 : 1;
+  const d = tinderDamp(s); const clumsy = (s.sys && s.sys.clumsyDay === s.day ? 0.8 : 1) * gloveHands(s);
   const cc = !!(s.sys && s.sys.charcloth > 0); /* char cloth takes the spark first, and the tinder catches from it */
   const kit = fireKit(s), windy = s.wind || s.storm; /* a flame dries the tinder it touches; sparks only land on it */
   if (kit === 'Stormproof matches') return clamp(0.97 * (1 - (cc ? 0.12 : 0.2) * d) * clumsy, 0.05, 0.98);
@@ -690,6 +709,135 @@ function snowRoof(s, T, lines) {
 // ------------------------------------------------------------------ clothes: brush, timber and storms wear them; worn clothes let the cold in; a needle and thread put most of it back
 const WEARS = ['firewood', 'cut_poles', 'cut_logs', 'boughs', 'shelter', 'hunt', 'track', 'forage'];
 function clothesOf(s) { return s.sys && s.sys.clothes != null ? s.sys.clothes : 1; }
+// ------------------------------------------------------------------ the issued clothing, piece by piece: each piece has a kind (some also a weight, length or style), a colour, and its own warmth, dryness and wear
+/* warm: how warm it is for its place; keep: share of that warmth left when soaked; dry: how fast it dries; kg: weight; tough: how slowly it wears.
+   w is how much each piece counts toward the whole outfit. Every effect is read against the default outfit, so the defaults play exactly as before. */
+const COLORS = {
+  leather: ['black', 'dark brown', 'brown', 'tan'],
+  basic: ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'black', 'white', 'grey', 'brown'],
+  hunting: ['blaze orange', 'forest camo', 'snow camo', 'olive', 'khaki'],
+  plaid: ['red plaid', 'green plaid', 'blue plaid', 'black plaid'],
+  thermal: ['black', 'grey', 'navy'],
+  rubber: ['black', 'green', 'brown'],
+};
+const BH = [...COLORS.basic, ...COLORS.hunting];
+const OUTFIT = [
+  { id: 'jacket', name: 'Heavy jacket', n: 1, w: 3, def: 'synthetic', color: 'olive', colors: k => k === 'leather' ? COLORS.leather : BH, kinds: {
+    down: { name: 'Down parka', warm: 1.3, keep: 0.25, dry: 0.6, kg: 1, tough: 0.8, note: 'The warmest there is while it stays dry. Soaked, the down clumps flat and hardly warms you.' },
+    synthetic: { name: 'Synthetic parka', warm: 1.1, keep: 0.75, dry: 1.1, kg: 1.4, tough: 0.9, note: 'A little less warm than down, but it keeps its warmth wet and dries fast.' },
+    wool: { name: 'Wool coat', warm: 1, keep: 0.7, dry: 0.6, kg: 2.4, tough: 1.2, sparks: true, note: 'Heavy, warm even damp, and a spark from the fire just fizzles on it instead of melting a hole.' },
+    leather: { name: 'Leather coat', warm: 0.95, keep: 0.4, dry: 0.45, kg: 2.6, tough: 1.6, wind: true, note: 'Tough and windproof. Cold, and slow to dry, once it soaks through.' },
+    canvas: { name: 'Waxed canvas', warm: 0.85, keep: 0.5, dry: 0.8, kg: 1.9, tough: 1.4, shed: 0.85, note: 'Tough, and rain runs off it. Not much warmth in it.' } } },
+  { id: 'shell', name: 'Waterproof shell', n: 1, w: 0.5, def: 'breathable', color: 'green', colors: () => BH, kinds: {
+    breathable: { name: 'Breathable shell', warm: 1, keep: 0.9, dry: 1.3, kg: 0.6, tough: 0.8, rain: 1, note: 'Keeps most rain out and lets your sweat out. Brush and rock wear it through.' },
+    pvc: { name: 'PVC rain gear', warm: 1, keep: 0.9, dry: 1, kg: 1, tough: 1.2, rain: 0.7, sweat: 0.02, note: 'Nothing gets through it, rain or sweat. Work hard in it and you soak from the inside.' } } },
+  { id: 'boots', name: 'High-leg boots', n: 1, w: 1, def: 'leatherIns', color: 'brown', colors: k => k === 'rubber' ? COLORS.rubber : COLORS.leather, kinds: {
+    rubber: { name: 'Rubber insulated', warm: 1.05, keep: 0.9, dry: 0.5, kg: 2.2, tough: 1.1, wade: 0.7, note: 'Bog and shallow water stay outside. Sweaty, and slow to dry if they fill.' },
+    leatherIns: { name: 'Leather insulated', warm: 1, keep: 0.6, dry: 0.7, kg: 1.9, tough: 1, wade: 1, note: 'Warm and comfortable for long days. Dry them carefully.' },
+    leather: { name: 'Leather uninsulated', warm: 0.8, keep: 0.5, dry: 0.9, kg: 1.5, tough: 1, wade: 1, note: 'Light and quick on the trail, cold standing still.' } } },
+  { id: 'ankle', name: 'Ankle boots', n: 1, w: 0, spare: true, def: 'hikers', color: 'tan', colors: () => [...COLORS.leather, 'grey'], kinds: {
+    hikers: { name: 'Waterproof hikers', warm: 1, keep: 0.6, dry: 0.7, kg: 1.1, tough: 1, spareDry: 1, note: 'The second pair: a dry change when the big boots are soaked.' },
+    mesh: { name: 'Mesh trail shoes', warm: 0.7, keep: 0.4, dry: 1.8, kg: 0.6, tough: 0.7, spareDry: 1.4, note: 'Light and dry fast on the line, so the spare set is ready sooner. Cold feet.' } } },
+  { id: 'socks', name: 'Socks', n: 6, w: 0.6, acc: true, def: 'wool', color: 'grey', colors: () => COLORS.basic, kinds: {
+    wool: { name: 'Wool', warm: 1, keep: 0.8, dry: 0.8, kg: 0.08, tough: 1, note: 'Warm even damp, the standard for a reason.' },
+    synthetic: { name: 'Synthetic', warm: 0.95, keep: 0.6, dry: 1.4, kg: 0.06, tough: 1.1, note: 'Dries fast; less warm once wet.' },
+    blend: { name: 'Wool blend', warm: 1, keep: 0.72, dry: 1.1, kg: 0.07, tough: 1.1, note: 'A bit of both.' } },
+    opts: [{ id: 'len', name: 'Length', def: 'crew', of: { ankle: { name: 'Ankle', warm: 0.8 }, crew: { name: 'Crew', warm: 1 }, calf: { name: 'Over-calf', warm: 1.1 } } },
+      { id: 'thick', name: 'Thickness', def: 'heavy', of: { thin: { name: 'Thin', warm: 0.8, dry: 1.3 }, heavy: { name: 'Heavy cushion', warm: 1, dry: 1 } } }] },
+  { id: 'tshirt', name: 'T-shirt', n: 1, w: 0.5, def: 'merino', color: 'grey', colors: () => COLORS.basic, kinds: {
+    cotton: { name: 'Cotton', warm: 0.9, keep: 0.1, dry: 0.5, kg: 0.2, tough: 1, note: 'Comfortable dry. Wet, it pulls the heat out of you.' },
+    merino: { name: 'Merino', warm: 1, keep: 0.7, dry: 0.9, kg: 0.15, tough: 0.8, note: 'Warm next to the skin, wet or dry, and it does not stink.' },
+    synthetic: { name: 'Synthetic', warm: 0.95, keep: 0.5, dry: 1.5, kg: 0.12, tough: 1, note: 'Dries fastest.' } } },
+  { id: 'shirts', name: 'Shirts', n: 2, w: 1, def: 'wool', color: 'green', colors: () => [...COLORS.basic, ...COLORS.plaid], kinds: {
+    fleece: { name: 'Fleece', warm: 1.05, keep: 0.6, dry: 1.4, kg: 0.4, tough: 0.9, note: 'Warm and quick to dry. Sparks melt it.' },
+    wool: { name: 'Wool', warm: 1, keep: 0.7, dry: 0.7, kg: 0.5, tough: 1, note: 'Warm even damp.' },
+    flannel: { name: 'Flannel', warm: 0.9, keep: 0.15, dry: 0.5, kg: 0.45, tough: 1, note: 'Cotton flannel: cosy by the fire, miserable when wet.' } } },
+  { id: 'sweaters', name: 'Sweaters', n: 2, w: 1.2, def: 'crew', color: 'grey', colors: () => COLORS.basic, kinds: {
+    crew: { name: 'Wool crew', warm: 1, keep: 0.7, dry: 0.7, kg: 0.7, tough: 1, note: 'The main warm layer.' },
+    vest: { name: 'Wool zip vest', warm: 0.75, keep: 0.7, dry: 0.8, kg: 0.45, tough: 1, note: 'Keeps your core warm and your arms free to work.' },
+    fleece: { name: 'Fleece', warm: 0.95, keep: 0.6, dry: 1.4, kg: 0.5, tough: 0.9, note: 'Light, dries fast.' } } },
+  { id: 'thermals', name: 'Thermals', n: 2, w: 1, def: 'merino', color: 'black', colors: () => COLORS.thermal, kinds: {
+    merino: { name: 'Merino', warm: 1, keep: 0.7, dry: 0.9, kg: 0.3, tough: 0.8, note: 'Warm next to the skin, wet or dry.' },
+    synthetic: { name: 'Synthetic', warm: 0.95, keep: 0.55, dry: 1.5, kg: 0.25, tough: 1, note: 'Dries fast; a little colder.' } },
+    opts: [{ id: 'wt', name: 'Weight', def: 'mid', of: { light: { name: 'Light', warm: 0.8, dry: 1.2 }, mid: { name: 'Mid', warm: 1 }, heavy: { name: 'Heavy', warm: 1.2, dry: 0.85, kg: 0.15 } } }] },
+  { id: 'pants', name: 'Pants', n: 2, w: 1.2, def: 'synthetic', color: 'khaki', colors: () => BH, kinds: {
+    canvas: { name: 'Canvas', warm: 0.9, keep: 0.2, dry: 0.5, kg: 0.9, tough: 1.5, note: 'Brush and rock hardly touch them. Cotton: cold and heavy once wet.' },
+    wool: { name: 'Wool', warm: 1.1, keep: 0.7, dry: 0.6, kg: 0.8, tough: 1, note: 'Warm, wet or dry.' },
+    synthetic: { name: 'Synthetic', warm: 1, keep: 0.55, dry: 1.4, kg: 0.5, tough: 1, note: 'Light and quick to dry.' } } },
+  { id: 'insPants', name: 'Insulated pants', n: 1, w: 1.2, def: 'synthetic', color: 'olive', colors: () => BH, kinds: {
+    down: { name: 'Down', warm: 1.25, keep: 0.25, dry: 0.6, kg: 0.6, tough: 0.8, note: 'Warmest, until they get wet.' },
+    synthetic: { name: 'Synthetic', warm: 1, keep: 0.75, dry: 1.1, kg: 0.8, tough: 0.9, note: 'Keeps warm when wet.' } },
+    opts: [{ id: 'style', name: 'Style', def: 'pants', of: { pants: { name: 'Pants', warm: 1 }, bibs: { name: 'Bibs', warm: 1.15, kg: 0.3 } } }] },
+  { id: 'hats', name: 'Hats', n: 2, w: 0.7, def: 'beanie', color: 'grey', colors: () => BH, kinds: {
+    beanie: { name: 'Wool beanie', warm: 1, keep: 0.7, dry: 0.8, kg: 0.1, tough: 1, note: 'Warm, and you can sleep in it.' },
+    trapper: { name: 'Trapper', warm: 1.3, keep: 0.5, dry: 0.6, kg: 0.25, tough: 1, note: 'Ear flaps down, the wind can blow.' },
+    brimmed: { name: 'Brimmed hat', warm: 0.6, keep: 0.6, dry: 0.9, kg: 0.15, tough: 1.1, note: 'Sun and rain off your face. Little warmth.' },
+    cap: { name: 'Ball cap', warm: 0.4, keep: 0.5, dry: 1.2, kg: 0.08, tough: 1, note: 'Keeps the sun out of your eyes. That is all.' } } },
+  { id: 'gloves', name: 'Gloves', n: 3, w: 0.6, def: 'insulated', color: 'black', colors: k => k === 'work' ? COLORS.leather : COLORS.basic, kinds: {
+    work: { name: 'Leather work gloves', warm: 0.7, keep: 0.4, dry: 0.6, kg: 0.15, tough: 1.8, note: 'Axe handles and thorns hardly mark them. Not warm.' },
+    insulated: { name: 'Insulated gloves', warm: 1, keep: 0.5, dry: 0.7, kg: 0.15, tough: 1, note: 'Warm hands for most jobs.' },
+    liners: { name: 'Liners', warm: 0.5, keep: 0.6, dry: 1.5, kg: 0.05, tough: 0.6, note: 'Thin enough for knots and fine work, and they wear through fast.' },
+    mittens: { name: 'Shell mittens', warm: 1.4, keep: 0.5, dry: 0.8, kg: 0.2, tough: 1, note: 'The warmest hands, and the clumsiest.' } } },
+  { id: 'belt', name: 'Belt', n: 1, w: 0, def: 'leather', color: 'brown', colors: k => k === 'leather' ? COLORS.leather : COLORS.basic, kinds: {
+    leather: { name: 'Leather', warm: 1, keep: 1, dry: 1, kg: 0.2, tough: 1, cord: 2, note: 'Cut up, it makes leather lacing.' },
+    braided: { name: 'Braided', warm: 1, keep: 1, dry: 1, kg: 0.15, tough: 1, cord: 3, note: 'Unravelled, it makes cordage.' },
+    nylon: { name: 'Nylon webbing', warm: 1, keep: 1, dry: 1, kg: 0.1, tough: 1, cord: 0, note: 'Strong, and nothing to salvage from it.' } } },
+  { id: 'buff', name: 'Buff', n: 1, w: 0.3, acc: true, def: 'thin', color: 'grey', colors: () => BH, kinds: {
+    thin: { name: 'Thin', warm: 1, keep: 0.6, dry: 1.3, kg: 0.05, tough: 1, note: 'Wind and bugs off your face and neck.' },
+    fleece: { name: 'Fleece-lined', warm: 1.6, keep: 0.5, dry: 0.8, kg: 0.1, tough: 1, note: 'Warm in hard cold.' } } },
+  { id: 'bandana', name: 'Bandana', n: 1, w: 0, acc: true, def: 'cotton', color: 'red', colors: () => COLORS.basic, kinds: {
+    cotton: { name: 'Cotton', warm: 1, keep: 1, dry: 1, kg: 0.03, tough: 1, note: 'A sweatband, a sling, a flag.' } } },
+];
+const SLOT = Object.fromEntries(OUTFIT.map(x => [x.id, x]));
+function defaultOutfit() { const o = {}; for (const sl of OUTFIT) { o[sl.id] = { k: sl.def, c: sl.color }; for (const op of sl.opts || []) o[sl.id][op.id] = op.def; } return o; }
+/* any outfit from a save or the setup screen, made safe: unknown kinds, colours or options fall back to the defaults */
+function cleanOutfit(src) { const o = defaultOutfit(); if (!src || typeof src !== 'object') return o;
+  for (const sl of OUTFIT) { const p = src[sl.id]; if (!p || typeof p !== 'object') continue; const d = o[sl.id];
+    if (sl.kinds[p.k]) d.k = p.k; const cols = sl.colors(d.k); d.c = cols.includes(p.c) ? p.c : cols.includes(sl.color) ? sl.color : cols[0];
+    for (const op of sl.opts || []) if (op.of[p[op.id]]) d[op.id] = p[op.id]; }
+  return o; }
+const outfitOf = s => (s && s.outfit) || DEF_OUTFIT;
+/* one piece's stats, its options folded in */
+function pieceStats(sl, p) { const k = sl.kinds[p.k] || sl.kinds[sl.def]; const st = { ...k }; for (const op of sl.opts || []) { const c = op.of[p[op.id]] || op.of[op.def]; if (c.warm) st.warm *= c.warm; if (c.dry) st.dry *= c.dry; if (c.kg) st.kg += c.kg; } return st; }
+function outfitSums(o) { let W = 0, K = 0, D = 0, Dw = 0, kg = 0; for (const sl of OUTFIT) { const st = pieceStats(sl, o[sl.id] || {}); W += sl.w * st.warm; K += sl.w * st.warm * st.keep; D += sl.w * st.dry; Dw += sl.w; kg += sl.n * st.kg; } return { warm: W, keep: K / W, dry: D / Dw, kg }; }
+const DEF_OUTFIT = defaultOutfit(); const DEF_SUMS = outfitSums(DEF_OUTFIT);
+const stat = (s, id) => pieceStats(SLOT[id], outfitOf(s)[id]);
+/* what the outfit does, each against the default (1 = as the game always was) */
+function outfitFx(s) { const o = outfitOf(s); if (o === DEF_OUTFIT) return { cold: 1, wet: 1, dry: 1, kg: 0, rain: 1, wade: 1, spareDry: 1, sweat: 0 };
+  const m = outfitSums(o); const j = stat(s, 'jacket'), sh = stat(s, 'shell');
+  return { cold: Math.pow(DEF_SUMS.warm / m.warm, 0.8), wet: (1 - m.keep) / (1 - DEF_SUMS.keep), dry: m.dry / DEF_SUMS.dry, kg: Math.round((m.kg - DEF_SUMS.kg) * 10) / 10,
+    rain: (sh.rain || 1) * (j.shed || 1), wade: stat(s, 'boots').wade || 1, spareDry: stat(s, 'ankle').spareDry || 1, sweat: sh.sweat || 0 }; }
+/* colour: small, and only where it is real. Hoofed animals see blue and yellow, so blue and UV-bright white stand out and orange looks dull; birds see every colour; outline matters more than any of it */
+const HOOFED = ['deer', 'elk', 'reddeer', 'roedeer', 'caribou', 'moose', 'muskox', 'boar', 'warthog', 'springbok'];
+const UV_BRIGHT = ['blue', 'white', 'purple'], BRIGHT = ['red', 'orange', 'yellow', 'blaze orange', 'white', 'blue', 'purple'], DARK = ['black', 'dark brown', 'navy', 'black plaid'];
+const outerColor = s => outfitOf(s)[(s.rain || s.storm) ? 'shell' : 'jacket'].c;
+function colorSeen(s, id) { const c = outerColor(s); const camo = c === 'forest camo' || (c === 'snow camo' && snowy(s));
+  if (HOOFED.includes(id)) return UV_BRIGHT.includes(c) ? 0.95 : camo ? 1.03 : 1;
+  if (BIRDS.test(id)) return BRIGHT.includes(c) ? 0.96 : camo ? 1.02 : 1;
+  return 1; }
+/* the day's weather against the coat: a dark one soaks up the sun, leather stops the wind */
+const coatWeather = s => (DARK.includes(outfitOf(s).jacket.c) && !(s.fog || s.rain || s.storm || s.snowfall) ? 0.98 : 1) * (stat(s, 'jacket').wind && (s.wind || s.storm) ? 0.96 : 1);
+/* fumbling a ferro rod in mittens; in the warm they come off anyway */
+const gloveHands = s => outfitOf(s).gloves.k === 'mittens' && temperature(s) < 5 ? 0.92 : 1;
+/* wear, piece by piece. The job decides where it lands (an axe: gloves, pants, jacket); the total is the clothes' wear as before, so mending and the cold read it the same way */
+const WEAR_AT = { jacket: ['jacket'], firewood: ['gloves', 'pants', 'jacket'], cut_poles: ['gloves', 'pants', 'jacket'], cut_logs: ['gloves', 'pants', 'jacket'], boughs: ['gloves', 'jacket', 'shell'], shelter: ['gloves', 'pants', 'shirts'], hunt: ['pants', 'boots', 'jacket', 'shell'], track: ['pants', 'boots', 'shell'], forage: ['pants', 'gloves', 'boots'], storm: null };
+const WORN_LINE = { pants: 'A knee is through your trousers and the cuffs are in rags. The wind finds every hole.', gloves: 'The gloves are through at the fingertips and the palms are thin as paper.', jacket: 'The jacket is torn at the cuffs and the elbows. The cold comes in at the seams.', shell: 'The shell is scuffed through at the shoulders. It leaks now.', boots: 'The soles of your boots are worn smooth and a seam is opening at the toe.', shirts: 'Both shirts are worn through at the elbows.' };
+const WEAR_W = OUTFIT.filter(sl => sl.w > 0);
+const WEAR_TOT = WEAR_W.reduce((a, sl) => a + sl.w, 0);
+function piecesOf(s) { const sys = sysOf(s); const agg = clothesOf(s);
+  if (!sys.pieces || typeof sys.pieces !== 'object') sys.pieces = {}; const P = sys.pieces; for (const sl of WEAR_W) if (typeof P[sl.id] !== 'number' || !isFinite(P[sl.id])) P[sl.id] = agg;
+  /* the total was set some other way (an older save, a mend): bring the pieces into line with it, keeping their shape */
+  for (let i = 0; i < 4; i++) { const m = WEAR_W.reduce((a, sl) => a + sl.w * P[sl.id], 0) / WEAR_TOT; const d = agg - m; if (Math.abs(d) < 0.0005) break; for (const sl of WEAR_W) P[sl.id] = clamp(Math.round((P[sl.id] + d) * 10000) / 10000, 0, 1); }
+  return P; }
+/* each piece's wear, read without changing anything (for the screens) */
+function pieceWear(s) { const P = (s.sys && s.sys.pieces) || {}; const agg = clothesOf(s); return Object.fromEntries(WEAR_W.map(sl => [sl.id, typeof P[sl.id] === 'number' ? P[sl.id] : agg])); }
+function wearClothes(s, amount, job) { const sys = sysOf(s); const before = clothesOf(s); const o = outfitOf(s); const at = WEAR_AT[job] || null;
+  const tough = id => pieceStats(SLOT[id], o[id]).tough / pieceStats(SLOT[id], DEF_OUTFIT[id]).tough;
+  const share = id => 0.5 + (at ? (at.includes(id) ? 0.5 * WEAR_TOT / at.reduce((a, x) => a + SLOT[x].w, 0) : 0) : 0.5); /* half of it everywhere, half on the pieces doing the work */
+  const P = piecesOf(s); const pre = { ...P }; let lost = 0; for (const sl of WEAR_W) { const d = amount * share(sl.id) / tough(sl.id); P[sl.id] = Math.max(0, Math.round((P[sl.id] - d) * 10000) / 10000); lost += sl.w * d; }
+  const k = lost / WEAR_TOT / amount; sys.clothes = Math.max(0, Math.round((before - (Math.abs(k - 1) < 1e-9 ? amount : amount * k)) * 1000) / 1000); piecesOf(s); /* the default outfit wears exactly as the single meter did */
+  for (const id of at || []) if (pre[id] >= 0.5 && P[id] < 0.5 && WORN_LINE[id]) return WORN_LINE[id];
+  return null; }
 // ------------------------------------------------------------------ a bow of your own: a stave carved down and strung. Uneven limbs cost it a quarter of its cast
 function hasBow(s) { return has(s, 'Bow and arrows') || s.crafts.bow >= 2; }
 function bowPower(s) { return has(s, 'Bow and arrows') ? kitBowPower(s) : 0.85 * ((s.sys && s.sys.tiller) || 1) * ({ hard: 1.12, soft: 0.92 }[s.sys && s.sys.bowWood] || 1); } /* a springy hardwood stave casts harder than spruce */
@@ -760,7 +908,7 @@ function thinIce(s) { const f = season(s).climate.freeze; return frozen(s) && f 
 function wade(s, bridge) {
   const L = []; if (s.status !== 'playing' || frozen(s)) return L;
   if (bridge) { if ((s.rain || s.storm || s.fog) && chance(s, 0.02)) { s.wet = Math.min(1, s.wet + 0.6); s.morale = Math.max(0, s.morale - 2); L.push(['Your boots went out from under you on the wet logs and you went in to the thighs.', 'warn']); } return L; }
-  s.wet = Math.min(1, s.wet + 0.25); if (temperature(s) < 5) s.morale = Math.max(0, s.morale - 0.5);
+  s.wet = Math.min(1, s.wet + 0.25 * outfitFx(s).wade); /* rubber boots keep the shallows out */ if (temperature(s) < 5) s.morale = Math.max(0, s.morale - 0.5);
   if (chance(s, 0.04 * (s.crafts.staff >= 1 ? (poorly(s, 'staff') ? 0.45 : 0.2) : 1))) { s.wet = 1; s.morale = Math.max(0, s.morale - 3); s.health = Math.max(1, s.health - 2); L.push(['A stone rolled under your foot mid-river and you went down to the chest. Soaked through and shaking.', 'bad']); }
   return L;
 }
@@ -1199,7 +1347,7 @@ function available(s, id) {
     // the issued kit: a full spare set (shirt, pants, thermals, socks, the second pair of boots), one photograph, a leather belt
     case 'change_dry': return s.wet < 0.35 ? r(false, 'Dry enough') : s.sys && s.sys.sparesWet ? r(false, 'The spares are wet too. Dry them by the fire') : r(true, '', 'spare shirt, pants, thermals, socks and boots');
     case 'photo': return s.sys && s.sys.photoDay === s.day ? r(false, 'You looked at it today') : r(true, '', 'lifts your will a little');
-    case 'cut_belt': return s.sys && s.sys.beltCut ? r(false, 'Already cut up') : !blade(s) ? r(false, 'Needs a knife') : r(true, '', '+2 cordage · your trousers on a cord after');
+    case 'cut_belt': { const bk = outfitOf(s).belt.k; return s.sys && s.sys.beltCut ? r(false, 'Already cut up') : !stat(s, 'belt').cord ? r(false, 'Nylon webbing: nothing to salvage') : bk === 'leather' && !blade(s) ? r(false, 'Needs a knife') : r(true, '', `+${stat(s, 'belt').cord} cordage · your trousers on a cord after`); }
     case 'talk_camera': return s.talkedToday ? r(false, 'Said your piece today') : r(true, '', 'lifts your will a little');
     case 'sit': return s.storm ? r(false, 'Not in this weather') : s.sys && s.sys.sitDay === s.day ? r(false, 'You sat a while already today') : r(true, '', 'lifts your will a little · sometimes something shows itself');
     case 'setlines': return !hasRod(s) && s.hooks < 2 ? r(false, 'Needs hooks') : s.hooks < 2 ? r(false, 'Needs 2 hooks') : s.mats.cordage < 2 && s.line < 20 ? r(false, 'Needs 2 cordage or line') : s.setlines ? r(false, 'Lines are out. Check them in the morning') : frozen(s) && !cutsIce(s) ? r(false, 'Ice') : s.storm ? r(false, 'Too rough') : r(true, '', 'Baited lines fish while you sleep');
@@ -1433,7 +1581,7 @@ function beginDay(s) {
   if (se.climate.snow === s.day) lines.push(['First lasting snow. Berries and greens are buried, days are shorter.', 'info']);
   if (se.climate.freeze === s.day) lines.push(['The water freezes over.', 'info']);
   if (s.storm) lines.push([s.hail ? 'A storm, and hail with it: the ground goes white for an hour and the fish go deep.' : s.thunder ? 'Thunder rolling in off the hills all day. Lightning on the ridge.' : pick1(s, ['A storm blows through.', 'Gale from the west. Trees down in the night.', 'Sideways rain and a wind that finds every gap in the walls.']), 'bad']); else if (s.rain) lines.push([s.wetStreak >= 3 ? `Rain again. ${s.wetStreak} days of it now, and the ground is a sponge.` : s.thunder ? 'Rain with thunder behind it.' : pick1(s, ['Rain all day.', 'Grey drizzle from first light.', 'Cold rain, on and off.']), 'muted']); else if (s.snowfall) lines.push(['Snowing. Fresh sign on every trail.', 'info']); else if (s.fog) lines.push(['Fog to the ground. Nothing to shoot at until it lifts.', 'muted']); else if (s.wind) lines.push(['A hard wind all day. Casting is poor and the fire eats wood.', 'muted']); else if (s.heat) lines.push(['A hot one. Nothing moves at midday, and you will drink more.', 'warn']);
-  if (s.sys && s.sys.sparesWet && !s.rain && !s.storm && !s.snowfall && !s.fog && chance(s, 0.6)) { s.sys.sparesWet = false; lines.push(['The spare clothes dried on the line overnight.', 'muted']); }
+  if (s.sys && s.sys.sparesWet && !s.rain && !s.storm && !s.snowfall && !s.fog && chance(s, Math.min(0.95, 0.6 * outfitFx(s).spareDry))) { s.sys.sparesWet = false; lines.push(['The spare clothes dried on the line overnight.', 'muted']); }
   for (const w of s.windows) if (w.from === s.day) lines.push([w.text, w.id === 'freezeup' || w.id === 'redtide' ? 'warn' : 'good']);
   if (se.climate.snow && s.day === se.climate.snow - 8) lines.push(['First hard frost. The greens are gone black; the cranberries just got sweet.', 'info']);
   s.spate = (s.day - s.lastStorm === 1) && !frozen(s) && se.climate.water !== 'scarce'; if (s.spate) { lines.push(['The river is up and brown after the storm. The ford will not go today.', 'warn']); if (s.crafts.bridge >= 2 && chance(s, poorly(s, 'bridge') ? 0.55 : 0.3)) { s.crafts.bridge = 1; lines.push(['The flood tore one of the bridge logs loose from its lashings. It needs re-lashing before it will take your weight.', 'bad']); } }
@@ -1462,7 +1610,7 @@ function act(s, id, opts = {}) {
   const lines = []; const av = available(s, id); const A = ACTIONS[id];
   if (!av.ok) { lines.push([`Couldn't ${A.label.toLowerCase()}: ${av.why.toLowerCase()}.`, 'muted']); return lines; }
   const h = jobHours(s, id, opts.extra) * (s.health < 40 ? 1.25 : 1) * (s.sys && s.sys.dry ? 1.25 : 1); /* thirst slows every job */
-  if ((s.rain || s.storm) && !opts.inside && !['inside', 'camp'].includes(A.where)) s.wet = Math.min(1, s.wet + (s.storm ? 0.2 : 0.12) * h * (s.gear.includes('Poncho') ? VARIANT.Poncho.rainWet : 1)); /* a poncho sheds most of it */
+  if ((s.rain || s.storm) && !opts.inside && !['inside', 'camp'].includes(A.where)) s.wet = Math.min(1, s.wet + (s.storm ? 0.2 : 0.12) * h * (s.gear.includes('Poncho') ? VARIANT.Poncho.rainWet : 1) * outfitFx(s).rain); /* a poncho sheds most of it */
   if ((s.rain || s.storm) && opts.inside) s.morale += 0.5;
   const atNight = s.phase === 3; if (atNight) { s.nightHours = round1((s.nightHours || 0) + h); const lamp = lampOk(s) && (!s.fire || (!!opts.inside && !s.fireInside)) && !['light_fire', 'tend_fire'].includes(id); if (lamp) burnLamp(s, h, lines, !!opts.inside); else if (headlampOk(s) && (!s.fire || (!!opts.inside && !s.fireInside)) && !['light_fire', 'tend_fire'].includes(id) && !(canWorkInside(s) && DARK_OK.includes(id))) useKit(s, 'lamp', h, lines); else s.morale -= 0.3 * h; } // steady lamplight takes the strain out of night work
   s.hours = round1(s.hours + h); s.today.burn += C.burnPerHour[A.effort] * h; s.today.done.push(id); s.stats.jobs++; s.lastAction = id;
@@ -1477,7 +1625,7 @@ function act(s, id, opts = {}) {
   if (chopping && s.status === 'playing') axeWear(s, lines);
   if (['roots', 'cattail', 'dig_latrine', 'bury'].includes(id) && s.crafts.diggingstick >= 1 && !has(s, 'Shovel') && poorly(s, 'diggingstick') && chance(s, 0.08)) { s.crafts.diggingstick = 0; delete s.sys.poor.diggingstick; lines.push(['The soft point of the digging stick split up the middle. Make another, and harden it properly.', 'bad']); }
   if (BLADE_JOBS.includes(id) && s.crafts.stoneblade >= 1 && !has(s, 'Knife') && !has(s, 'Multitool') && chance(s, 0.03)) { s.crafts.stoneblade = 0; lines.push(['The stone blade snapped across the middle on a joint. Knap another.', 'bad']); }
-  if (WEARS.includes(id) && s.status === 'playing') { const sys = sysOf(s); const before = clothesOf(s); sys.clothes = Math.max(0, Math.round((before - 0.01 * h / 2) * 1000) / 1000); if (before >= 0.6 && sys.clothes < 0.6) lines.push(['A knee is through your trousers and the cuffs are in rags. The wind finds every hole.', 'warn']); }
+  if (WEARS.includes(id) && s.status === 'playing') { const worn = wearClothes(s, 0.01 * h / 2, id); if (worn) lines.push([worn, 'warn']); const sw = outfitFx(s).sweat; if (sw && !frozen(s)) s.wet = Math.min(1, Math.round((s.wet + sw * h) * 1000) / 1000); /* rain gear that breathes nothing: you soak from inside */ }
   s.morale = clamp(s.morale, 0, 100); s.phase = atNight ? 3 : phaseOf(s); floorHealth(s, lines);
   s.today.lines.push(...lines);
   if (s.status === 'playing' && !atNight) maybeEvent(s, 'act', lines, id);
@@ -1573,6 +1721,7 @@ function doAction(s, id, lines, mod, opts) {
       if (X.target) { p = { good: bow ? 0.82 : 0.6, poor: bow ? 0.55 : 0.4, miss: 0.04, none: 0 }[X.hit || 'none'] * (big ? (bow ? 0.75 * pointBig(s) : 0.02) : 1) /* a slingshot stone stings a moose; it does not bring one down */ * Math.min(1.15, s.skill.hunt) * (1 - 0.3 * crooked) * (bow ? bowPower(s) : 1); if (s.health < 40) p *= 0.85; const smoked = s.sys && s.sys.smokeDay != null && s.day - s.sys.smokeDay <= 1; if (X.scent === 'down') p *= smoked ? 0.8 : 0.6; else if (smoked) p *= 1.05; if (X.scent === 'up') p *= 1.15; p *= 0.5 + 0.5 * stalkNoise(s); }
       else p = X.spooked ? 0 : huntOdds(s) * mod * (1 - 0.3 * crooked); /* a stalk that crashed in finds nothing */
       if (bow && recurveSapped(s) && !s.today.bowNote) { s.today.bowNote = true; lines.push([s.rain || s.storm ? 'The bowstring soaked up the rain and stretched, and the recurve threw soft all day.' : 'In this frost the recurve limbs feel dead in the hand, and the arrows drop short.', 'muted']); }
+      p *= colorSeen(s, shotAt); /* what the animal makes of your coat */
       const killed = chance(s, p);
       if (killed && (big || (!X.target && bow && se.big.length && chance(s, 0.0022 * se.mult.hunt * pointBig(s))))) {
         const id2 = big ? X.target : se.big[Math.floor(rnd(s) * se.big.length)];
@@ -1645,7 +1794,7 @@ function doAction(s, id, lines, mod, opts) {
     case 'read_letter': { s.letterDay = s.day; s.morale += 9; lines.push(['You read it twice, slowly, and fold it back along the same creases.', 'good']); break; }
     case 'change_dry': { const sys = sysOf(s); s.wet = 0.1; sys.sparesWet = true; s.morale += 2; lines.push(['Stripped off the wet layers and pulled on the spares: dry shirt, dry pants, dry wool socks, the other boots. The wet set is hanging up now.', 'good']); break; }
     case 'photo': { const sys = sysOf(s); sys.photoDay = s.day; const worked = s.today.done.some(x => !['rest', 'photo', 'talk_camera', 'read_letter'].includes(x)); s.morale += worked ? 3 : 1; lines.push([pick1(s, ['Took the photograph out and looked at it for a long time.', 'The photograph is soft at the corners now. You look anyway.', 'Looked at the photograph. Said a few words to it.']), 'muted']); break; }
-    case 'cut_belt': { const sys = sysOf(s); sys.beltCut = true; s.mats.cordage += 2; lines.push(['Cut the leather belt into long thongs. Strong lacing. Your trousers are held up with a length of cord now.', 'info']); break; }
+    case 'cut_belt': { const sys = sysOf(s); sys.beltCut = true; s.mats.cordage += stat(s, 'belt').cord; lines.push([outfitOf(s).belt.k === 'braided' ? 'Picked the braided belt apart and twisted the strands back into cordage. Your trousers are held up with a length of it now.' : 'Cut the leather belt into long thongs. Strong lacing. Your trousers are held up with a length of cord now.', 'info']); break; }
     case 'talk_camera': { s.talkedToday = true; s.morale += 2; lines.push([['Told the camera about the fish that got off.', 'Explained to nobody why the shelter faces this way.', 'Said good night to everyone by name.', 'Admitted to the lens that you cried a little this morning.'][Math.floor(rnd(s) * 4)], 'muted']); break; }
     case 'sit': { /* an hour of doing nothing on purpose: the quiet is half of what is out here. Now and then something shows itself */ const sys = sysOf(s); sys.sitDay = s.day; s.morale += 1; const r0 = drand(s, 'sit');
       if (r0 < 0.3) { const g = goodLine(s, null, ['wonder']); if (g) { s.morale += Math.min(2, g.lift); lines.push([g.text, 'good']); break; } }
@@ -1850,7 +1999,7 @@ function doAction(s, id, lines, mod, opts) {
       lines.push([pot ? `Rendered the fat down slowly in the pot and strained it: ${Math.round(got)} portion${Math.round(got) === 1 ? '' : 's'} of clean tallow that will keep for months.` : `Rendered the fat on a flat stone by the fire. Much of it ran into the ashes. ${Math.round(got)} portion${Math.round(got) === 1 ? '' : 's'} of tallow that will keep for months.`, 'good']);
       break;
     }
-    case 'dry': { s.wet = 0; s.morale += 2; if (s.sys && s.sys.sparesWet) { s.sys.sparesWet = false; lines.push(['The spare set dried by the fire too.', 'muted']); } if (!s.once_boot && chance(s, 0.004)) { s.once_boot = true; addCond(s, { name: 'Melted boot sole', days: 10, dmg: 0.3 }); s.morale -= 6; lines.push(['Left a boot too close to the coals. The sole has melted and curled. Wet feet from here on.', 'bad']); } else lines.push([pick1(s, ['Steamed yourself dry by the fire.', 'Turned the socks on a stick over the coals until they stopped steaming.', 'Dried out in front of the fire. The jacket smells of smoke and fish.']), 'info']); break; }
+    case 'dry': { s.wet = 0; s.morale += 2; if (outfitOf(s).jacket.k === 'down' && drand(s, 'downspark' + s.hours) < 0.1) { wearClothes(s, 0.004, 'jacket'); lines.push(['A spark from the fire landed on the parka and melted a hole. Feathers came out of it until you taped it with a strip of bark.', 'warn']); } if (s.sys && s.sys.sparesWet) { s.sys.sparesWet = false; lines.push(['The spare set dried by the fire too.', 'muted']); } if (!s.once_boot && chance(s, 0.004)) { s.once_boot = true; addCond(s, { name: 'Melted boot sole', days: 10, dmg: 0.3 }); s.morale -= 6; lines.push(['Left a boot too close to the coals. The sole has melted and curled. Wet feet from here on.', 'bad']); } else lines.push([pick1(s, ['Steamed yourself dry by the fire.', 'Turned the socks on a stick over the coals until they stopped steaming.', 'Dried out in front of the fire. The jacket smells of smoke and fish.']), 'info']); break; }
     case 'sharpen': { const target = has(s, 'Sharpening stone') ? 1 : 0.75; if (X.good === false) { s.axeEdge = Math.max(s.axeEdge, round1((s.axeEdge + target) / 2 * 10) / 10); lines.push(['A few strokes and you stopped. The edge is better, not right.', 'muted']); break; } /* stopped part way: half the gain */
       if (has(s, 'Sharpening stone')) { s.axeEdge = 1; lines.push(['Put a fresh edge on the axe.', 'info']); } else { s.axeEdge = Math.max(s.axeEdge, 0.75); lines.push(['Honed the axe on a flat river stone, wet. A working edge, not a fine one.', 'info']); } break; }
     case 'fix_axe': { const sys = sysOf(s); const wrap = s.mats.hide >= 1; if (wrap) s.mats.hide -= 1; sys.wrapped = wrap; sys.haft = wrap ? 1 : 0.8; sys.axeOff = false; lines.push([wrap ? 'Carved a hardwood wedge, drove it into the eye and bound the neck in a strip of wet rawhide. It will shrink tight as it dries.' : 'Carved a new hardwood wedge and drove it into the eye. The head is tight again, for now.', 'good']); break; }
@@ -2475,7 +2624,7 @@ function nightAndBody(s, burn, done, lines) {
 
   // energy
   if (bedOf(s) > 0) s.sys.bed = Math.max(0, Math.round((s.sys.bed - 0.03) * 100) / 100);
-  if (s.storm && s.shelterLvl < 2) { const sys = sysOf(s); sys.clothes = Math.max(0, Math.round((clothesOf(s) - 0.02) * 1000) / 1000); }
+  if (s.storm && s.shelterLvl < 2) wearClothes(s, 0.02, 'storm');
   if (s.shelterType === 'cabin' && s.sys && s.sys.cabinDay && s.day - s.sys.cabinDay === 28) { s.sys.gaps = true; s.sys.seal = 0; lines.push(['The green logs have dried and shrunk. Daylight shows between them, and the wind comes through the walls. They want chinking.', 'warn']); }
   if (sealOf(s) > 0 && s.sys.sealFresh > 0) { if (s.sys.sealFresh === 3) lines.push(['The clay in the walls is shrinking as it dries and pulling away from the wood in hairline cracks. Moss or grass worked into it would have held it.', 'warn']); s.sys.sealFresh -= 1; s.sys.seal = Math.max(0, s.sys.seal - 0.07); }
   if (sealOf(s) > 0) { s.sys.seal = Math.max(0, Math.round((s.sys.seal - 0.01 - (s.storm ? 0.04 : 0) - (T < -20 ? 0.02 : 0)) * 1000) / 1000); }
@@ -2483,7 +2632,7 @@ function nightAndBody(s, burn, done, lines) {
   const bmr = C.bmrPerLb * s.weight * (1 - C.adapt * lossFrac);
   if (rough) s.shelterLvl = 0;
   if (!rough && s.shelterType === 'tarp' && (s.rain || s.storm) && kindV(s, 'Tarp', 'leak')) { s.wet = Math.min(1, s.wet + kindV(s, 'Tarp', 'leak')); if (drand(s, 'poncho') < 0.4) lines.push(['Rain blew in under the edges of the poncho all night; it was never big enough for a roof.', 'muted']); }
-  let coldMod = (has(s, 'Sleeping bag') && !rough ? bagMod(s) : 1) * [1, 0.8, 0.65, 0.5][s.shelterLvl] * (1 + (1 - (s.shelterCond ?? 1)) * 0.6) * (fire ? (s.fireInside ? (green ? 0.7 : 0.6) : (green ? 0.9 : hearth ? 0.76 : 0.8)) * (s.tended ? 0.9 : 1) : (hearth && hadFire && !rough ? 0.9 : 1)) * (1 + s.wet * 0.5) * (1 - 0.15 * sealOf(s)) * (1 - (rough ? 0 : bedWarmth(s))) * (fire && !s.fireInside && s.crafts.reflector >= 1 && s.shelterLvl <= 1 ? (poorly(s, 'reflector') ? 0.94 : 0.88) : 1) * (WALLED.includes(s.shelterType) && snowLoadOf(s) >= 0.5 && snowLoadOf(s) <= 2 ? 0.93 : 1) * (s.shelterType === 'cabin' && s.sys && s.sys.gaps ? 1.08 : 1) * (1 + 0.2 * (1 - clothesOf(s))) * (s.sys && s.sys.mat && s.shelterType && (s.wind || s.storm) ? (s.sys.mat === 'tight' ? 0.9 : 0.97) : 1);
+  let coldMod = outfitFx(s).cold * coatWeather(s) * (has(s, 'Sleeping bag') && !rough ? bagMod(s) : 1) * [1, 0.8, 0.65, 0.5][s.shelterLvl] * (1 + (1 - (s.shelterCond ?? 1)) * 0.6) * (fire ? (s.fireInside ? (green ? 0.7 : 0.6) : (green ? 0.9 : hearth ? 0.76 : 0.8)) * (s.tended ? 0.9 : 1) : (hearth && hadFire && !rough ? 0.9 : 1)) * (1 + s.wet * 0.5 * outfitFx(s).wet) * (1 - 0.15 * sealOf(s)) * (1 - (rough ? 0 : bedWarmth(s))) * (fire && !s.fireInside && s.crafts.reflector >= 1 && s.shelterLvl <= 1 ? (poorly(s, 'reflector') ? 0.94 : 0.88) : 1) * (WALLED.includes(s.shelterType) && snowLoadOf(s) >= 0.5 && snowLoadOf(s) <= 2 ? 0.93 : 1) * (s.shelterType === 'cabin' && s.sys && s.sys.gaps ? 1.08 : 1) * (1 + 0.2 * (1 - clothesOf(s))) * (s.sys && s.sys.mat && s.shelterType && (s.wind || s.storm) ? (s.sys.mat === 'tight' ? 0.9 : 0.97) : 1);
   { const sp = (s.sys && s.sys.campSpot) || {}; if (!rough && (s.wind || s.storm)) { if (sp.exposed) coldMod *= 1.1; if (sp.windbreak) coldMod *= 0.94; } if (sp.hollow && !s.wind && !s.storm && !s.rain && !s.fog && T < 6) coldMod *= 1.08; /* cold air pools in the hollow */ }
   if (!rough && s.shelterType === 'tarp' && has(s, 'Tarp')) { const v = variantOf(s, 'Tarp'); if (v.flap && (s.wind || s.storm)) coldMod *= v.flap; if (v.leak) coldMod *= 1.04; } /* thin nylon snaps and draughts in a wind; a poncho barely covers the bed */
   if (s.crafts.mittens >= 1 && T < 0) { const sys = sysOf(s); sys.mittWear = (sys.mittWear || 0) + 0.012; if (sys.mittWear >= 1 && !sys.mittHoles) { sys.mittHoles = true; lines.push(['Your mittens have worn through at the fingertips. They keep out much less cold until they are mended.', 'warn']); } }
@@ -2546,7 +2695,7 @@ function nightAndBody(s, burn, done, lines) {
   else if (s.sys && s.sys.dry) s.sys.dry = 0;
   if (s.wet > 0.4 && !fire && T < 8) { dmg += 4 * s.wet; s.morale -= 4; lines.push([T < 0 ? 'Wet, no fire, below freezing. A dangerous night.' : 'Wet and cold all night with no fire.', 'bad']); if (T < -5 && chance(s, 0.25 * s.wet * (s.crafts.mittens ? 0.4 : 1))) { addCond(s, { name: 'Frostnipped toes', days: 5, dmg: 1 }); lines.push(['Frostnip on the toes.', 'bad']); } }
   else if (T < -15 && !fire && s.shelterLvl < 2) { dmg += 3; lines.push(['A brutal night without fire.', 'bad']); if (chance(s, 0.15)) { addCond(s, { name: 'Frostnipped fingers', days: 5, dmg: 1 }); lines.push(['Frostnip on the fingers.', 'bad']); } }
-  s.wet = fire ? Math.max(0, s.wet - (s.tended ? 0.8 : 0.5)) : Math.max(0, s.wet - 0.15);
+  { const dr = outfitFx(s).dry; s.wet = fire ? Math.max(0, s.wet - (s.tended ? 0.8 : 0.5) * dr) : Math.max(0, s.wet - 0.15 * dr); } /* quick-drying clothes give up the wet sooner */
   /* a clear bottle in full sun all day: the light kills what is in the water (it wants a clear sky, not a frozen one) */
   if (s.gear.includes('Plastic bottle') && !rough && !(s.rain || s.storm || s.fog || s.snowfall) && T > 0 && !frozen(s) && ((s.potWater || 0) >= 1 || !(((s.sys && s.sys.campSpot) || {}).waterM > 150)) && (s.boiled || 0) < 2) { s.boiled = 2; if (!(s.sys && s.sys.sunWater)) { sysOf(s).sunWater = true; lines.push(['The bottle sat full in the sun all day, and the light has made the water in it safe to drink.', 'good']); } }
   if (s.gear.includes('Water bladder') && !(s.sys && s.sys.bladderTorn) && drand(s, 'bladder') < VARIANT['Water bladder'].tear) { sysOf(s).bladderTorn = true; lines.push(['The water bladder snagged on a broken branch and split along the seam, so it will not hold water now.', 'bad']); }
@@ -2789,7 +2938,7 @@ const GEAR_COST = { 'Gillnet': 12, 'Fishing gear': 4, 'Axe': 4, 'Sleeping bag': 
   'Rations': 1, 'Multitool': 1, 'Soap': 1, 'Scotch eyed auger': 1, 'Trapping wire': 1, 'Shovel': 1, 'Salt': 1, 'Tarp': 1, 'Frying pan': 1, 'Wire': 1, 'Canteen': 1, 'Rope': 1, 'Slingshot': 1, 'Sunglasses': 1 };
 const BUDGET = 20;
 const gearCost = id => GEAR_COST[id] ?? (VARIANT[id] && VARIANT[id].cost) ?? 2; const kitCost = gear => gear.reduce((a, g) => a + gearCost(g), 0);
-const API = { kitLeft, useKit, headlampOk, GEAR_FAMILY, VARIANT, kindsOf, variantOf, campStock, jobHours, surplusPor, PRACTICE_KEY, placeOf, practicePlace, hydOf, waterNow, drinkUp, fishDepth, campSummary, shelterScores, bedDampOf, prevailOf, CAMP_FIXED, zoneOf, layoutNotes, kitchenMult, GEAR_COST, BUDGET, gearCost, kitCost, waterToday, note, sunny, sprayLeft, fallChance, climbAnchor, stalkNoise, fouling, latrineOk, raftOf, raftOk, flintOf, hasBow, bowPower, castReach, cutsFor, fineBlade, pointBig, driftChance, bearings, wade, clothesOf, tomorrow, skyAcc, thinIce, potLike, clayPots, greenPots, bedWarmth, snowLoadOf, bedOf, lampOk, nightOk, haftOf, tinderDamp, fireOdds, fireKit, matchesLeft, fuelLeft, sealOf, hasHearth, isDry, onStation, RACK_CAP, DRY_AT, dryDaysLeft, sysOf, cacheSign, low, matName, BIOMES, biomeOf, treeKind, realMedianOf: se => { const d = se.rivals.filter(r => r.days != null).map(r => r.days).sort((a, b) => a - b); return d[d.length >> 1]; }, WEIGHT, loadOf, carryCap, moveCampCost, moveCamp, collectSize, berryRipe, bushRipeDay, stockOf, stockWord, billFor, nightOk, NIGHT_OK, treeYield, treeNames, fishPool, sizeOf, SHELTERS, shelterOptions, chooseShelter, dropPlan, makeCamp, foundWreck, shelterName, canWorkInside, travel, activeWindows, windowOn, timeMult, weatherName, dayFrac, midday, setTune, DATA, C, MATS, ACTIONS, EVENTS, newGame, runDay, beginDay, act, endDay, choose, carryLoad, available, tapOut, placing, status, season, storeKcal, temperature, shelterLevel, SHELTER_NAMES, shelterBill, shelterMissing, matList, fishOdds, huntOdds, bowDrillOdds, dayHours, hoursLeft, phaseOf, lowTide, igniter, blade, cutter, chopper, hasRod, digger };
+const API = { OUTFIT, SLOT, COLORS, DEF_OUTFIT, defaultOutfit, cleanOutfit, outfitOf, outfitFx, outfitSums, pieceStats, piecesOf, pieceWear, wearClothes, colorSeen, outerColor, HOOFED, kitLeft, useKit, headlampOk, GEAR_FAMILY, VARIANT, kindsOf, variantOf, campStock, jobHours, surplusPor, PRACTICE_KEY, placeOf, practicePlace, hydOf, waterNow, drinkUp, fishDepth, campSummary, shelterScores, bedDampOf, prevailOf, CAMP_FIXED, zoneOf, layoutNotes, kitchenMult, GEAR_COST, BUDGET, gearCost, kitCost, waterToday, note, sunny, sprayLeft, fallChance, climbAnchor, stalkNoise, fouling, latrineOk, raftOf, raftOk, flintOf, hasBow, bowPower, castReach, cutsFor, fineBlade, pointBig, driftChance, bearings, wade, clothesOf, tomorrow, skyAcc, thinIce, potLike, clayPots, greenPots, bedWarmth, snowLoadOf, bedOf, lampOk, nightOk, haftOf, tinderDamp, fireOdds, fireKit, matchesLeft, fuelLeft, sealOf, hasHearth, isDry, onStation, RACK_CAP, DRY_AT, dryDaysLeft, sysOf, cacheSign, low, matName, BIOMES, biomeOf, treeKind, realMedianOf: se => { const d = se.rivals.filter(r => r.days != null).map(r => r.days).sort((a, b) => a - b); return d[d.length >> 1]; }, WEIGHT, loadOf, carryCap, moveCampCost, moveCamp, collectSize, berryRipe, bushRipeDay, stockOf, stockWord, billFor, nightOk, NIGHT_OK, treeYield, treeNames, fishPool, sizeOf, SHELTERS, shelterOptions, chooseShelter, dropPlan, makeCamp, foundWreck, shelterName, canWorkInside, travel, activeWindows, windowOn, timeMult, weatherName, dayFrac, midday, setTune, DATA, C, MATS, ACTIONS, EVENTS, newGame, runDay, beginDay, act, endDay, choose, carryLoad, available, tapOut, placing, status, season, storeKcal, temperature, shelterLevel, SHELTER_NAMES, shelterBill, shelterMissing, matList, fishOdds, huntOdds, bowDrillOdds, dayHours, hoursLeft, phaseOf, lowTide, igniter, blade, cutter, chopper, hasRod, digger };
 Object.assign(API, { GOOD, goodLine, migWin });
 if (typeof module !== 'undefined') module.exports = API; else root.Engine = API;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -3014,6 +3163,88 @@ function siteChips(se) { const c = se.climate, m = se.base || se.mult; const pip
   const cold = c.freeze != null && c.freeze <= 1 ? 'frozen from day one' : c.freeze != null ? `freezes about day ${c.freeze}` : c.snow != null ? `snow about day ${c.snow}` : c.t1 >= 8 ? 'mild throughout' : 'cool, no freeze';
   const water = c.water === 'scarce' ? 'water is scarce' : { lake: 'a lake', river: 'a river', stream: 'streams', pond: 'ponds' }[c.water] || c.water;
   return `<span class="sc">${cold}</span><span class="sc">${water}${c.coast ? ' and the sea' : ''}</span><span class="sc pips"><em>fish</em>${pip(m.fish)}</span><span class="sc pips"><em>game</em>${pip(m.hunt)}</span><span class="sc pips"><em>plants</em>${pip(m.forage)}</span>`; }
+// ------------------------------------------------------------ loadout: the issued clothing, piece by piece
+const CLR = { red: '#a3352c', orange: '#cf6f2a', yellow: '#d4ae3a', green: '#4d6a3a', blue: '#3c5e8e', purple: '#674a7d', black: '#23211f', white: '#efebe2', grey: '#8b8a85', brown: '#6b4a2e', 'dark brown': '#3d2a1b', tan: '#b48c63', 'blaze orange': '#f05a1a', 'forest camo': '#56603a', 'snow camo': '#dfe2de', olive: '#5d6034', khaki: '#b0a079', navy: '#25304a', 'red plaid': '#9b2f28', 'green plaid': '#3f5a34', 'blue plaid': '#34507c', 'black plaid': '#2b2926' };
+/* swatches for the colour dots; camo and plaid get a pattern so they never rely on hue alone */
+function swatch(c) { const b = CLR[c] || '#888';
+  if (c === 'forest camo') return `radial-gradient(circle at 30% 30%, #2f3a22 0 22%, transparent 23%), radial-gradient(circle at 70% 65%, #7a6a42 0 20%, transparent 21%), radial-gradient(circle at 65% 20%, #3b4a2a 0 15%, transparent 16%), ${b}`;
+  if (c === 'snow camo') return `radial-gradient(circle at 30% 35%, #9aa29a 0 18%, transparent 19%), radial-gradient(circle at 70% 70%, #b9beb6 0 16%, transparent 17%), ${b}`;
+  if (/plaid/.test(c)) return `repeating-linear-gradient(0deg, rgba(0,0,0,.35) 0 3px, transparent 3px 8px), repeating-linear-gradient(90deg, rgba(0,0,0,.3) 0 3px, transparent 3px 8px), ${b}`;
+  return b; }
+const DEF_DRESS = () => E.defaultOutfit();
+const pieceLine = (sl, p) => { const k = sl.kinds[p.k]; const extra = (sl.opts || []).map(op => op.of[p[op.id]].name.toLowerCase()); return `${k.name}${extra.length ? ' (' + extra.join(', ') + ')' : ''}, ${p.c}`; };
+/* the saved outfits */
+function presetOutfit(name) { const o = DEF_DRESS(); const each = (cs, pick) => { for (const sl of E.OUTFIT) { const p = o[sl.id]; const cols = sl.colors(p.k); const c = pick(sl, cols); if (c && cols.includes(c)) p.c = c; } };
+  if (name === 'last') return E.cleanOutfit(records.lastOutfit || o);
+  if (name === 'camo') each(null, (sl, cols) => cols.includes('forest camo') ? 'forest camo' : cols.includes('olive') ? 'olive' : cols.includes('dark brown') ? 'dark brown' : cols.includes('brown') ? 'brown' : cols.includes('green') ? 'green' : null);
+  if (name === 'hivis') { each(null, () => null); for (const id of ['jacket', 'shell', 'hats', 'buff']) o[id].c = 'blaze orange'; o.gloves.c = 'orange'; }
+  if (name === 'random') { const R = a => a[Math.floor(Math.random() * a.length)]; for (const sl of E.OUTFIT) { const p = o[sl.id]; p.k = R(Object.keys(sl.kinds)); for (const op of sl.opts || []) p[op.id] = R(Object.keys(op.of)); p.c = R(sl.colors(p.k)); } }
+  return E.cleanOutfit(o); }
+/* the figure at the top: what you will be wearing, in your colours */
+function figureSvg(o) { const f = id => CLR[o[id].c] || '#888'; const pat = id => /camo|plaid/.test(o[id].c) ? `url(#pt-${o[id].c.replace(/ /g, '-')})` : f(id);
+  const pats = [...new Set(E.OUTFIT.map(sl => o[sl.id].c).filter(c => /camo|plaid/.test(c)))].map(c => { const id = 'pt-' + c.replace(/ /g, '-'), b = CLR[c];
+    return /plaid/.test(c) ? `<pattern id="${id}" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="${b}"/><rect width="8" height="3" fill="rgba(0,0,0,.32)"/><rect width="3" height="8" fill="rgba(0,0,0,.28)"/></pattern>`
+      : `<pattern id="${id}" width="14" height="14" patternUnits="userSpaceOnUse"><rect width="14" height="14" fill="${b}"/><ellipse cx="4" cy="4" rx="4" ry="2.5" fill="${c === 'snow camo' ? '#9aa29a' : '#2f3a22'}"/><ellipse cx="10" cy="10" rx="3.5" ry="2" fill="${c === 'snow camo' ? '#b9beb6' : '#7a6a42'}"/></pattern>`; }).join('');
+  const hat = o.hats.k, glove = o.gloves.k, boot = o.boots.k;
+  const hatSvg = hat === 'brimmed' ? `<ellipse cx="60" cy="25" rx="20" ry="4" fill="${pat('hats')}"/><rect x="49" y="12" width="22" height="13" rx="5" fill="${pat('hats')}"/>` : hat === 'cap' ? `<path d="M46 25 Q46 10 60 10 Q74 10 74 25 Z" fill="${pat('hats')}"/><rect x="60" y="22" width="20" height="4" rx="2" fill="${pat('hats')}"/>` : hat === 'trapper' ? `<path d="M45 30 Q44 9 60 9 Q76 9 75 30 L75 40 L69 40 L69 27 L51 27 L51 40 L45 40 Z" fill="${pat('hats')}"/>` : `<path d="M47 27 Q46 9 60 9 Q74 9 73 27 Z" fill="${pat('hats')}"/><rect x="46" y="23" width="28" height="5" rx="2" fill="${pat('hats')}" opacity=".85"/>`;
+  return `<svg class="figure" viewBox="0 0 120 200" role="img" aria-label="Your clothing colours"><defs>${pats}</defs>
+    <rect x="47" y="152" width="12" height="${boot === 'rubber' || boot.startsWith('leather') ? 34 : 30}" rx="3" fill="${f('boots')}"/><rect x="61" y="152" width="12" height="34" rx="3" fill="${f('boots')}"/>
+    <rect x="44" y="184" width="16" height="6" rx="2" fill="${f('boots')}"/><rect x="60" y="184" width="16" height="6" rx="2" fill="${f('boots')}"/>
+    <path d="M45 98 L75 98 L74 158 L62 158 L60 116 L58 158 L46 158 Z" fill="${pat('pants')}"/>
+    <path d="M40 46 Q60 38 80 46 L84 104 L36 104 Z" fill="${pat('jacket')}"/>
+    <path d="M40 48 L28 96 L36 98 L46 60 Z" fill="${pat('jacket')}"/><path d="M80 48 L92 96 L84 98 L74 60 Z" fill="${pat('jacket')}"/>
+    <line x1="60" y1="46" x2="60" y2="104" stroke="rgba(0,0,0,.25)" stroke-width="1.5"/>
+    <${glove === 'mittens' ? 'ellipse cx="31" cy="101" rx="6" ry="7"' : 'rect x="26" y="95" width="11" height="12" rx="3"'} fill="${f('gloves')}"/><${glove === 'mittens' ? 'ellipse cx="89" cy="101" rx="6" ry="7"' : 'rect x="83" y="95" width="11" height="12" rx="3"'} fill="${f('gloves')}"/>
+    <rect x="50" y="36" width="20" height="12" rx="4" fill="${pat('buff')}"/>
+    <circle cx="60" cy="27" r="12" fill="#d9b48f"/>${hatSvg}</svg>`; }
+/* one bottom sheet for a piece (or, for accessories, the few small ones): type, options, colour, what it does */
+function openPiece(ids = ['jacket'], onDone = () => {}) { if (!setup.outfit) setup.outfit = E.cleanOutfit(records.outfit || records.lastOutfit || null); sheet((sh, close) => {
+  const o = setup.outfit; const title = ids.length > 1 ? 'Accessories' : E.SLOT[ids[0]].name;
+  sh.append($(`<h2>${esc(title)}</h2>`));
+  const body = $(`<div class="dress"></div>`); sh.append(body);
+  const bar = (label, v) => `<div class="sbar"><span>${label}</span><i><b style="width:${Math.round(Math.max(0.04, Math.min(1, v)) * 100)}%"></b></i></div>`;
+  const draw = () => { body.replaceChildren();
+    for (const id of ids) { const sl = E.SLOT[id], p = o[id];
+      const box = $(`<div class="piece">${ids.length > 1 ? `<div class="sect">${esc(sl.name)}${sl.n > 1 ? ` · ${sl.n}` : ''}</div>` : sl.n > 1 ? `<div class="muted" style="font-size:13px">Issued: ${sl.n}${sl.id === 'gloves' ? ' pairs' : ''}, all of this kind.</div>` : ''}</div>`);
+      const kinds = Object.keys(sl.kinds); const opt = (name, entries, cur, set) => { if (entries.length < 2) return; const g = $(`<div class="grp">${esc(name)}</div>`); const seg = $(`<div class="seg wrap" role="group" aria-label="${esc(name)}"></div>`);
+        for (const [k, label] of entries) { const b = $(`<button aria-pressed="${k === cur}">${esc(label)}</button>`); b.onclick = () => { set(k); setup.outfit = E.cleanOutfit(o); Object.assign(o, setup.outfit); keep(); draw(); }; seg.append(b); } box.append(g, seg); };
+      opt(sl.opts ? 'Material' : 'Type', kinds.map(k => [k, sl.kinds[k].name]), p.k, k => { p.k = k; });
+      for (const op of sl.opts || []) opt(op.name, Object.keys(op.of).map(k => [k, op.of[k].name]), p[op.id], k => { p[op.id] = k; });
+      const cols = sl.colors(p.k); const dots = $(`<div class="dots" role="group" aria-label="Colour"></div>`);
+      for (const c of cols) { const d = $(`<button class="dot" aria-pressed="${c === p.c}" aria-label="${esc(c)}" title="${esc(c)}"><i style="background:${swatch(c)}"></i></button>`); d.onclick = () => { p.c = c; keep(); draw(); }; dots.append(d); }
+      box.append($(`<div class="grp">Colour · <span style="text-transform:none;letter-spacing:0">${esc(p.c)}</span></div>`), dots);
+      if (sl.w > 0 || sl.id === 'ankle') { const all = kinds.map(k => E.pieceStats(sl, { ...p, k })); const st = E.pieceStats(sl, p); const mx = key => Math.max(...all.map(x => x[key]));
+        box.append($(`<div class="bars">${bar('Warmth', st.warm / Math.max(1.4, mx('warm')))}${bar('Warm when wet', st.keep)}${bar('Dries', st.dry / Math.max(1.5, mx('dry')))}${bar('Weight', (st.kg * sl.n) / Math.max(...all.map(x => x.kg * sl.n), 0.1))}</div>`)); }
+      box.append($(`<p class="muted note">${esc(sl.kinds[p.k].note)}</p>`));
+      body.append(box); } };
+  draw();
+  const done = $(`<button class="big-btn">Done</button>`); done.onclick = () => { close(); onDone(); }; sh.append(done);
+}); }
+const keep = () => { records.outfit = setup.outfit; saveRecords(); };
+/* the overall effect, against the standard issue (the advanced panel) */
+function outfitSummary(o) { const s = { outfit: o, sys: {}, gear: [] }; const fx = E.outfitFx(s); const pct = (v, good) => { const d = Math.round((v - 1) * 100); return d === 0 ? 'as standard' : `<span class="${(d < 0) === good ? 'tone-good' : 'tone-warn'}">${d > 0 ? '+' : ''}${d}%</span>`; };
+  return `<div class="row"><span>Cold at night</span><span>${pct(fx.cold, true)}</span></div><div class="row"><span>Extra cold when soaked</span><span>${pct(fx.wet, true)}</span></div><div class="row"><span>Drying overnight</span><span>${pct(fx.dry, false)}</span></div><div class="row"><span>Rain while working</span><span>${pct(fx.rain, true)}</span></div>${fx.wade !== 1 ? `<div class="row"><span>Water in your boots at a ford</span><span>${pct(fx.wade, true)}</span></div>` : ''}<div class="row"><span>Weight on a camp move</span><span>${fx.kg === 0 ? 'as standard' : (fx.kg > 0 ? '+' : '') + fx.kg + ' kg'}</span></div>${fx.sweat ? '<div class="row"><span>Sweat on hard jobs</span><span class="tone-warn">soaks you slowly</span></div>' : ''}`; }
+function colorNotes(o) { const c = o.jacket.c, sh = o.shell.c; const L = [];
+  const one = (x, when) => { if (['blue', 'white', 'purple'].includes(x)) L.push(`${when}: ${x} stands out to deer, moose, caribou and other hoofed animals (hunting −5%).`); if (['red', 'orange', 'yellow', 'blaze orange', 'white', 'blue', 'purple'].includes(x)) L.push(`${when}: ${x} is easy for grouse, ducks and other birds to see (−4%).${/orange/.test(x) ? ' Hoofed animals see orange as a dull brown, so it costs nothing with them.' : ''}`); if (x === 'forest camo') L.push(`${when}: forest camo breaks up your outline (hoofed +3%, birds +2%).`); if (x === 'snow camo') L.push(`${when}: snow camo hides you once there is snow on the ground (hoofed +3%, birds +2%).`); };
+  one(c, 'Jacket'); if (sh !== c) one(sh, 'Shell, worn in rain'); if (['black', 'dark brown', 'navy', 'black plaid'].includes(c)) L.push('A dark jacket soaks up the sun: a little warmer on fair days (2%).');
+  if (o.jacket.k === 'leather') L.push('A leather coat stops the wind: a little warmer on windy nights (4%).');
+  if (o.gloves.k === 'mittens') L.push('Mittens fumble the fire-lighting in the cold (−8% a try).');
+  L.push('Movement and outline count far more than colour. Bears and other predators go by smell and movement; colour barely matters to them.');
+  return L.map(x => `<li>${esc(x)}</li>`).join(''); }
+function loadoutSection() {
+  if (!setup.outfit) setup.outfit = E.cleanOutfit(records.outfit || records.lastOutfit || null);
+  const sec = $(`<section class="step loadout"><h2>3 · Clothing <span class="label">issued to everyone</span></h2>
+    <p class="muted" style="font-size:13px;margin:0">Everyone gets the same pieces. Pick the kind and colour of each; every piece starts on a sensible default, so open only the ones you care about.</p>
+    <div class="fig"></div><div class="presets" role="group" aria-label="Saved outfits"></div><div class="rows"></div>
+    <details class="adv"><summary>Colour and outfit details</summary><div class="summary"></div><ul class="cnotes"></ul></details>
+    <p class="muted" style="font-size:13px;margin:0">Also issued: underwear, a shemagh and snake gaiters. Personal: ${ISSUED.personal.join(', ').toLowerCase()}.</p></section>`);
+  const draw = () => { const o = setup.outfit; sec.querySelector('.fig').innerHTML = figureSvg(o);
+    const rows = sec.querySelector('.rows'); rows.replaceChildren();
+    for (const sl of E.OUTFIT.filter(x => !x.acc)) { const b = $(`<button class="drow"><span class="dl">${esc(sl.name)}${sl.n > 1 ? ` <small>×${sl.n}</small>` : ''}</span><span class="dv"><i class="sw" style="background:${swatch(o[sl.id].c)}"></i>${esc(pieceLine(sl, o[sl.id]))}</span></button>`); b.onclick = () => openPiece([sl.id], draw); rows.append(b); }
+    const acc = E.OUTFIT.filter(x => x.acc); const a = $(`<button class="drow"><span class="dl">Accessories</span><span class="dv">${acc.map(sl => `<i class="sw" style="background:${swatch(o[sl.id].c)}"></i>${esc(sl.name.toLowerCase())}`).join(' ')}</span></button>`); a.onclick = () => openPiece(acc.map(x => x.id), draw); rows.append(a);
+    sec.querySelector('.summary').innerHTML = outfitSummary(o); sec.querySelector('.cnotes').innerHTML = colorNotes(o); };
+  const pr = sec.querySelector('.presets'); for (const [k, label] of [['last', 'Last round'], ['camo', 'Camo'], ['hivis', 'High-vis'], ['random', 'Random'], ['std', 'Standard']]) { if (k === 'last' && !records.lastOutfit) continue; const b = $(`<button class="rule">${label}</button>`); b.onclick = () => { setup.outfit = k === 'std' ? DEF_DRESS() : presetOutfit(k); keep(); draw(); }; pr.append(b); }
+  draw(); return sec; }
 function renderSetup() {
   // easiest first: by difficulty level, then by how long a typical player lasts there (longest first)
   const level = placeLevel;
@@ -3057,8 +3288,7 @@ function renderSetup() {
   const s2 = $(`<section class="step"><h2>2 · Ten items <span class="label num" id="count"></span></h2>
     <div class="rules" role="group" aria-label="Gear rules"><button class="rule" data-b="0">Any ten</button><button class="rule" data-b="1">Budget · ${E.BUDGET} points</button></div>
     <div class="muted" id="rulenote" style="font-size:13px"></div>
-    <div class="gear"></div>
-    <details class="issued"><summary>Everyone is also issued clothing and a few personal things</summary><p class="muted" style="font-size:13px;margin:6px 0 0">${ISSUED.clothing.join(', ')}. Personal: ${ISSUED.personal.join(', ').toLowerCase()}.</p></details></section>`);
+    <div class="gear"></div></section>`);
   const grid = s2.querySelector('.gear');
   const fits = id => !setup.budget || E.kitCost(setup.gear) + E.gearCost(id) <= E.BUDGET;
   const count = () => { const pts = E.kitCost(setup.gear); s2.querySelector('#count').textContent = `${setup.gear.length} / 10${setup.budget ? ` · ${pts} of ${E.BUDGET} points` : ''}`; startBtn.disabled = setup.gear.length === 0 || (setup.budget && pts > E.BUDGET);
@@ -3076,7 +3306,7 @@ function renderSetup() {
       grid.append(b);
     }
   };
-  app.append(s2);
+  app.append(s2); app.append(loadoutSection());
   s2.querySelectorAll('.rule').forEach(b => b.onclick = () => { setup.budget = b.dataset.b === '1'; if (setup.budget && E.kitCost(setup.gear) > E.BUDGET) { const kept = []; for (const id of setup.gear) if (E.kitCost(kept) + E.gearCost(id) <= E.BUDGET) kept.push(id); setup.gear = kept; } drawGear(); count(); });
   const opts = $(`<details><summary>More options</summary><div class="opts">
     <label class="opt" for="wt">Starting weight (lb)<input id="wt" type="number" min="100" max="300" step="1" value="${setup.weight}"></label>
@@ -3092,7 +3322,7 @@ function renderSetup() {
   app.append(opts);
   const startBtn = $(`<button class="big-btn">Drop me off</button>`);
   startBtn.onclick = () => {
-    startGame(setup.season, setup.gear, { weight: setup.weight, showRemaining: setup.showRemaining, budget: setup.budget });
+    records.lastOutfit = setup.outfit; saveRecords(); startGame(setup.season, setup.gear, { weight: setup.weight, showRemaining: setup.showRemaining, budget: setup.budget, outfit: setup.outfit });
   };
   app.append(startBtn);
   const links = $(`<div style="display:flex;gap:16px;justify-content:center"><button class="linkbtn" id="rec">Records and badges</button><button class="linkbtn" id="how">How to play</button></div>`);
@@ -5538,7 +5768,9 @@ function openPack() {
     for (const g of S.gear) rows.append($(`<div class="row"><span>${esc(gearName(g))}</span><span>${esc(note[g] || note[(E.VARIANT[g] || {}).base] || '')}</span></div>`));
     if (S.crafts.handline && !E.kindsOf(S, 'Fishing gear').length) rows.append($(`<div class="row"><span>Hand line</span><span>${S.hooks} hooks</span></div>`));
     if (S.found.length) rows.append($(`<div class="row"><span>Found</span><span>${esc(S.found.map(f => E.low(f.name)).join(', '))}</span></div>`));
-    { const c = E.clothesOf(S); const sys = S.sys || {}; rows.append($(`<div class="row"><span>Issued clothing</span><span>${c >= 0.8 ? 'in good shape' : c >= 0.6 ? 'worn' : c >= 0.35 ? 'patched and thin' : 'in rags'} · spares ${sys.sparesWet ? '<span class="tone-warn">wet</span>' : 'dry'}${sys.beltCut ? ' · belt cut up' : ''}</span></div>`)); rows.append($(`<div class="row"><span>Personal</span><span>toothbrush, glasses, a photograph</span></div>`)); }
+    { const c = E.clothesOf(S); const sys = S.sys || {}; const o = E.outfitOf(S), pw = E.pieceWear(S); const word = v => v >= 0.8 ? 'good' : v >= 0.6 ? 'worn' : v >= 0.35 ? '<span class="tone-warn">thin</span>' : '<span class="tone-bad">rags</span>';
+      rows.append($(`<div class="row"><span>Issued clothing</span><span>${c >= 0.8 ? 'in good shape' : c >= 0.6 ? 'worn' : c >= 0.35 ? 'patched and thin' : 'in rags'} · spares ${sys.sparesWet ? '<span class="tone-warn">wet</span>' : 'dry'}${sys.beltCut ? ' · belt cut up' : ''}</span></div>`));
+      for (const sl of E.OUTFIT) if (sl.w > 0 && !sl.acc) rows.append($(`<div class="row sub"><span>${esc(sl.name)}</span><span>${esc(sl.kinds[o[sl.id].k].name)}, ${esc(o[sl.id].c)} · ${word(pw[sl.id])}</span></div>`)); rows.append($(`<div class="row"><span>Personal</span><span>toothbrush, glasses, a photograph</span></div>`)); }
     if ((S.lostGear || []).length) rows.append($(`<div class="row"><span>Lost</span><span class="tone-warn">${esc(S.lostGear.join(', ').toLowerCase())}</span></div>`));
     sh.append(rows);
     sh.append($(`<div class="sect">Materials</div>`));
@@ -7684,7 +7916,7 @@ function migrate(g) { // fill anything a newer build added, so a save survives u
   const fresh = E.newGame(g.seasonKey, g.gear || [], { weight: g.weight0, seed: g.seed });
   if (g.sys && typeof g.sys === 'object') { if (typeof g.sys.sleepDebt !== 'number' || !isFinite(g.sys.sleepDebt)) g.sys.sleepDebt = 0; if (!Array.isArray(g.sys.good)) g.sys.good = []; } /* the quiet update: sleep debt, and the good lines already seen */
   const fill = (dst, src) => { for (const k in src) { if (dst[k] === undefined) dst[k] = src[k]; else if (src[k] && typeof src[k] === 'object' && !Array.isArray(src[k]) && dst[k] && typeof dst[k] === 'object' && !Array.isArray(dst[k])) fill(dst[k], src[k]); } };
-  fill(g, fresh); conformSave(g, fresh); if (!g.stats.walked) g.stats.walked = 0; if (g.shelterLvl && !g.shelterType) g.shelterType = ['', 'leanto', 'hut', 'cabin'][g.shelterLvl]; for (const x of (g.stores || []).concat(g.raw || [])) if (x.left == null || x.left > 1e8) x.left = Infinity; if (needRivals) scrubRivals(g); g.rivalsV = 1; g._at = null; g.v = 2; return g;
+  fill(g, fresh); conformSave(g, fresh); if (g.outfit != null) g.outfit = E.cleanOutfit(g.outfit); if (g.sys && g.sys.pieces != null && (typeof g.sys.pieces !== 'object' || Array.isArray(g.sys.pieces))) delete g.sys.pieces; if (!g.stats.walked) g.stats.walked = 0; if (g.shelterLvl && !g.shelterType) g.shelterType = ['', 'leanto', 'hut', 'cabin'][g.shelterLvl]; for (const x of (g.stores || []).concat(g.raw || [])) if (x.left == null || x.left > 1e8) x.left = Infinity; if (needRivals) scrubRivals(g); g.rivalsV = 1; g._at = null; g.v = 2; return g;
 }
 /* a damaged field (null, wrong type, unknown id) is treated as missing, so migrate rebuilds it instead of the game screen crashing */
 function repairSave(g) {
