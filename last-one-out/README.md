@@ -1,4 +1,6 @@
-# Last One Out
+# Hold Fast
+
+_Formerly "Last One Out". The folder name and the save keys in the browser keep the old name, so existing saves load._
 
 A single-file survival game: pick a place and ten items, then outlast the other survivors.
 

@@ -141,7 +141,7 @@ add('Other sizes', 'desktop', 'Desktop, 1280 wide', P, null, null, [1280, 800]);
   await b.close();
   const groups = [...new Set(shots.map(s => s.group))];
   const when = new Date().toISOString().slice(0, 10);
-  const page = `<title>Last One Out Picture Sheet</title>
+  const page = `<title>Hold Fast Picture Sheet</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 /* a contact sheet: small pictures in a grid on dark canvas, captions in the game's own typefaces */
@@ -158,7 +158,7 @@ figcaption { padding: 7px 9px 9px; font-size: 13.5px; color: var(--soft); }
 a:focus-visible { outline: 2px solid var(--soft); outline-offset: 2px; }
 </style>
 <div class="wrap">
-  <header><h1>Last One Out picture sheet</h1><p class="lede">Every place on its first morning, one camp through a day, the choices and mini-games, the panels and two other screen sizes. Made ${when} from the current game. Tap a picture to see it full size.</p></header>
+  <header><h1>Hold Fast picture sheet</h1><p class="lede">Every place on its first morning, one camp through a day, the choices and mini-games, the panels and two other screen sizes. Made ${when} from the current game. Tap a picture to see it full size.</p></header>
   ${groups.map(g => `<section><h2>${g}</h2><div class="grid${g === 'Other sizes' ? ' wide' : ''}">${shots.filter(s => s.group === g).map(s => `<figure><a href="img/${s.name}.jpg" target="_blank" rel="noopener"><img src="img/${s.name}.jpg" alt="${s.caption}" loading="lazy" width="${s.vp[0]}" height="${s.vp[1]}"></a><figcaption>${s.caption}</figcaption></figure>`).join('')}</div></section>`).join('\n  ')}
 </div>`;
   fs.writeFileSync(path.join(OUT, 'index.html'), page);
