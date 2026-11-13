@@ -214,6 +214,17 @@ Everyone gets the same clothing and a few personal things on top of the ten item
 - **Snake gaiters.** Backing away from a snake, a strike at your shin sometimes hits the gaiter instead. A bad moment, no bite.
 - The rest (hats, gloves, buff, shell, insulated pants, thermals) is part of how warm and dry you already are in the game, so it changes nothing new. The clothes still wear out and can be mended.
 
+## Clothing, piece by piece (Nov 8, 2026)
+
+The issued clothing is no longer one wear meter. Every piece has a kind, a colour, and its own warmth, dryness and wear.
+
+- **Loadout.** Step 3 on the setup screen: a figure in your colours, one row per piece ("Heavy jacket · Synthetic parka, olive"), and one sheet per piece with type, material, colour dots and bars for warmth, warmth when wet, drying and weight. Socks, buff and bandana sit under Accessories. Saved outfits: Last round, Camo, High-vis, Random, Standard. Every piece starts on a sensible default.
+- **Kinds.** Jacket (down, synthetic, wool, leather, waxed canvas), shell (breathable or PVC), high boots (rubber, leather insulated, leather), ankle boots (hikers or mesh), socks (wool, synthetic, blend; length; thickness), T-shirt, shirts, sweaters, thermals (material and weight), pants, insulated pants (down or synthetic; pants or bibs), hats, gloves, belt, buff.
+- **What they do.** Warmer outfits make colder nights easier; down and cotton lose most of their warmth soaked; quick-dry layers dry faster overnight; PVC and waxed canvas shed rain but PVC soaks you with sweat on hard jobs; rubber boots keep a ford out; mesh spares dry faster on the line; heavier clothes add weight to a camp move; tough pieces (leather, canvas, work gloves) wear slower; a nylon belt has nothing to salvage and a braided one unravels into 3 cordage; mittens fumble a ferro rod in the cold; a spark can melt a hole in a down parka.
+- **Wear.** Each job wears the pieces doing the work (an axe: gloves, pants, jacket) and each piece says when it is through. The total still drives the cold and mending exactly as before.
+- **Colour (a few percent, in the details panel).** Blue and UV-bright white stand out to hoofed animals; orange looks dull to them but bright to birds; camo breaks up your outline; a dark jacket is a little warmer on a fair day. Bears go by smell, so colour does nothing with them.
+- **Balance.** The standard outfit plays exactly as before: the golden runs match and the core fingerprints differ only in the wording of the worn-clothes line. The daily challenge uses the standard outfit so everyone starts equal.
+
 ## Checked and clean
 
 - Engine: 1,360 random runs and 255 bot runs across all 17 places, up to day 100. No errors, no broken numbers.

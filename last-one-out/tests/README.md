@@ -19,6 +19,7 @@ Run these before publishing any change. They test the real `../index.html`.
 | `node pottery.js` | Pottery: shaping, drying, pit firing, and using a clay pot. | ~3 s |
 | `node wild.js` | Reading the land: catches left in snares, forecasting from the sky, smoke on your clothes, thin ice, game sign. | ~10 s |
 | `node mend.js` | Clothes and spirits: wear, mending, sleeping-bag holes, tea by the fire. | ~2 s |
+| `node outfit.js` | Clothing piece by piece: the standard outfit changes nothing, warmth, wet and drying by kind, rain gear, rubber boots, per-piece wear, the belt, colour effects, saves. | <1 s |
 | `node bowmap.js` | A bow of your own (carving, tillering), cairns, and losing your bearings. | ~3 s |
 | `node crafts.js` | Stone blades, woven door mats, cabin joints, rafts. | ~10 s |
 | `node finish.js` | Bear spray, climbing the rock, noise when stalking, the latrine. | ~10 s |

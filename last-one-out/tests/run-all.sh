@@ -14,6 +14,7 @@ node shelter.js
 node pottery.js
 node wild.js
 node mend.js
+node outfit.js
 node bowmap.js
 node crafts.js
 node finish.js
